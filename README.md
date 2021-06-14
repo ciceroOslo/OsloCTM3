@@ -16,4 +16,4 @@ See README in src/ catalogue
 
 ---
 ## More info
-Visit [OsloCTM3 official website][https://cicero.oslo.no/en/OsloCTM3].
+Visit [OsloCTM3 official website](https://cicero.oslo.no/en/OsloCTM3).
