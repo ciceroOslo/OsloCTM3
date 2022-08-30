@@ -31,6 +31,7 @@ module emisutils_oslo
   !//   subroutine read_bcoc_bond_2d
   !//   subroutine read_aerocom_2d
   !//   subroutine gfed4_rd
+  !//   subroutine gfed4_init
   !//   subroutine gfed4_rd_novert
   !//   subroutine gfed4_rd_novert_daily
   !//   subroutine read_ceds_cicero
@@ -2446,6 +2447,105 @@ contains
   !// ----------------------------------------------------------------------
 
 
+  
+ !// ----------------------------------------------------------------------
+  subroutine read_retrobbh_noresm(INFILE,efnr,IHLF,JHLF,LMAX,BBH,LPARW,LMMAP)
+    !// --------------------------------------------------------------------
+    !// Read biomass burning height distribution, matching NorESM
+    !// vertical resolution.
+    !//
+    !// Amund Sovde Haslerud, February 2018
+    !// --------------------------------------------------------------------
+    use ncutils, only: get_netcdf_var_1d, get_netcdf_var_3d
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    integer, intent(in)       :: EFNR,IHLF,JHLF,LMAX,LPARW,LMMAP(LPARW)
+    character(len=*), intent(in) :: INFILE
+    real(r8), intent(out)       :: BBH(IHLF,JHLF,LMAX)
+
+    integer, parameter :: LHLF=13 !// Levels of input data
+    integer :: I,J, nLon, nLat, nLev
+    real(r8) :: BFRAC(IHLF,JHLF,LHLF),BBFRAC(IHLF,JHLF,LHLF)
+    character(len=60) :: FIELDNAME
+    real(r8), allocatable, dimension(:) :: inLon, inLat, inLev
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'read_retrobbh'
+    !// --------------------------------------------------------------------
+    FIELDNAME = 'altitude_fraction'
+
+    !call readnc_field(BBFRAC,FIELDNAME,LONG,LAT,LEVEL,INFILE,IHLF,JHLF,LHLF)
+
+    !// Check resolution (latitude/longitude)
+    !// This routine allocates inLon/inLat
+    call get_netcdf_var_1d( infile, 'lon',  inLon  )
+    call get_netcdf_var_1d( infile, 'lat',  inLat  )
+    call get_netcdf_var_1d( infile, 'level',  inLev  )
+
+    nLon  = SIZE( inLon  )
+    nLat  = SIZE( inLat  )
+    nLev  = SIZE( inLev  )
+
+    deallocate( inLon, inLat, inLev )
+
+    if (nLon .ne. IHLF .or. nLat.ne.JHLF .or. nLev.ne.LHLF) then
+       write(6,'(a,3i5)') f90file//':'//subr// &
+            ': wrong resolution ', nLon, nLat, nLev
+       stop
+    end if
+
+    !// Get data, should be resolution 720x360x13
+    call get_netcdf_var_3d(infile, fieldname, BBFRAC, nLon, nLat, nLev)
+
+
+    !// Fit array to CTM grid
+    do I = 1, IHLF/2
+       BFRAC(IHLF/2+I,:,:)=BBFRAC(I,:,:)
+    end do
+    do I = (IHLF/2)+1, IHLF
+       BFRAC(I-IHLF/2,:,:)=BBFRAC(I,:,:)         
+    end do
+    do J = 1, JHLF
+       BBFRAC(:,JHLF-J+1,:)=BFRAC(:,J,:)
+    end do
+
+    !// Initialize output field
+    BBH(:,:,:)=0._r8
+
+    !// Do vertical adjustments
+    BBH(:,:,LMMAP( 1)) = BBH(:,:,LMMAP( 1)) + 0.10_r8*BBFRAC(:,:,1)
+    BBH(:,:,LMMAP( 2)) = BBH(:,:,LMMAP( 2)) + 0.21_r8*BBFRAC(:,:,1)
+    BBH(:,:,LMMAP( 3)) = BBH(:,:,LMMAP( 3)) + 0.40_r8*BBFRAC(:,:,1)
+    BBH(:,:,LMMAP( 4)) = BBH(:,:,LMMAP( 4)) + 0.29_r8*BBFRAC(:,:,1)
+    BBH(:,:,LMMAP( 4)) = BBH(:,:,LMMAP( 4)) + 0.29_r8*BBFRAC(:,:,2) !1.29
+    BBH(:,:,LMMAP( 5)) = BBH(:,:,LMMAP( 5)) + 0.71_r8*BBFRAC(:,:,2)
+    BBH(:,:,LMMAP( 5)) = BBH(:,:,LMMAP( 5)) + 0.06_r8*BBFRAC(:,:,3) !2.06
+    BBH(:,:,LMMAP( 6)) = BBH(:,:,LMMAP( 6)) + 0.94_r8*BBFRAC(:,:,3)
+    BBH(:,:,LMMAP( 6)) = BBH(:,:,LMMAP( 6)) + 0.02_r8*BBFRAC(:,:,4) !3.02
+    BBH(:,:,LMMAP( 7)) = BBH(:,:,LMMAP( 7)) + 0.98_r8*BBFRAC(:,:,4)
+    BBH(:,:,LMMAP( 8)) = BBH(:,:,LMMAP( 8)) + 0.16_r8*BBFRAC(:,:,5) !4.16
+    BBH(:,:,LMMAP( 8)) = BBH(:,:,LMMAP( 8)) + 0.84_r8*BBFRAC(:,:,5)
+    BBH(:,:,LMMAP( 8)) = BBH(:,:,LMMAP( 8)) + 0.29_r8*BBFRAC(:,:,6) !5.29
+    BBH(:,:,LMMAP( 9)) = BBH(:,:,LMMAP( 9)) + 0.71_r8*BBFRAC(:,:,6)
+    BBH(:,:,LMMAP( 9)) = BBH(:,:,LMMAP( 9)) + 0.42_r8*BBFRAC(:,:,7) !6.42
+    BBH(:,:,LMMAP(10)) = BBH(:,:,LMMAP(10)) + 0.48_r8*BBFRAC(:,:,7)
+    BBH(:,:,LMMAP(10)) = BBH(:,:,LMMAP(10)) + 0.56_r8*BBFRAC(:,:,8) !7.56
+    BBH(:,:,LMMAP(11)) = BBH(:,:,LMMAP(11)) + 0.44_r8*BBFRAC(:,:,8)
+    BBH(:,:,LMMAP(11)) = BBH(:,:,LMMAP(11)) + 0.69_r8*BBFRAC(:,:,9) !8.69
+    BBH(:,:,LMMAP(12)) = BBH(:,:,LMMAP(12)) + 0.31_r8*BBFRAC(:,:,9)
+    BBH(:,:,LMMAP(12)) = BBH(:,:,LMMAP(12)) + 0.82_r8*BBFRAC(:,:,10)!9.82
+    BBH(:,:,LMMAP(13)) = BBH(:,:,LMMAP(13)) + 0.18_r8*BBFRAC(:,:,10)
+    BBH(:,:,LMMAP(13)) = BBH(:,:,LMMAP(13)) + 0.96_r8*BBFRAC(:,:,11)!10.96
+    BBH(:,:,LMMAP(14)) = BBH(:,:,LMMAP(14)) + 0.04_r8*BBFRAC(:,:,11)
+    BBH(:,:,LMMAP(14)) = BBH(:,:,LMMAP(14)) + 1.00_r8*BBFRAC(:,:,12)
+    BBH(:,:,LMMAP(14)) = BBH(:,:,LMMAP(14)) + 0.09_r8*BBFRAC(:,:,13)!12.09
+    BBH(:,:,LMMAP(15)) = BBH(:,:,LMMAP(15)) + 0.91_r8*BBFRAC(:,:,13)
+
+    !// --------------------------------------------------------------------
+  end subroutine read_retrobbh_noresm
+  !// ----------------------------------------------------------------------
+
+  
 
   !// ----------------------------------------------------------------------
   subroutine read_bcoc_bond_2d(R8XY,INFILE,EFNR,IRES,JRES,MRES,NSETS)
@@ -3412,7 +3512,8 @@ contains
     use regridding, only: E_GRID
     use cmn_oslo, only: EPAR_FIR, NEFIR, EPAR_FIR_LM, ECOMP_FIR, EMIS_FIR, &
          FF_PATH, FF_YEAR, METHANEMIS, &
-         FF_CNAMES, FF_BNAMES, FF_SCALE, FF_PARTITIONS, EPAR_NPARTS
+         FF_CNAMES, FF_BNAMES, FF_SCALE, FF_PARTITIONS, EPAR_NPARTS, &
+         GFED4_NC, GFED4_NP, GFED4_EF, GFED4_NM
     use ncutils, only: get_netcdf_var_1d, get_netcdf_var_2d
     !// ------------------------------------------------------------------
     implicit none
@@ -3450,13 +3551,7 @@ contains
     character(len=120) :: INFILE
     real(r8) :: tscale, scalefac
 
-    !// GFED4 emission factors
-    character(len=16) :: VAR
-    real(r8) :: f1,f2,f3,f4,f5,f6
-    integer, parameter :: NG4 = 41
     integer :: GFED4_N
-    real(r8) :: GFED4_EF(NPARTS,NG4)
-    character(len=16) :: GFED4_NM(NG4)
 
     real(r8), allocatable, dimension(:) :: QXBEDGE, QYBEDGE
     !// --------------------------------------------------------------------
@@ -3484,25 +3579,7 @@ contains
        inquire(efnr,opened=file_status)
     end do
     
-    !// Get emission factors for all GFED4 species
-    infile = trim(FF_PATH)//'GFED4_Emission_Factors.txt'
-    open(efnr,file=infile,form='formatted',action='read')
-    do I = 1, 17
-       read(efnr,*) ! Reading header
-    end do
-    do I = 1, NG4
-       !// Read emission factors
-       read(efnr,*) VAR,f1,f2,f3,f4,f5,f6
-       GFED4_EF(1:6,I) = (/ f1,f2,f3,f4,f5,f6 /)
-       GFED4_NM(I) = VAR
-    end do
-    close(efnr)
-
-    write(6,'(a)') 'GFED4 emission factors'
-    write(6,'(a16,6a9)') 'Component',CPARTS
-    do I = 1, NG4
-       write(6,'(a16,6f9.3)')GFED4_NM(I),GFED4_EF(1:6,I)
-    end do
+    !// Get emission factors for all GFED4 species - done in gfed4_init
 
 
     !// Read DM from partitions
@@ -3569,7 +3646,7 @@ contains
     !// Read DM for six categories; save data on 0.5x0.5 degree
     !// For each species, add all partitions together in 0.5x0.5.
     !// Finally convert to model resolution.
-    do N = 1, NPARTS
+    do N = 1, GFED4_NP
 
        !// Emission variable, expected units: kg/m2/s for each month
        !// GFED4 on netcdf has been converted to start at 0E,90S
@@ -3609,7 +3686,7 @@ contains
 
        !// Find the GFED4 component number, if available.
        GFED4_N = -1
-       do I = 1, NG4
+       do I = 1, GFED4_NC
           if (trim(GFED4_NM(I)) .eq. trim(COMP)) then
              GFED4_N = I
              exit
@@ -3621,7 +3698,7 @@ contains
 
        !// Sum up partitions for this species
        R8Q(:,:) = 0._r8
-       do N = 1, NPARTS
+       do N = 1, GFED4_NP
 
           if (partitions(N) .eq. 0) cycle
           !// Emission factors are g/kgDM, so we convert to kg, and also
@@ -3764,8 +3841,6 @@ contains
     real(r8) :: tscale, scalefac
 
     !// GFED4 emission factors
-    character(len=16) :: VAR
-    real(r8) :: f1,f2,f3,f4,f5,f6
     integer :: GFED4_N
 
     real(r8), allocatable, dimension(:) :: QXBEDGE, QYBEDGE
@@ -4053,12 +4128,25 @@ contains
     !// inTime is given as days since 1750, and starts at mid-month
     !// (15 Jan for each year).
     sTime = -1
-    do M = 1, nTime
-       if (inTime(M) .ge. (getY - 1750)*365 + 15) then
-          sTime = M
-          exit
-       end if
-    end do
+    if (getY .le. 2014) then 
+       do M = 1, nTime
+          if (inTime(M) .ge. (getY - 1750)*365 + 15) then
+             sTime = M
+             exit
+          end if
+       end do
+    else
+       !//For scenario files with base 2015
+       do M = 1, nTime
+          if (inTime(M) .ge. (getY - 2015)*365 + 15) then
+             sTime = M
+             exit
+          end if
+       end do
+    endif
+
+
+    
     if (sTime .le. 0) then
        write(6,'(a,i4,a)') f90file//':'//subr// &
             ': Cannot find year ',getY,' in file: '//trim(infile)
@@ -4859,7 +4947,8 @@ contains
        end if
     end if
 
-
+    write(6,'(a)') f90file//':'//subr//': Reading '//trim(INFILE)
+    
     !// Check resolution (latitude/longitude/time)
     !// This routine allocates inLon/inLat/inTime
     call get_netcdf_var_1d( infile, 'lone', QXBEDGE )

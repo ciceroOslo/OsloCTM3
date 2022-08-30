@@ -1039,6 +1039,7 @@ contains
     status = nf90_def_dim(ncid,"NCOMPS",NPAR,ncomps_dim_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define NCOMPS dim')
+
     !// All the component IDs
     status = nf90_def_var(ncid,"tracer_idx",nf90_int,ncomps_dim_id,tracer_idx_id)
     if (status .ne. nf90_noerr) call handle_error(status, &

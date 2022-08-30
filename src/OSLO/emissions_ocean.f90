@@ -235,6 +235,9 @@ contains
 
     !// Set scaleEPOA. Should be calculated from climatological averages.
     !// Note that scaling will depend slightly on resolution.
+    !// The scaling will also possibly differ slightly between
+    !// different land surface type datasets, if the ocean coverage
+    !// changes.
     if (SeaSaltScheme .eq. 1) then
        scaleEPOA = 0.35_r8  !// First guess
     else if (SeaSaltScheme .eq. 2) then
@@ -242,10 +245,21 @@ contains
     else if (SeaSaltScheme .eq. 3) then
        scaleEPOA = 0.5_r8 !// About right
     else if (SeaSaltScheme .eq. 4) then
-       scaleEPOA = 0.57_r8 !// 6.3Tg for mean of 2000 and 2016
+       !// Using CLM4-PFTs, a factor 0.57 gives 6.3Tg as
+       !// mean of 2000 and 2016. MODIS land cover seemed to
+       !// give the same using scaling factor 0.5.
+       !// scaleEPOA = 0.57_r8
+       !// RBS: I will use MODIS
+       scaleEPOA = 0.57_r8 !// CLM4-PFT 6.3Tg for mean of 2000 and 2016
     else
-       scaleEPOA = 1._r8  !// Not known yet; assume 1.
+       write(6,'(a,i5)') f90file//':'//subr// &
+            ': No scaleEPOA set for SeaSaltScheme ',SeaSaltScheme
+       stop
+       !scaleEPOA = 1._r8  !// Not known yet; assume 1.
     end if
+
+    write(6,'(a,i5)') f90file//':'//subr//': Sea salt acheme ',SeaSaltScheme
+    write(6,'(a,i5)') f90file//':'//subr//': scaleEPOA ',scaleEPOA
 
     !// --------------------------------------------------------------------
   end subroutine emissions_ocean_organiccarbon_init
@@ -293,7 +307,7 @@ contains
 
     !// Filename to read
     if (YEAR_CHLA .eq. 9999) then
-       if (MYEAR .lt. 2003 .or. MYEAR .gt. 2014) then
+       if (MYEAR .lt. 2003 .or. MYEAR .gt. 2017) then
           !// Use a climatology
           write(CMON(1:2),'(i2.2)') JMON
           infile = trim(chlaPATH)//'chlorophyllA/modis_chlorophyll_a_'// &

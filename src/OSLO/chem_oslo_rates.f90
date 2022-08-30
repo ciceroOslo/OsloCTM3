@@ -111,7 +111,13 @@ module chem_oslo_rates
        r_ho2_ch3o2, &
        r_ho2_ch3x, &
        r_ho2_radical, &
+       !// Previously: just r_ch3o2_ch3o2,  May 2022 split by masan&
+       !// Into: CH3O2 + CH3O2 -> 2*CH2O + 2*HO2 and
+       !// CH3O2 + CH3O2 -> CH2O + CH3OH 
+       !// and one to methanol and formaldehyde
        r_ch3o2_ch3o2, &
+       r_ch3o2_ch3o2_a, &
+       r_ch3o2_ch3o2_b, &
        r_ch3o2_ch3x_a, &
        r_ch3o2_ch3x_b, &
        r_ch3x_ch3x, &
@@ -565,10 +571,16 @@ contains
        !// IUPAC number: HOx_VOC54 (IUPAC06, 20080612)
        r_ho2_ch3x(I) = 4.3e-13_r8 * exp(1040._r8 * ZTEM)
 
-       !// CH3O2 + CH3O2 --> HCHO  + (CH3OH + O2)     60 %
-       !//               --> 2CH3O + (O2)             40 %
+       !// Previously:
+       !// CH3O2 + CH3O2 --> HCHO  + (CH3OH + O2)     60 % (b)
+       !//               --> 2CH3O + (O2)             40 % (a)
+       !// r_ch3o2_ch3o2(I)  = 9.5e-14_r8 * exp(390._r8 * ZTEM) !JPL06, 20080612
+       !// As of May 2022, split in separate rates:
+       !// ! JPL15 201510:
        r_ch3o2_ch3o2(I)  = 9.5e-14_r8 * exp(390._r8 * ZTEM) !JPL06, 20080612
-
+       r_ch3o2_ch3o2_a(I)  =  r_ch3o2_ch3o2(I) / (1._r8 + 1._r8/(26.6_r8*exp(-1130._r8 * ZTEM)))!JPL15, 201510
+       r_ch3o2_ch3o2_b(I)  =  r_ch3o2_ch3o2(I) / (1._r8 + 26.6_r8*exp(-1130._r8 * ZTEM))!JPL15, 201510
+       
        !// CH3O2 + CH3X --> CH3O + CH3 + (CO2 + O2)  R2237A
        !//              --> HCHO + (CH3COOH + O2)    R2237B
        !//   CH3X = CH3C(O)O2
@@ -1108,51 +1120,99 @@ contains
 
     end if
 
+    !// Only set up for LPAR=60 and LPAR=30. Why? Because:
     !cmga20feb03--v   ... only a temporary fix!!! mga 29AUG2003
-    do J = 1, JPAR
-       do L = 1, LPAR
+    if (LPAR .eq. 60) then
+       do J = 1, JPAR
+          do L = 1, LPAR
+
+             Select Case(L)
+
+             Case(01:02)
+                P42H(L) = R42HET_TMP(J,01)
+             Case(03:05)
+                P42H(L) = R42HET_TMP(J,02)
+             Case(06:08)
+                P42H(L) = R42HET_TMP(J,03)
+             Case(09:10)
+                P42H(L) = R42HET_TMP(J,04)
+             Case(11:13)
+                P42H(L) = R42HET_TMP(J,05)
+             Case(14:15)
+                P42H(L) = R42HET_TMP(J,06)
+             Case(16:18)
+                P42H(L) = R42HET_TMP(J,07)
+             Case(19:20)
+                P42H(L) = R42HET_TMP(J,08)
+             Case(21:23)
+                P42H(L) = R42HET_TMP(J,09)
+             Case(24:25)
+                P42H(L) = R42HET_TMP(J,10)
+             Case(26:28)
+                P42H(L) = R42HET_TMP(J,11)
+             Case(29:30)
+                P42H(L) = R42HET_TMP(J,12)
+             Case(31:32)
+                P42H(L) = R42HET_TMP(J,13)
+             Case(33:34)
+                P42H(L) = R42HET_TMP(J,14)
+             Case DEFAULT
+                P42H(L) = 0._r8
+             End Select
+
+          end do
+          do L = 1, LPARW !// Not degraded
+             LL = LMMAP(L) !// Degraded 
+             PR42HET(LL,J) = PR42HET(LL,J) + P42H(L) * XLMMAP(L)
+          end do
+       end do
+
+   else if (LPAR .eq. 30) then
+      !// NorESM vertical grid
+      do J = 1, JPAR
+        do L = 1, LPAR
 
           Select Case(L)
 
-          Case(01:02)
+          Case(01)
              P42H(L) = R42HET_TMP(J,01)
-          Case(03:05)
+          Case(02:04)
              P42H(L) = R42HET_TMP(J,02)
-          Case(06:08)
-             P42H(L) = R42HET_TMP(J,03)
-          Case(09:10)
+          Case(05)
              P42H(L) = R42HET_TMP(J,04)
-          Case(11:13)
+          Case(06:07)
              P42H(L) = R42HET_TMP(J,05)
-          Case(14:15)
+          Case(08)
              P42H(L) = R42HET_TMP(J,06)
-          Case(16:18)
+          Case(09)
              P42H(L) = R42HET_TMP(J,07)
-          Case(19:20)
+          Case(10)
              P42H(L) = R42HET_TMP(J,08)
-          Case(21:23)
+          Case(11)
              P42H(L) = R42HET_TMP(J,09)
-          Case(24:25)
+          Case(12)
              P42H(L) = R42HET_TMP(J,10)
-          Case(26:28)
+          Case(13)
              P42H(L) = R42HET_TMP(J,11)
-          Case(29:30)
+          Case(14:15)
              P42H(L) = R42HET_TMP(J,12)
-          Case(31:32)
+          Case(16:17)
              P42H(L) = R42HET_TMP(J,13)
-          Case(33:34)
+          Case(18:20)
              P42H(L) = R42HET_TMP(J,14)
           Case DEFAULT
              P42H(L) = 0._r8
           End Select
 
-       end do
-       do L = 1, LPARW !// Not degraded
+        end do
+        do L = 1, LPARW !// Not degraded
           LL = LMMAP(L) !// Degraded 
           PR42HET(LL,J) = PR42HET(LL,J) + P42H(L) * XLMMAP(L)
-       end do
-    end do
+        end do
+      end do
+    end if
 
+       
 
     !// --------------------------------------------------------------------
   end subroutine set_pr42het

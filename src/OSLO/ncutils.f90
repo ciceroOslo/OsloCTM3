@@ -42,7 +42,8 @@ contains
 
   !// ----------------------------------------------------------------------
   subroutine readnc_3d_from4d(INFILE, DIMNAME1, DIM1, DIMNAME2, DIM2, &
-       DIMNAME3, DIM3, DIMNAME4, GET4ENTRY, GETFIELDNAME, R8XYZ)
+       DIMNAME3, DIM3, DIMNAME4, GET4ENTRY, GETFIELDNAME, R8XYZ, &
+       SILENT)
     !// --------------------------------------------------------------------
     !// Read netCDF file containing 4D fields (DIM1,DIM2,DIM3,DIM4), and
     !// returns 3D-field for DIM4-entry TSTEP. Typically, we have
@@ -70,6 +71,7 @@ contains
                                               !// No need for DIM4
     integer,intent(in)          :: GET4ENTRY  !// Entry to get from dimension4
     character(len=*), intent(in)   :: getfieldname  !// Name of field to get
+    integer, optional, intent(in)  :: SILENT !// non-zero: Do not print info
 
     !// Output
     real(r8), intent(out)        :: R8XYZ(DIM1,DIM2,DIM3)
@@ -182,7 +184,10 @@ contains
     if (status /= NF90_NOERR) call handle_error(status, &
          subr//':'//trim(infile)//':'//trim(getfieldname)//':get_var')
 
-    write(6,'(a)') f90file//':'//subr//': Got variable '//trim(getfieldname)
+    if (present(SILENT)) then
+       if (SILENT.eq.1) &
+            write(6,'(a)') f90file//':'//subr//': Got variable '//trim(getfieldname)
+    end if
 
     !// Close file
     status=nf90_close(ncid)
@@ -197,7 +202,7 @@ contains
 
   !// ----------------------------------------------------------------------
   subroutine readnc_2d_from3d(INFILE, DIMNAME1, DIM1, DIMNAME2, DIM2, &
-       DIMNAME3, GET3ENTRY, GETFIELDNAME, R8XY)
+       DIMNAME3, GET3ENTRY, GETFIELDNAME, R8XY, SILENT)
     !// --------------------------------------------------------------------
     !// Read netCDF file containing 4D fields (DIM1,DIM2,DIM3), and
     !// returns 2D-field for DIM3-entry TSTEP. Typically, we have
@@ -222,6 +227,7 @@ contains
 
     integer, intent(in)          :: GET3ENTRY  !// Entry to get from dimension3
     character(len=*), intent(in) :: getfieldname  !// Name of field to get
+    integer, optional, intent(in):: SILENT !// non-zero: Do not print info
 
     !// Output
     real(r8), intent(out)        :: R8XY(DIM1,DIM2)
@@ -318,7 +324,11 @@ contains
     if (status /= NF90_NOERR) call handle_error(status, &
          subr//':'//trim(infile)//':'//trim(getfieldname)//':get_var')
 
-    write(6,'(a)') f90file//':'//subr//': Got variable '//trim(getfieldname)
+    if (present(SILENT)) then
+       if (SILENT.eq.1) &
+            write(6,'(a)') f90file//':'//subr//': Got variable '//trim(getfieldname)
+    end if
+    
 
     !// Close file
     status=nf90_close(ncid)

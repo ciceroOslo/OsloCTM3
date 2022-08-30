@@ -25,7 +25,7 @@ module CMN_MET
 
   !// Met-file names
   character(len=80) :: MET_ROOT   !// Root where metdata resides
-  character(len=80) :: MPATH1, MPATH2, MFILE3, PPFDFILE
+  character(len=80) :: MPATH1, MPATH2, MFILE3 , PPFDFILE
   character(len=120):: PPFDPATH
 
   !// Metdata type (e.g. ECMWF_IFS/ECMWF_oIFS/ECMWF_oIFSnc4),

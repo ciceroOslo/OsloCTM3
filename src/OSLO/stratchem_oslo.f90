@@ -22,6 +22,9 @@ module stratchem_oslo
   !// ----------------------------------------------------------------------
   implicit none
   !// ----------------------------------------------------------------------
+  character(len=*), parameter, private :: f90file = 'stratchem_oslo.f90'
+  !// ----------------------------------------------------------------------
+
 
 contains
 
@@ -522,6 +525,8 @@ contains
     !// 3. Put into STT_2d_* arrays
     !// 4. Scale and re-make sums if necessary
     !// ------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'read_oslo2d2'
+    !// --------------------------------------------------------------------
 
     !// Only do this every month
     if (.not. LNEW_MONTH) return
@@ -530,7 +535,7 @@ contains
     write(YEAR,'(I4)') MYEAR
     write(MON,'(I2.2)') JMON
 
-    write(6,'(a)') '* Updating boundary conditions'
+    write(6,'(a)') f90file//':'//subr//': Updating boundary conditions'
 
     !// Find file number to use
     ifnr = get_free_fileid()
@@ -575,7 +580,8 @@ contains
     filename='Indata_CTM3/2d_data/sr'//YEAR
     open(ifnr,FILE=filename,form='formatted',STATUS='OLD',iostat=ierr)
     if (ierr.ne.0) then
-       print*,'*** No 2D file in stratchem_oslo.f90:'//trim(filename)
+       write(6,'(a)') f90file//':'//subr// &
+            ': No 2D file: '//trim(filename)
        stop
     end if
     write(6,'(a)') '  Reading '//trim(filename)
@@ -728,8 +734,12 @@ contains
     else if(LPARW.eq.60) then
       !// Use next to uppermost level (i.e. 25)
       LEV2D = L2D - 1
+    else if (LPARW.eq.30) then
+      !// NorESM L30
+      LEV2D = 16
     else
-      print*,'Wrong resolution in oc_read_oslo2d2',LPARW
+       write(6,'(a,i5)') f90file//':'//subr// &
+            ': Wrong resolution: ',LPARW
       stop
     end if
 

@@ -72,7 +72,7 @@ module emissions_aircraft
   !// Read from Ltracer_emis.inp by emis_input in emissions_oslo.f90
   integer :: AirScenYear
   character(len=12) :: AirScen
-  character(len=160) :: AirEmisPath
+  character(len=200) :: AirEmisPath
 
   !// Number of levels in dataset
   integer :: actual_levels

@@ -251,6 +251,7 @@ contains
          J_HCl,     J_H2O,     J_BrCl, &
          !// Components (extracted from ZC_LOCAL array)
          M_O3,        M_HNO3,     M_CO,      M_CH2O,      M_H2O2, &
+         M_CH3OH, &
          M_CH3O2H,    M_HO2NO2,   M_HO2,     M_CH3O2,     M_O3P, &
          M_O1D,       M_OH,       M_NO3,     M_N2O5,      M_NO, &
          M_NO2,       M_CH4,      M_MCF,     M_HCFC22,    M_CFC11, &
@@ -554,6 +555,7 @@ contains
         M_NO      = ZC_LOCAL(43,L)
         M_NO2     = ZC_LOCAL(44,L)
         M_CH4     = ZC_LOCAL(46,L)
+        M_CH3OH   = ZC_LOCAL(52,L)
         M_MCF     = ZC_LOCAL(101,L)
         M_HCFC22  = ZC_LOCAL(102,L)
         M_CFC11   = ZC_LOCAL(103,L)
@@ -1294,6 +1296,7 @@ contains
                    + k_ho2_cl_a * M_HO2        &! Cl + HO2  -> HCl + O2
                    + k_cl_h2 * M_H2         &! Cl + H2   -> HCl + H
                    + k_cl_h2o2 * M_H2O2       &! Cl + H2O2 -> HCl + HO2
+                   + k_cl_ch3oh * M_CH3OH     &! Cl + CH3OH -> HCl + CH2OH
                    + k_cl_ch2o * M_CH2O )     &! Cl + H2CO -> HCl + HCO
                    * M_Cl                    &! Cl to HCl TRANSFORMATION
                  + k_oh_clo_b * M_OH * M_ClO  &! OH + ClO  -> HCl + O2
@@ -1589,7 +1592,9 @@ contains
                + J_CH3O2H * M_CH3O2H          &! CH3O2H + hv -> CH2O + OH + H (->HO2)
                + ( k_od_ch4_b  &! O(1D) + CH4 -> (CH3O/CH2OH + H)  -O2-> CH2O + HO2 + H
                  + k_od_ch4_c ) * M_O1D * M_CH4 &! O(1D) + CH4 -> H2 + CH2O
-               + k_oh_ch3o2h_b * M_CH3O2H * M_OH ! OH + CH3OOH -> CH2O + OH + H2O (30%)
+               + k_oh_ch3o2h_b * M_CH3O2H * M_OH& ! OH + CH3OOH -> CH2O + OH + H2O (30%)
+               + k_oh_ch3oh * M_CH3OH * M_OH &! OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2
+               + k_cl_ch3oh * M_CH3OH * M_Cl  ! Cl + CH3OH -> HCl + CH2OH -O2-> CH2O + HO2
 
         LOSS = J_CH2O_a               &! CH2O + hv   -> H + CHO
                + J_CH2O_b             &! CH2O + hv   -> H2 + CO
@@ -1616,6 +1621,14 @@ contains
         CHEMPROD(6,13,L) = CHEMPROD(6,13,L) + k_oh_ch3o2h_b*M_CH3O2H*M_OH*DTS
 
         call QSSA(233,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_CH2O)
+
+        !// Integrate CH3OH
+        PROD = EMISX(52,L)
+        LOSS = k_oh_ch3oh * M_OH &! OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2
+             + k_cl_ch3oh * M_Cl  ! Cl + CH3OH -> HCl + CH2OH -O2-> CH2O + HO2
+
+        call QSSA(301,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_CH3OH)
+
 
         !// HYDROGEN
         !// Integrate the sum of H, OH and HO2:
@@ -1748,6 +1761,7 @@ contains
 
         LOSS = k_oh_ch4 * M_CH4            &! OH + CH4  -> CH3 + H2O
                + k_oh_ch2o * M_CH2O         &! OH + CH2O -> H2O + HCO
+               + k_oh_ch3oh * M_CH3OH       &! OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2
                + k_oh_hno3 * M_HNO3         &! OH + HNO3 -> H2O + NO3
                !//HNO2: + k_oh_hno2 * M_HNO2
                + k_oh_h2o2 * M_H2O2         &! OH + H2O2 -> H2O + HO2
@@ -1797,6 +1811,8 @@ contains
                + J_CH3O2H * M_CH3O2H       &! CH3O2H + hv -> CH2O + OH + H (->HO2)
                + J_CH2O_a * M_CH2O         &! CH2O + hv   -> H + CHO
                + k_oh_h2o2 * M_OH * M_H2O2  &! OH + H2O2   -> H2O +HO2
+               + k_oh_ch3oh * M_CH3OH * M_OH &! OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2
+               + k_cl_ch3oh * M_CH3OH * M_Cl &! Cl + CH3OH -> HCl + CH2OH -O2-> CH2O + HO2
                + k_o2_h_m * M_O2 * M_H     &! O2 + H    -M-> HO2
                + k_o3_oh * M_O3 * HOY      &! O3 + OH     -> HO2 + O2
                + ( J_HO2NO2_b              &! HO2NO2 + hv   -> HO2 + NO2
@@ -1897,7 +1913,8 @@ contains
                   + k_oh_ch3br * M_OH * M_CH3Br   &! OH + CH3Br   -> CH2Br + H2O
                   + LC_spsECPARBK * M_HOCl       &! HOCl + HCl(sad) -> Cl2 + H2O
                   + LC_spsGCPARBK * M_HOBr       &! HOBr + HCl(sad) -> BrCl + H2O
-                  + k_h_ho2_b * M_H * M_HO2       ! H + HO2      -> O + H2O
+                  + k_h_ho2_b * M_H * M_HO2       &! H + HO2      -> O + H2O
+                  + k_oh_ch3oh * M_CH3OH * M_OH ! OH + CH3OH -> CH3O/CH2OH + H2O
 
            LOSS = k_od_h2o * M_O1D             &! O(1D) + H2O  -> OH + OH
                   + J_H2O                     &! H2O + hv     -> H + OH

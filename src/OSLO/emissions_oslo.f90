@@ -86,7 +86,7 @@ contains
     character(len=20)  :: BNAME, EVAR
     character(len=50)  :: EDATASET
     character(len=120) :: ELINE, ELINE2
-    character(len=200) :: EFILE
+    character(len=250) :: EFILE
 
 
     !// input dataset variables

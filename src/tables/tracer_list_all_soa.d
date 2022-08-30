@@ -43,6 +43,7 @@ Number    Name(8)  Weight
 049       'C3H7O2'      75.086    'Propyl peroxide; Radical from (propane+OH)+O2'
 050       'ACETONE'     58.078    'Acetone [CH3COCH3]'
 051       'CH3COD'      89.070    'Propyldioxy, 2-oxo- [CH3COCH2(O2)], [C3H5O3]'
+052       'CH3OH'       32.032    'Methanol'
 061       'NH3'         17.034    'NH3 gas'
 062       'NH4fine'     18.042    'Fine mode aerosols'
 063       'NH4coarse'   18.042    'Coarse mode aerosols'

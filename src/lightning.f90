@@ -31,16 +31,24 @@ module lightning
   !//   - subroutine LIGHTNING_ALLEN2002
   !//   - subroutine LIGHTDIST
   !//
+  !// Amund Sovde Haslerud, February 2018
+  !//   Slight update; Using CLM vegetation, instead of MODIS, the
+  !//   scaling factors must be updated: MODIS water also covers
+  !//   fresh water, and should probably not be included for
+  !//   lightning considerations.
   !// Ole Amund Sovde, March 2015, November 2014, August 2011
   !// ----------------------------------------------------------------------
   use cmn_precision, only: r8, r4
   use cmn_parameters, only: secYear
-  use cmn_chem, only: INFILE_LIGHTNING !// Ott etal data
+  !use cmn_chem, only: INFILE_LIGHTNING !// Ott etal data
   !// ----------------------------------------------------------------------
   implicit none
   !// ----------------------------------------------------------------------
 
-   integer, parameter :: NNLIGHT=3200
+  !// Ott etal data
+  character(len=50), parameter :: &
+       FILENAME = 'tables/light_dist.ott2010.dat'
+  integer, parameter :: NNLIGHT=3200
   integer, parameter :: NLTYPE=4
   real(r8), dimension(NNLIGHT,NLTYPE) :: LITPROFILE
 
@@ -64,7 +72,7 @@ module lightning
 
   !// Seconds in a year
   real(r8), parameter :: dtyear = secYear
-  !// Flag to turn on flashrate.dta production
+  !// Flag to turn on flashrate.dta production (lightning_YYYYMMDD.nc)
   logical, parameter :: getFlashFiles = .false.
   !// ----------------------------------------------------------------------
   character(len=*), parameter, private :: f90file = 'lightning.f90'
@@ -95,6 +103,7 @@ contains
     !// --------------------------------------------------------------------
     use cmn_size, only: IPARW, IDGRD
     use cmn_met, only: metTYPE, metCYCLE, metREVNR
+    use cmn_sfc, only: LANDUSE_IDX
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
@@ -109,9 +118,12 @@ contains
     real(r8), parameter :: Lecmwf_ifs_c36r1_T159 = 7.061138e-17_r8
 
     !// ECMWF oIFS cy38r1
-    !// T159L60: 1995 - 2005
-    real(r8), parameter :: Oecmwf_oifs_c38r1_T159 = 4.012695e-14_r8
-    real(r8), parameter :: Lecmwf_oifs_c38r1_T159 = 9.542578e-17_r8
+    !// T159L60: 1995 - 2005 (MODIS vegetation)
+        real(r8), parameter :: Oecmwf_oifs_c38r1_T159_MODPFT = 4.012695e-14_r8
+    real(r8), parameter :: Lecmwf_oifs_c38r1_T159_MODPFT = 9.542578e-17_r8
+    !// Using CLM PFTs to calculate PLAND (1995-2005)
+    real(r8), parameter :: Oecmwf_oifs_c38r1_T159_CLMPFT = 4.328769e-14_r8
+    real(r8), parameter :: Lecmwf_oifs_c38r1_T159_CLMPFT = 7.910481e-17_r8
     !// --------------------------------------------------------------------
     character(len=*), parameter :: subr = 'getScaleFactors'
     !// --------------------------------------------------------------------
@@ -186,12 +198,27 @@ contains
        !// ECMWF OpenIFS
        if (metCYCLE .eq. 38 .and. metREVNR .eq. 1) then
           !// Cycle 38r1
+          if (LANDUSE_IDX .eq. 2) then
+             Oecmwf_oifs_c38r1_T159 = Oecmwf_oifs_c38r1_T159_MODPFT
+             Lecmwf_oifs_c38r1_T159 = Lecmwf_oifs_c38r1_T159_MODPFT
+          else if(LANDUSE_IDX .eq. 3) then
+             Oecmwf_oifs_c38r1_T159 = Oecmwf_oifs_c38r1_T159_CLMPFT
+             Lecmwf_oifs_c38r1_T159 = Lecmwf_oifs_c38r1_T159_CLMPFT
+          else
+             write(6,'(a,2i7)') f90file//':'//subr// &
+                  ': LANDUSE_IDS is unknown: ',LANDUSE_IDX
+             stop 'STOP in '//subr
+          end if
+
           if (IPARW .eq. 320) then
              if (IDGRD .eq. 1) then
                 scaleOcean = Oecmwf_oifs_c38r1_T159
                 scaleLand  = Lecmwf_oifs_c38r1_T159
              else if (IDGRD .eq. 2) then
                 !// Scaling factors based on cy38r1 2005 meteorology
+                !// With CLM4-PFT, it is close to MODIS PFT,
+                !// 2.335421/2.028930 vs 2.319733/2.041230, so we
+                !// keep MODIS-factors                
                 scaleOcean = Oecmwf_oifs_c38r1_T159 * 2.319733_r8
                 scaleLand  = Lecmwf_oifs_c38r1_T159 * 2.041230_r8
              else if (IDGRD .eq. 4) then
@@ -263,7 +290,7 @@ contains
 
 
   !// ----------------------------------------------------------------------
-  subroutine LIGHTNING_OAS2015(NDAY,NDAYI,dt_met,LNEW_MONTH)
+  subroutine LIGHTNING_OAS2015(NDAY,NDAYI,dt_met,LNEW_MONTH,NMET)
     !// --------------------------------------------------------------------
     !// Lightning NOx
     !//
@@ -274,17 +301,19 @@ contains
     !//
     !// Ole Amund Sovde, March 2015
     !// --------------------------------------------------------------------
-    use cmn_size, only: IPARW,IPAR,JPAR,LPAR,LPARW, LWEPAR, IDGRD
+    use cmn_size, only: IPARW,IPAR,JPAR,LPAR,LPARW, LWEPAR, IDGRD, NRMETD
     use cmn_ctm, only: ETAA, ETAB, XDGRD, YDGRD, XDEDG, YDEDG, &
-         AREAXY, PLAND
+         AREAXY, PLAND, JMON,JDATE,JYEAR
     use cmn_chem, only: NEMLIT, LITSRC, LITFAC
     use cmn_met, only: CWETE, CENTU, ZOFLE, T, PRECCNV, P
     use utilities, only: get_free_fileid
+    use netcdf
+    use ncutils, only: handle_error    
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
     !// Input / Output
-    integer, intent(in) :: NDAY, NDAYI
+    integer, intent(in) :: NDAY, NDAYI, NMET
     logical, intent(in) :: LNEW_MONTH
     real(r8),  intent(in) :: dt_met
 
@@ -351,6 +380,18 @@ contains
     real(r8), parameter :: obsFocean=9.1_r8, obsFland=36.9_r8
     real(r8), parameter :: obsFall = obsFocean + obsFland
 
+    integer, parameter :: nc4deflate = 6
+    integer, parameter :: nc4shuffle = 1
+
+
+    !// NetCDF
+    character(len=8) :: datestamp
+    character(len=80) :: ncfile
+    integer :: &
+         lat_dim_id, lon_dim_id, nrmetd_dim_id, &
+         lat_id, lon_id, areaxy_id, &
+         flashL_id, flashO_id, &
+         status, ncid
 
     !// Scaling parameters depending on meteorological data.
     !//
@@ -444,13 +485,13 @@ contains
        accDT     = 0._r8
 
        !// Echo info
-       write(*,*) '   - INIT_LIGHTNING: Reading '//TRIM( INFILE_LIGHTNING )
+       write(*,*) '   - INIT_LIGHTNING: Reading '//TRIM( FILENAME )
 
        !// Get unused file ID
        IFNR = get_free_fileid()
 
        !// Open file containing lightning PDF data
-       open( IFNR, file=trim( INFILE_LIGHTNING ), status='OLD', iostat=IOS)
+       open( IFNR, file=trim( filename ), status='OLD', iostat=IOS)
        if ( IOS /= 0 ) stop f90file//':'//subr//': lightdist not read:1'
          
        !// Read 12 header lines
@@ -487,10 +528,11 @@ contains
 
     end if !// if ( LNEW_MONTH .and. NDAY.eq.NDAYI ) then
 
-    !// Locate layer of approximately 1500m above surface, which is
+    !// Locate layer of approximately 1200m above surface, which is
     !// about layer 12 in native vertical L60. If collapsing this
     !// will be layer 9 (as in UCI standard code).
-    LFREE = 12 - (LPARW-LPAR)
+    !// Moved into the loop below, calculated from ZOFLE.
+    !LFREE = 12 - (LPARW-LPAR)
 
 
     !=================================================================
@@ -501,11 +543,11 @@ contains
 !$omp          private (CTH,PBOT) &
 !$omp          private (fPR,finc,FACT1,FACT2,minT,maxT,MFLX,MENT) &
 !$omp          private (LNCWET,LNCENTU, ZL,TEMP) &
-!$omp          private (vertprof) &
+!$omp          private (vertprof, LFREE) &
 !$omp          shared (CWETE,CENTU,T,ZOFLE,PRECCNV) &
 !$omp          shared (P,ETAA,ETAB) &
 !$omp          shared (LITFAC,LITSRC,normFrate,NO_SUM) &
-!$omp          shared (LentuExist, LFREE, JPS, JPN, PLAND) &
+!$omp          shared (LentuExist, JPS, JPN, PLAND) &
 !$omp          shared (scaleLand, scaleOcean) &
 !$omp          shared (flashO, flashL) &
 !$omp          default(NONE)
@@ -513,6 +555,29 @@ contains
     do J = 1,JPAR
        do I = 1,IPAR
 
+          !// Find layer bottom height above ground [km]
+          !// ------------------------------------------------------------
+          do L = 1, LWEPAR+1
+             ZL(L) = 1.e-3_r8 * (ZOFLE(L,I,J) - ZOFLE(1,I,J))
+          end do
+          !// Find first layer with reaching above 1200m (free troposphere),
+          !// to avoid problems considering mass fluxes. In the lowermost
+          !// model levels the mass flux can be very large, or it could
+          !// be shallow convection, which should be disregarded in
+          !// lightning considerations. We limit the convection considerations
+          !// to the region between ~1200m and up to mass flux top.
+          !// (Earlier we used LFREE=12, ~1200m on average in ECMWF L60 data)
+          LFREE = -1
+          do LFREE = 1, LWEPAR
+             if (ZL(LFREE+1) .gt. 1.2_r8) exit
+          end do
+          if (LFREE .lt. 0 .or. LFREE .ge. LWEPAR) then
+             write(*,'(a,es23.17)') f90file//':'//subr//': LFREE not found'
+             do L = 1, LWEPAR+1
+                print*,L,ZL(L)
+             end do
+             stop
+          end if
 
           !// Store updraft convection.
           !// I do not know the reason behind this parameterisation yet.
@@ -731,9 +796,9 @@ contains
 
           !// Find layer bottom height above ground [km]
           !// ------------------------------------------------------------
-          do L = 1, LWEPAR+1
-             ZL(L) = 1.e-3_r8 * (ZOFLE(L,I,J) - ZOFLE(1,I,J))
-          end do
+          !do L = 1, LWEPAR+1
+          !   ZL(L) = 1.e-3_r8 * (ZOFLE(L,I,J) - ZOFLE(1,I,J))
+          !end do
 
           !// Now use Price et al. equations
           !// ------------------------------------------------------------
@@ -791,10 +856,141 @@ contains
 
     !// Flash files
     if (getFlashFiles) then
-       IFNR = get_free_fileid()
-       open(IFNR,file='flashrate.dta',form='unformatted', position='append')
-       write(IFNR) real(flashL, r4), real(flashO, r4)
-       close(IFNR)
+
+       write(datestamp(1:8),'(i4.4,2i2.2)') JYEAR,JMON,JDATE
+       ncfile = 'lightning_'//datestamp//'.nc'
+
+       ! Make file for NMET=1
+       if (NMET .eq. 1) then
+          !// Write netCDF4 file
+          write(6,'(a)') f90file//':'//subr//': creating file: '//trim(ncfile)
+          status=nf90_create(path=ncfile,cmode=nf90_netcdf4,ncid=ncid)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': in creating file')
+
+          !//File headers
+          status=nf90_put_att(ncid,nf90_global,'title', &
+               'Lightning flashes in Oslo CTM3')
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': file header')
+          !//---------------------------------------------------------------
+
+          !// Define spatial dimensions (lat, lon, lev)
+          status = nf90_def_dim(ncid,"lat",JPAR,lat_dim_id)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define lat dim')
+          status = nf90_def_dim(ncid,"lon",IPAR,lon_dim_id)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define lon dim')
+          status = nf90_def_dim(ncid,"nrmetd",NRMETD,nrmetd_dim_id)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define nrmetd dim')
+
+
+          !// Define the lon/lat/lev
+          status = nf90_def_var(ncid,"lon",nf90_double,lon_dim_id,lon_id)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define lon variable')
+          status = nf90_def_var(ncid,"lat",nf90_double,lat_dim_id,lat_id)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define lat variable')
+
+          !// Grid area (r8), deflate netcdf4
+          status = nf90_def_var(ncid,"gridarea", nf90_double, &
+               (/lon_dim_id, lat_dim_id/), areaxy_id)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define gridarea variable')
+          status = nf90_def_var_deflate(ncid,areaxy_id,nc4shuffle,1,nc4deflate)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define deflate gridarea variable')
+          status = nf90_put_att(ncid,areaxy_id,'unit','m2')
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': attribute unit gridarea')
+
+          !// Flashes
+          status = nf90_def_var(ncid,"flashL", nf90_float, &
+               (/lon_dim_id, lat_dim_id, nrmetd_dim_id/), flashL_id)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define flashL variable')
+          status = nf90_def_var_deflate(ncid,flashL_id,nc4shuffle,1,nc4deflate)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define deflate flashL variable')
+
+          status = nf90_def_var(ncid,"flashO", nf90_float, &
+               (/lon_dim_id, lat_dim_id, nrmetd_dim_id/), flashO_id)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define flashO variable')
+          status = nf90_def_var_deflate(ncid,flashO_id,nc4shuffle,1,nc4deflate)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': define deflate flashO variable')
+
+          !//---------------------------------------------------------------
+          !// End definition mode
+          status = nf90_enddef(ncid)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': end defmode')
+          !//---------------------------------------------------------------
+
+          !// Putting the lon/lat/lev variables
+          status = nf90_put_var(ncid,lon_id,XDGRD)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': putting lon')
+          status = nf90_put_var(ncid,lat_id,YDGRD)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': putting lat')
+
+          !// Grid area
+          status = nf90_put_var(ncid, areaxy_id, AREAXY)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': putting gridarea')
+
+          !// -------------------------------------------------------------
+          !// close netcdf file
+          status = nf90_close(ncid)
+          if (status .ne. nf90_noerr) call handle_error(status, &
+               f90file//':'//subr//': close file')
+          !// -------------------------------------------------------------
+
+       end if
+
+       !// Open the existing file
+       status = nf90_open(ncfile, nf90_write, ncid)
+       if (status .ne. nf90_noerr) call handle_error(status,'open existing file')
+     
+       !// Inquire dimension ids
+       status = nf90_inq_dimid(ncid,"lat",lat_dim_id)
+       if (status .ne. nf90_noerr) call handle_error(status,'getting lat')
+       status = nf90_inq_dimid(ncid,"lon",lon_dim_id)
+       if (status .ne. nf90_noerr) call handle_error(status,'getting lon')
+       status = nf90_inq_dimid(ncid,"nrmetd",nrmetd_dim_id)
+       if (status .ne. nf90_noerr) call handle_error(status,'getting lev')
+
+       status = nf90_inq_varid(ncid,'flashL',flashL_id)
+       if (status .ne. nf90_noerr) call handle_error(status,'inq flashL')
+       status = nf90_inq_varid(ncid,'flashO',flashO_id)
+       if (status .ne. nf90_noerr) call handle_error(status,'inq flashO')
+
+       !// Put flashL and flashO
+       status = nf90_put_var(ncid, flashL_id, flashL, &
+            start = (/1,1,NMET/), count = (/IPAR,JPAR,1/))
+       if (status .ne. nf90_noerr) call handle_error(status, &
+            f90file//':'//subr//': putting flashL')
+
+       status = nf90_put_var(ncid, flashO_id, flashO, &
+            start = (/1,1,NMET/), count = (/IPAR,JPAR,1/))
+       if (status .ne. nf90_noerr) call handle_error(status, &
+            f90file//':'//subr//': putting flashO')
+       !// -----------------------------------------------------------------
+       !// close netcdf file
+       status = nf90_close(ncid)
+       if (status .ne. nf90_noerr) call handle_error(status, &
+            f90file//':'//subr//': close file')
+       !// -----------------------------------------------------------------
+
+!       IFNR = get_free_fileid()
+!       open(IFNR,file='flashrate.dta',form='unformatted', position='append')
+!       write(IFNR) real(flashL, r4), real(flashO, r4)
+!       close(IFNR)
     end if
 
     !// How many grid boxes experienced lightning?
@@ -1092,13 +1288,13 @@ contains
        JPN = JPAR+1 - JPS
 
        !// Echo info
-       write(*,*) '   - INIT_LIGHTNING: Reading '//TRIM( INFILE_LIGHTNING )
+       write(*,*) '   - INIT_LIGHTNING: Reading '//TRIM( FILENAME )
 
        !// Get unused file ID
        IFNR = get_free_fileid()
 
        !// Open file containing lightning PDF data
-       open( IFNR, FILE=trim( INFILE_LIGHTNING ), STATUS='OLD', IOSTAT=IOS)
+       open( IFNR, FILE=trim( FILENAME ), STATUS='OLD', IOSTAT=IOS)
        if ( IOS /= 0 ) stop f90file//':'//subr//': lightdist not read:1'
          
        !// Read 12 header lines
@@ -1582,13 +1778,13 @@ contains
        accDT     = 0._r8
 
        !// Echo info
-       write(*,*) '   - INIT_LIGHTNING: Reading '//TRIM( INFILE_LIGHTNING )
+       write(*,*) '   - INIT_LIGHTNING: Reading '//TRIM( FILENAME )
 
        !// Get unused file ID
        IFNR = get_free_fileid()
 
        ! Open file containing lightning PDF data
-       open( IFNR, file=trim( INFILE_LIGHTNING ), status='OLD', iostat=IOS)
+       open( IFNR, file=trim( FILENAME ), status='OLD', iostat=IOS)
        if ( IOS /= 0 ) stop f90file//':'//subr//': lightdist not read:1'
          
        ! Read 12 header lines
@@ -2407,13 +2603,13 @@ contains
        accDT     = 0._r8
 
        !// Echo info
-       write(*,*) '   - INIT_LIGHTNING: Reading '//TRIM( INFILE_LIGHTNING )
+       write(*,*) '   - INIT_LIGHTNING: Reading '//TRIM( FILENAME )
 
        !// Get unused file ID
        IFNR = get_free_fileid()
 
        ! Open file containing lightning PDF data
-       OPEN( IFNR, FILE=TRIM( INFILE_LIGHTNING ), STATUS='OLD', IOSTAT=IOS)
+       OPEN( IFNR, FILE=TRIM( FILENAME ), STATUS='OLD', IOSTAT=IOS)
        if ( IOS /= 0 ) stop f90file//':'//subr//': lightdist not read:1'
          
        ! Read 12 header lines

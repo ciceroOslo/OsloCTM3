@@ -1,12 +1,13 @@
 !//=========================================================================
 !// Oslo CTM3
 !//=========================================================================
+!// Based on UCI CTM core p-7.1 (1/2013).
 !// Lightning generation.
 !// Stripped version of Oslo CTM3 pmain.f90
 !//
-!// Ole Amund Sovde, April 2015
+!// Amund Sovde Haslerud, May 2017
 !//=========================================================================
-!// p-main.f90 version of UCIrvine CTM p-main.f.
+!// pmain.f90 version of UCIrvine CTM p-main.f.
 !//=========================================================================
 !// Lightning generation: Stripped of transport and chemistry.
 !//=========================================================================
@@ -19,7 +20,8 @@ program pmain
        LOSLOCHEM, LBCOC, LSOA, LSALT, LDUST
   use cmn_ctm, only: AIR, LYEAR, GMTAU, NRMETD, NROPSM, NRCHEM, JDATE, &
        JDAY, JMON, JYEAR, NTM, IDAY, IYEAR, LLPYR, LFIXMET, TMON, TMET, &
-       SOLDEC, SOLDIS, LCONT, STT
+       JDAY_NEXT, JDATE_NEXT, JMON_NEXT, JYEAR_NEXT, &
+       SOLDEC, SOLDIS, LCONT, STT, modelTimeIntegrated
   use cmn_chem, only: N_LZ, N_STE, LZLBO3, O3iso1,O3iso2
   use cmn_diag, only: NTDPAR, USTEP, VSTEP, WSTEP, JMON0, LFLXDG, LMXDG, &
        STTTND, NDAY0, JDO_A, JDO_C, JDO_X, JDO_T, &
@@ -48,7 +50,7 @@ program pmain
        ctm3_pml, ctm3_o3scav
   use stt_save_load, only: oslo_con_sav
   use utilities, only: write_log, ctmExitC, LCM, CALENDR, CALENDL, &
-       get_dinm, check_btt
+       get_dinm, check_btt, calendar, get_soldecdis
   !//-----------------------------------------------------------------------
   use cmn_oslo, only: METHANEMIS, JVAL_IJ
   use emissions_aircraft, only: aircraft_h2o_zero
@@ -61,13 +63,13 @@ program pmain
   use diagnostics_scavenging, only: &
        scav_diag_ls, scav_diag_cn, scav_diag_brd, scav_diag_2fileA
   use drydeposition_oslo, only: setdrydep
-  use dust_oslo, only: dustbdg2d
+  use dust_oslo, only: dustbdg2d, dustInstBdg
   use emissions_ocean, only: emissions_ocean_total
   use emissions_oslo, only: update_emis, update_emis_ij
   use gmdump3hrs, only: dump3hrs
   use input_oslo, only: init_oslo
   use main_oslo, only: master_oslo, update_chemistry
-  use physics_oslo, only: update_physics
+  use physics_oslo, only: update_physics, set_blh_ij
   use seasalt, only: seasaltbdg2d, emissions_seasalt_total
   use utilities_oslo, only: get_chmcycles, &
        source_e90, decay_e90, &
@@ -92,7 +94,7 @@ program pmain
   real(r8) :: DTOPS, DTCHM, DTMET, DTADV, DTLCM
   !//---CTM3: time steps variables
   integer :: CHMCYCLES, CCYC
-  real(r8) :: dtchm2
+  real(r8) :: dtchm2, nmetTimeIntegrated(MPBLK)
 
   !//---private arrays B--(reverse order) for IJ-block OMP calculation
   real(r8), dimension(LPAR,IDBLK,JDBLK)      :: AIRB, GAMAB, GAMACB, BTEM
@@ -130,16 +132,15 @@ program pmain
 
   !//---for timing the run
   character(len=10) :: BIG_BEN(3)
-  integer :: DATE_TIME(8), START_TIME(8)
+  integer :: END_TIME(8), START_TIME(8)
   real(r8) :: tot_dt, nops_dt, nday_dt
   !//-----------------------------------------------------------------------
 
-  !// Start time
-  call DATE_AND_TIME (BIG_BEN(1),BIG_BEN(2),BIG_BEN(3),DATE_TIME)
-  start_time(:) = date_time(:)
-  tot_dt = - (date_time(3)*86400._r8 + date_time(5)*3600._r8 &
-       + date_time(6)*60._r8 + date_time(7) + date_time(8)*1.e-3_r8)
-
+  !// Start time and system clock for timings
+  call DATE_AND_TIME (BIG_BEN(1),BIG_BEN(2),BIG_BEN(3),START_TIME)
+  call SYSTEM_CLOCK(count=stime, count_rate=rtime)
+  tot_dt = - real(stime, r8) / rtime
+  
   !// Write start info
   call write_log(0, start_time, start_time)
 
@@ -188,7 +189,7 @@ program pmain
   !// TRACER SPECIFIC INPUT
   !//-----------------------------------------------------------------------
 
-  !// Separate read-in for Oslo chemistry
+  !// Separate read-in for Oslo chemistry (must be after AIRSET)
   call init_oslo(NDAY,DTCHM,CHMCYCLES)
 
   !// Set up species (initialize.f90)
@@ -245,9 +246,8 @@ program pmain
     !//---------------------------------------------------------------------
 
     !// Date and time stuff
-    call DATE_AND_TIME (BIG_BEN(1),BIG_BEN(2),BIG_BEN(3),DATE_TIME)
-    nday_dt = - (date_time(3)*86400._r8 + date_time(5)*3600._r8 &
-         + date_time(6)*60._r8 + date_time(7) + date_time(8)*1.e-3_r8)
+    call SYSTEM_CLOCK(count=stime)
+    nday_dt = - real(stime, r8) / rtime
     if (NDAY.eq.NDAYI) tot_dt = tot_dt - nday_dt !// Time spent on init
 
     IDAY = NDAY !// Set IDAY
@@ -277,19 +277,21 @@ program pmain
         !// Set climatological mass, O3 & T above CTM
         call SET_ATM
         !// Find lightning
-        call LIGHTNING_OAS2015(NDAY,NDAYI,DTMET,LNEWM)
+        call LIGHTNING_OAS2015(NDAY,NDAYI,DTMET,LNEWM,NMET)
         NCLDRAN   = 0
       end if
       call DYN0 (DTMET)             ! process wind/advection fields
       call CFLADV (DTOPS,NADV)      ! global cfl criteria
       call LCM (NRCHEM,NADV,NLCM)   ! find least common multiple
-
+!      write(6,'(a,2i3)') 'NADV/NLCM: ',NADV,NLCM
+      
       !//---DTxxx = time step in seconds 
       DTLCM   = DTOPS / real(NLCM, r8)
       DTADV   = DTOPS / real(NADV, r8)
       DTCHM   = DTOPS / real(NRCHEM, r8) ! same as defined above
       DTAULCM = DTLCM / 3600._r8
       DTCHM2 = DTCHM / real(CHMCYCLES, r8) ! for Oslo chemistry internal loop
+      nmetTimeIntegrated(:) = 0._r8   ! sums up seconds calculated in CCYC-loop      
 
       !// Dump aerosol data each 3 hour? (set LDUMP3HRS in oc_gmdump3hrs.f90)
       !call dump3hrs(NDAYI,NDAY,NMET)
@@ -306,6 +308,10 @@ program pmain
         !//---CNVDBL:  Boundary layer mixing
         !//---DRYDEP:  Dry deposition at the surface
         !//---CHEM:    Full chemistry package
+'
+
+
+
         !//---WASHO:   Washout of tracers by large-scale precip
         !//---CONVW:   Convective transport (vertical, NOT subsidence)
         !//            and plume scavenging
@@ -345,8 +351,9 @@ program pmain
         !// Remember that for asynchronous chemistry/transport
         !// steps, the previous process MAY NOT BE transport.
         !call nops_diag(JYEAR,JMON,JDATE,NDAY,NMET,NOPS,NDAYI,LNEWM)
-        
-
+'        
+        nmp_dt = 0._r8
+        nuv_dt = 0._r8
 
         !//-----------------------------------------------------------------
         do NSUB = 1, NLCM
@@ -413,10 +420,17 @@ program pmain
       !  if (LLINOZ) call DUMPTRMASS_E90(4,N_LZ)
       !end if
 
-      call DATE_AND_TIME(BIG_BEN(1),BIG_BEN(2),BIG_BEN(3),DATE_TIME)
-      nops_dt = nops_dt + (date_time(3)*86400._r8 + date_time(5)*3600._r8 &
-           + date_time(6)*60._r8 + date_time(7) + date_time(8)*1.e-3_r8)
-      write(6,'(a,i4,i3,f8.2)') 'WC NMET [s]: ',NDAY,NMET,nops_dt
+!      do M = 1, MPBLK
+!         if (nmetTimeIntegrated(M) .ne. DTMET) then
+!            print*,'pmain: Seriously wrong',M,nmetTimeIntegrated(M),DTMET
+!            stop
+!         end if
+!      end do
+      
+!      call DATE_AND_TIME(BIG_BEN(1),BIG_BEN(2),BIG_BEN(3),DATE_TIME)
+!      nops_dt = nops_dt + (date_time(3)*86400._r8 + date_time(5)*3600._r8 &
+!           + date_time(6)*60._r8 + date_time(7) + date_time(8)*1.e-3_r8)
+!      write(6,'(a,i4,i3,f8.2)') 'WC NMET [s]: ',NDAY,NMET,nops_dt
 
       !//-------------------------------------------------------------------
     end do !// NMET                                                     NMET
@@ -442,10 +456,16 @@ program pmain
 
     !//---update the calendar to the new, upcoming day
     IDAY = NDAY + 1
-    call CALENDR (IYEAR,IDAY, LLPYR,LFIXMET,MYEAR, &
-         JYEAR,JDAY,JMON,TMON,JDATE,LYEAR,TMET,SOLDEC,SOLDIS)
+    !call CALENDR (IYEAR,IDAY, LLPYR,LFIXMET,MYEAR, &
+    !     JYEAR,JDAY,JMON,TMON,JDATE,LYEAR,TMET,SOLDEC,SOLDIS)
+    !LNEWM = JDATE.eq.1
+    call calendar(IYEAR,IDAY, LLPYR,LFIXMET,MYEAR, &
+         JYEAR,JDAY,JMON,TMON,JDATE,LYEAR,TMET, &
+         JYEAR_NEXT,JDAY_NEXT,JMON_NEXT,JDATE_NEXT)
+    call get_soldecdis(JDAY,SOLDEC,SOLDIS)
     LNEWM = JDATE.eq.1
 
+    
     !// STEFLUX: flux dump share calendar JDO_X
     call CALENDL (JYEAR,JDAY,LYEAR,  JDO_X, LMXDG,L2)
     !if (LMXDG .and. LFLXDG)  then
@@ -520,9 +540,8 @@ program pmain
 !      if (LBCOC) call bcsnow_save_restart(NDAY+1)
 !    end if
 
-    call DATE_AND_TIME(BIG_BEN(1),BIG_BEN(2),BIG_BEN(3),DATE_TIME)
-    nday_dt = nday_dt + (date_time(3)*86400._r8 + date_time(5)*3600._r8 &
-         + date_time(6)*60._r8 + date_time(7) + date_time(8)*1.e-3_r8)
+    call SYSTEM_CLOCK(count=stime)
+    nday_dt = nday_dt + real(stime, r8) / rtime
     tot_dt = tot_dt + nday_dt !// Summing up total time
     write(6,'(a,i4,f8.1,1x,f10.2,1x,f7.2)') &
          '** WC time NDAY [s] / total [hours/days]:', &
@@ -533,8 +552,9 @@ program pmain
 
   !//---Final: closeout the model run
   close(21)
-  call write_log(1, start_time, date_time)
-  call ctmExitC(' std exit')
+  call DATE_AND_TIME (BIG_BEN(1),BIG_BEN(2),BIG_BEN(3),END_TIME)
+  call write_log(1, start_time, end_time, tot_dt)
+  !call ctmExitC(' std exit')
   !//-----------------------------------------------------------------------
 end program pmain
 !//=========================================================================

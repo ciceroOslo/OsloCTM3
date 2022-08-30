@@ -1548,7 +1548,7 @@ contains
     if (LLINOZ) return
 
     !// Read parameters from Linoz-file
-    INITFI = INFILE_POLAR_O3LOSS
+    INITFI = 'tables/polar_o3loss.dat'
 
     !// Get free file id
     fnr = get_free_fileid()

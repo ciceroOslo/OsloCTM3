@@ -21,6 +21,7 @@ module soa_oslo
   !//   subroutine soa_diag_separate
   !//   subroutine soa_nopsdiag
   !//   subroutine soa_diag_lsscav
+  !//   subroutine soa_diag2file_nc4
   !//
   !// This module also contains some comprehensive diagnostics for SOA,
   !// to keep track of what is produced and lost of all SOA.
@@ -99,7 +100,7 @@ module soa_oslo
   save !// All variables are to be saved.
   private
   public soa_init, soa_setdrydep, SOA_v9_separate, soa_diag_drydep, &
-       soa_diag_separate, soa_diag2file, soa_nopsdiag, &
+       soa_diag_separate, soa_diag2file_nc4, soa_diag2file, soa_nopsdiag, &
        ndep_soa, soa_deps, soa_diag_lsscav, soa_diag_soagas
   !// ----------------------------------------------------------------------
 
@@ -1165,6 +1166,9 @@ contains
     character(len=4)  :: cyear
     !// --------------------------------------------------------------------
 
+    write(6,'(a)') f90file//': should not use soa_diag2file, use soa_diag2file_nc4'
+    stop
+
     !// Open result file
     !// Find non-used file number for input file
     fnr_ok = .true.
@@ -1758,6 +1762,1048 @@ contains
     !// --------------------------------------------------------------------
   end subroutine soa_diag_lsscav
   !// ----------------------------------------------------------------------
+
+
+
+  !// ----------------------------------------------------------------------
+  subroutine soa_diag2file_nc4(NDAY,NDAYI)
+    !// --------------------------------------------------------------------
+    !// Put out SOA diagnoses to two netCDF4 files.
+    !// Called from p-main.
+    !//
+    !// IMPORTANT:
+    !//   Controlled by BUDGET calendar!
+    !//
+    !// File 1: soa_budgets_YYYYMMDD_YYYYMMDD.nc
+    !//       3D values for all SOA/SOAGAS species
+    !//   For SOA (aerosols), the following are written (unit [g]):
+    !//   - Accumulated production by separation routine from NDAY0 to NDAY
+    !//   - Accumulated evaporation by separation routine from NDAY0 to NDAY
+    !//   - Accumulated dry deposition from NDAY0 to NDAY
+    !//   - Accumulated large scale wet scavenging from NDAY0 to NDAY
+    !//   - Accumulated convective wet scavenging from NDAY0 to NDAY
+    !//   For SOAGAS (gas species), the following are written (unit [g]):
+    !//   - Accumulated chemical production from NDAY0 to NDAY
+    !//   - Accumulated production by separationfrom NDAY0 to NDAY
+    !//   - Accumulated condensation by separation from NDAY0 to NDAY
+    !//   - Accumulated large scale wet scavenging from NDAY0 to NDAY
+    !//   - Accumulated convective wet scavenging from NDAY0 to NDAY
+    !//
+    !//   Instantaneous burden is not written to file - you should either
+    !//   include it, or use monthly averages.
+    !//
+    !// File 2: soa_dailybudgets_YYYY.nc
+    !//       Daily global totals of the same variables.
+    !//
+    !// Amund Sovde Haslerud, January 2018
+    !//   Writes to netCDF4.
+    !// Amund Sovde, June 2014, July 2012
+    !// --------------------------------------------------------------------
+    use cmn_precision, only: r4
+    use cmn_size, only: TNAMELEN
+    use cmn_ctm, only: STT, MPBLK, MPBLKJB, MPBLKJE, MPBLKIB, MPBLKIE, &
+         JDATE, JMON, JYEAR, JDATE, &
+         XDGRD, YDGRD, XDEDG, YDEDG, ETAA, ETAB, &
+         ZGRD, ZEDG, ETAA, ETAB
+    use cmn_chem, only: TNAME
+    use cmn_diag, only: NTND, NTND_CNSCAV, STTTND, STTTN0, TLDIAG, NDAY0, &
+         JDATE0, JMON0, JYEAR0, nc4deflate_global, nc4shuffle_global
+    use cmn_oslo, only: CONVWASHOUT, trsp_idx, RESULTDIR
+    use netcdf
+    use ncutils, only: handle_error
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    !// Input
+    integer, intent(in) :: NDAY, NDAYI
+    !// Locals
+    integer :: TRNR,I,J,II,JJ,L,N,MP, ifnr
+    real(r8) :: tot_prod, tot_evap, tot_ddep, tot_lscav, tot_cscav, tot_burden
+    real(r8) :: tot_SepProdGas, tot_SepCondGas
+    real(r8) :: SCAV3D(IPAR,JPAR,LPAR,NDEP_SOA)
+    !// For file stuff
+    integer, dimension(6) :: start_time, end_time
+    character(len=8) :: datestamp, datestamp0
+    character(len=80) :: filename
+    character(len=4)  :: cyear
+
+    !// netCDF variables
+    !//---------------------------------------------------------------------
+    integer :: &
+         status, &          !Status for netcdf file 0=OK
+         ncid, &            !file id for output netcdf file
+         lon_dim_id, &      !Dimension id for longitude
+         lon_id, &          !Variable id for longitude
+         lat_dim_id, &      !Dimension id for latitude
+         lat_id, &          !Variable id for latitude
+         lev_dim_id, &      !Dimension id for level
+         lev_id, &          !Variable id for level
+         ilon_dim_id, &      !Dimension id for longitude interstices
+         ilon_id, &          !Variable id for longitude interstices
+         ilat_dim_id, &      !Dimension id for latitude interstices
+         ilat_id, &          !Variable id for latitude interstices
+         ilev_dim_id, &     !Dimension id for level interstices
+         ilev_id, &         !Variable id for level interstices
+         ihya_dim_id, &     !Dimension id for hybrid A on interstices
+         ihya_id, &         !Variable id for hybrid A on interstices
+         ihyb_dim_id, &     !Dimension id for hybrid B on interstices
+         ihyb_id, &         !Variable id for hybrid B on interstices
+         naer_dim_id, &     !Dimension id for NDEP_SOA
+         ngas_dim_id, &     !Dimension id for NGAS_SOA
+         days_dim_id, &     !Dimension id for days=366
+         date_size_dim_id, & !Dimension id for date sizes
+         soa_burden_id, &
+         soa_prod_id, soa_evap_id, soa_ddep_id, soa_lsscav_id, soa_cnvscav_id, &
+         soagas_prod_id, soagas_sepprod_id, soagas_sepcond_id, &
+         soagas_lsscav_id, soagas_cnvscav_id, soagas_burden_id, &
+         start_time_id, end_time_id, & !IDs for start/end dates for average
+         start_day_id, end_day_id      !IDs for start/end day (NDAY)
+    !// --------------------------------------------------------------------
+    integer, parameter :: nc4deflate = nc4deflate_global
+    integer, parameter :: nc4shuffle = nc4shuffle_global
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'soa_diag2file_nc4'
+    !// --------------------------------------------------------------------
+
+
+    !//---------------------------------------------------------------------
+    !// Write netcdf4 file.
+    !//---------------------------------------------------------------------
+    !// File name is xxx_STARTDATE-ENDDATE.nc, where STARTDATE is taken
+    !// from JYEAR1,JMON1,JDATE1,00UTC and ENDDATE is taken from current
+    !// time, which is JYEAR,JMON,JDATE,00UTC (already updated by calendar).
+    !// Format of the dates are YYYYMMDDHHMM, where HHMM always is 0000.
+    !//---------------------------------------------------------------------
+    !// Start of budgets period at 00:00UTC
+    start_time = (/JYEAR0,JMON0,JDATE0,0,0,0/)
+    write(datestamp0(1:8),'(i4.4,2i2.2)') JYEAR0,JMON0,JDATE0
+    !// End of average period at 00:00UTC
+    end_time = (/JYEAR,JMON,JDATE,0,0,0/)
+    write(datestamp(1:8),'(i4.4,2i2.2)') JYEAR,JMON,JDATE
+
+    !//---------------------------------------------------------------------
+    !// File name SOA (aerosols)
+    filename = trim(RESULTDIR)//'soa_budgets_'//datestamp0//'_'//datestamp//'.nc'
+    !// Open netCDF4 file for writing
+    status = nf90_create(path=filename, cmode=nf90_netcdf4, ncid=ncid)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': in creating file')
+    !//---------------------------------------------------------------------
+
+
+
+    !//File headers
+    status=nf90_put_att(ncid,nf90_global,'title','Oslo CTM3 SOA budgets')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': file header')
+
+    !// Define lat/lon/lev
+    status = nf90_def_dim(ncid,"lat",JPAR,lat_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define lat dim')
+    status = nf90_def_dim(ncid,"lon",IPAR,lon_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define lon dim')
+    status = nf90_def_dim(ncid,"lev",LPAR,lev_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define lev dim')
+
+    !// Define ilat/ilon/ilev
+    status = nf90_def_dim(ncid,"ilat",JPAR+1,ilat_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ilat dim')
+    status = nf90_def_dim(ncid,"ilon",IPAR+1,ilon_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//':define ilon dim')
+    status = nf90_def_dim(ncid,"ilev",LPAR+1,ilev_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ilev dim')
+
+    !// Define NAER_SOA=NDEP_SOA and NGAS_SOA
+    status = nf90_def_dim(ncid,"NAER_SOA",NDEP_SOA,naer_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define NAER_SOA dim')
+    status = nf90_def_dim(ncid,"NGAS_SOA",NGAS_SOA,ngas_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define NGAS_SOA dim')
+
+    !// Define size of date stamps
+    status = nf90_def_dim(ncid,"date_size",size(start_time),date_size_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define date_size dim')
+
+    !//---------------------------------------------------------------------
+
+    !// Defining the lon variable
+    status = nf90_def_var(ncid,"lon",nf90_double,lon_dim_id,lon_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define lon variable')
+    !// Attributes
+    status = nf90_put_att(ncid,lon_id,'units','degrees east')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute units lon')
+    status = nf90_put_att(ncid,lon_id,'description','Value at grid box center.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description lon')
+
+    !// Defining the lat variable
+    status = nf90_def_var(ncid,"lat",nf90_double,lat_dim_id,lat_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define lat variable')
+    !// Attributes
+    status = nf90_put_att(ncid,lat_id,'units','degrees north')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute units lat')
+    status = nf90_put_att(ncid,lat_id,'description','Value at grid box center.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description lat')
+
+    !// Defining the lev variable
+    status = nf90_def_var(ncid,"lev",nf90_double,lev_dim_id,lev_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define lev variable')
+    !// Attributes
+    status = nf90_put_att(ncid,lev_id,'units','hPa')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute units lev')
+    status = nf90_put_att(ncid,lev_id,'description', &
+         'Pressure at mass-weighted grid box center (mean of pressures at upper and lower edges), assuming surface at 1000hPa.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description lev')
+
+
+    !// Defining ilon variable (lon on interstices)
+    status = nf90_def_var(ncid,"ilon",nf90_double,ilon_dim_id,ilon_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ilon variable')
+    !// Attributes
+    status = nf90_put_att(ncid,ilon_id,'units','degrees east')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute units ilon')
+    status = nf90_put_att(ncid,ilon_id,'description','Value at eastern edge of grid box.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description ilon')
+
+    !// Defining ilat variable (lat on interstices)
+    status = nf90_def_var(ncid,"ilat",nf90_double,ilat_dim_id,ilat_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ilat variable')
+    !// Attributes
+    status = nf90_put_att(ncid,ilat_id,'units','degrees north')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute units ilat')
+    status = nf90_put_att(ncid,ilat_id,'description','Value at southern edge of grid box.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description ilat')
+
+    !// Defining ilev variable (lev on interstices)
+    status = nf90_def_var(ncid,"ilev",nf90_double,ilev_dim_id,ilev_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ilev variable')
+    !// Attributes
+    status = nf90_put_att(ncid,ilev_id,'units','hPa')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute units ilev')
+    status = nf90_put_att(ncid,ilev_id,'description', &
+         'Pressure at lower edge of grid box, assuming surface at 1000hPa.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description ilev')
+
+    !// Defining hybrid sigma coordinate A
+    status = nf90_def_var(ncid,"ihya",nf90_double,ilev_dim_id,ihya_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ihya variable')
+    !// Attributes
+    status = nf90_put_att(ncid,ihya_id,'units','hPa')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute units ihya')
+    status = nf90_put_att(ncid,ihya_id,'description', 'Sigma hybrid coordinate A.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description ihya')
+    status = nf90_put_att(ncid,ihya_id,'usage','p_box_bottom(L) = ihya(L) + ihyb(L)*p_surface')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute usage ihya')
+
+    !// Defining hybrid sigma coordinate B
+    status = nf90_def_var(ncid,"ihyb",nf90_double,ilev_dim_id,ihyb_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ihyb variable')
+    !// Attributes
+    status = nf90_put_att(ncid,ihyb_id,'units','1')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute units ihyb')
+    status = nf90_put_att(ncid,ihyb_id,'description', 'Sigma hybrid coordinate B.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description ihyb')
+    status = nf90_put_att(ncid,ihyb_id,'usage','p_box_bottom(L) = ihya(L) + ihyb(L)*p_surface')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute usage ihyb')
+
+
+
+    !// Start time for accumulating data - START_TIME
+    status = nf90_def_var(ncid,"START_TIME",nf90_int,date_size_dim_id,start_time_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define START_TIME variable')
+    status = nf90_put_att(ncid,start_time_id,'description', &
+         'Start date [YYYY,MM,DD,hh,mm,ss] for accumulating data.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description START_TIME')
+
+    !// End time for accumulating data - END_TIME
+    status = nf90_def_var(ncid,"END_TIME",nf90_int,date_size_dim_id,end_time_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define END_TIME variable')
+    status = nf90_put_att(ncid,end_time_id,'description', &
+         'End date [YYYY,MM,DD,hh,mm,ss] for accumulating data.')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description END_TIME')
+
+    !// Start day for accumulating data - START_DAY (NDAY)
+    status = nf90_def_var(ncid,"START_DAY",nf90_int,start_day_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define START_DAY variable')
+    status = nf90_put_att(ncid,start_day_id,'description', &
+         'Start day for accumulating data (model counter NDAY).')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description START_DAY')
+
+    !// End day for accumulating data - END_DAY
+    status = nf90_def_var(ncid,"END_DAY",nf90_int,end_day_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define END_DAY variable')
+    status = nf90_put_att(ncid,end_day_id,'description', &
+         'End day for accumulating data (model counter NDAY).')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute description END_DAY')
+
+
+    !// Define aerosol names
+    !// Define gas names
+
+
+    !// Define aerosol budgets
+    status = nf90_def_var(ncid,"SOA_PROD",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soa_prod_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_PROD variable')
+    status = nf90_def_var_deflate(ncid,soa_prod_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_PROD variable')
+    status = nf90_put_att(ncid,soa_prod_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_PROD')
+    status = nf90_put_att(ncid,soa_prod_id,'long_name','SOA production by separation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_PROD')
+
+    status = nf90_def_var(ncid,"SOA_EVAP",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soa_evap_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_EVAP variable')
+    status = nf90_def_var_deflate(ncid,soa_evap_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_EVAP variable')
+    status = nf90_put_att(ncid,soa_evap_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_EVAP')
+    status = nf90_put_att(ncid,soa_evap_id,'long_name','SOA evaporation by separation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_EVAP')
+
+    status = nf90_def_var(ncid,"SOA_DDEP",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soa_ddep_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_DDEP variable')
+    status = nf90_def_var_deflate(ncid,soa_ddep_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_DDEP variable')
+    status = nf90_put_att(ncid,soa_ddep_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_DDEP')
+    status = nf90_put_att(ncid,soa_ddep_id,'long_name','SOA dry deposition')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_DDEP')
+
+    status = nf90_def_var(ncid,"SOA_LSSCAV",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soa_lsscav_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_LSSCAV variable')
+    status = nf90_def_var_deflate(ncid,soa_lsscav_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_LSSCAV variable')
+    status = nf90_put_att(ncid,soa_lsscav_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_LSSCAV')
+    status = nf90_put_att(ncid,soa_lsscav_id,'long_name','SOA scavenged by large scale precipitation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_LSSCAV')
+
+    status = nf90_def_var(ncid,"SOA_CNVSCAV",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soa_cnvscav_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_CNVSCAV variable')
+    status = nf90_def_var_deflate(ncid,soa_cnvscav_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_CNVSCAV variable')
+    status = nf90_put_att(ncid,soa_cnvscav_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_CNVSCAV')
+    status = nf90_put_att(ncid,soa_cnvscav_id,'long_name','SOA scavenged by convective precipitation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_CNVSCAV')
+
+
+    !// Define gas budgets
+    !// Produced in chemistry
+    status = nf90_def_var(ncid,"SOAGAS_PROD",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soagas_prod_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_PROD variable')
+    status = nf90_def_var_deflate(ncid,soagas_prod_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_PROD variable')
+    status = nf90_put_att(ncid,soagas_prod_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_PROD')
+    status = nf90_put_att(ncid,soagas_prod_id,'long_name','SOAGAS chemical production')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_PROD')
+
+    !// Produced in SOA_separate
+    status = nf90_def_var(ncid,"SOAGAS_SEPPROD",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soagas_sepprod_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_SEPPROD variable')
+    status = nf90_def_var_deflate(ncid,soagas_sepprod_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_SEPPROD variable')
+    status = nf90_put_att(ncid,soagas_sepprod_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_SEPPROD')
+    status = nf90_put_att(ncid,soagas_sepprod_id,'long_name','SOAGAS production in separation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_SEPPROD')
+
+    !// Condensed in SOA_separate
+    status = nf90_def_var(ncid,"SOAGAS_SEPCOND",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soagas_sepcond_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_SEPCOND variable')
+    status = nf90_def_var_deflate(ncid,soagas_sepcond_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_SEPCOND variable')
+    status = nf90_put_att(ncid,soagas_sepcond_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_SEPCOND')
+    status = nf90_put_att(ncid,soagas_sepcond_id,'long_name','SOAGAS condensation in separation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_SEPCOND')
+
+    status = nf90_def_var(ncid,"SOAGAS_LSSCAV",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soagas_lsscav_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_LSSCAV variable')
+    status = nf90_def_var_deflate(ncid,soagas_lsscav_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_LSSCAV variable')
+    status = nf90_put_att(ncid,soagas_lsscav_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_LSSCAV')
+    status = nf90_put_att(ncid,soagas_lsscav_id,'long_name','SOAGAS scavenged by large scale precipitation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_LSSCAV')
+
+    status = nf90_def_var(ncid,"SOAGAS_CNVSCAV",nf90_float, &
+         (/lon_dim_id, lat_dim_id, lev_dim_id, naer_dim_id/), soagas_cnvscav_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_CNVSCAV variable')
+    status = nf90_def_var_deflate(ncid,soagas_cnvscav_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_CNVSCAV variable')
+    status = nf90_put_att(ncid,soagas_cnvscav_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_CNVSCAV')
+    status = nf90_put_att(ncid,soagas_cnvscav_id,'long_name','SOAGAS scavenged by convective precipitation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_CNVSCAV')
+
+
+    !//---------------------------------------------------------------------
+    !// End definition mode
+    status = nf90_enddef(ncid)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': end defmode')
+    !//---------------------------------------------------------------------
+
+    !// Putting the lon/lat/lev variables
+    status = nf90_put_var(ncid,lon_id,XDGRD)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting lon')
+    status = nf90_put_var(ncid,lat_id,YDGRD)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting lat')
+    status = nf90_put_var(ncid,lev_id,ZGRD)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting lev')
+
+    status = nf90_put_var(ncid,ilon_id,XDEDG)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting ilon')
+    status = nf90_put_var(ncid,ilat_id,YDEDG)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting ilat')
+    status = nf90_put_var(ncid,ilev_id,ZEDG)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting ilev')
+
+    status = nf90_put_var(ncid,ihya_id,ETAA)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting ihya')
+    status = nf90_put_var(ncid,ihyb_id,ETAB)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting ihyb')
+
+    !// Start time
+    status = nf90_put_var(ncid,start_time_id,start_time)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting START_TIME')
+    !// End time
+    status = nf90_put_var(ncid,end_time_id,end_time)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting END_TIME')
+
+    !// Start day (NDAY counter)
+    status = nf90_put_var(ncid,start_day_id,NDAY0)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting START_DAY')
+    !// End day (NDAY counter)
+    status = nf90_put_var(ncid,end_day_id,NDAY-1)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting END_DAY')
+
+
+    !//---------------------------------------------------------------------
+    !// Put out SOA
+    !//---------------------------------------------------------------------
+
+    !// Production from SOA_separate [kg]
+    status = nf90_put_var(ncid,soa_prod_id,TOTAL_SOA_PROD)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_PROD')
+
+    !// Evaporation from SOA_separate [kg]
+    status = nf90_put_var(ncid,soa_evap_id,TOTAL_SOA_EVAP)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_EVAP')
+
+    !// Loss due to dry deposition
+    status = nf90_put_var(ncid,soa_ddep_id,TOTAL_SOA_DDEP)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_DDEP')
+
+    !// Large scale wet scav loss
+    status = nf90_put_var(ncid,soa_lsscav_id,TOTAL_SOA_LSSCAV)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_LSSCAV')
+
+    !// Convective wet scav loss
+    !// Even though wet loss is diagnosed using the CTM3 core diagnostic
+    !// arrays, namely the real*4 STTTND, we do a separate diagnotic here in
+    !// real*8. For convective scavenging, the CTM3 diagnose CONVWASHOUT is
+    !// used. This means that SOA 3D diagnose is tied to BUDGET calendar
+    !// in LxxTyy-file.
+    SCAV3D(:,:,:,:) = 0._r8
+    if (NTND_CNSCAV .gt. 0) then
+       do MP = 1, MPBLK
+          do J = MPBLKJB(MP),MPBLKJE(MP)
+             JJ    = J - MPBLKJB(MP) + 1
+             do I = MPBLKIB(MP),MPBLKIE(MP)
+                II    = I - MPBLKIB(MP) + 1
+                do N = 1, ndep_soa
+                   TRNR = trsp_idx(SOA_DEPS(N))
+                   do L = 1, LPAR
+                      SCAV3D(I,J,L,N) = &
+                           + CONVWASHOUT(L,TRNR,II,JJ,MP) * 1000._r8 !// kg -> g
+                   end do
+                end do
+             end do
+          end do
+       end do
+    end if
+
+    status = nf90_put_var(ncid,soa_cnvscav_id,SCAV3D)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_CNVSCAV')
+
+
+    !//---------------------------------------------------------------------
+
+    !// Print out total production and loss and life time
+    !// Set totals for each process
+    tot_prod = sum(TOTAL_SOA_PROD)
+    tot_evap = sum(TOTAL_SOA_EVAP)
+    tot_ddep = sum(TOTAL_SOA_DDEP)
+    tot_lscav = sum(TOTAL_SOA_LSSCAV)
+    tot_cscav = 0._r8
+    if (NTND_CNSCAV .gt. 0) then
+       do N = 1, ndep_soa
+          TRNR = trsp_idx(SOA_DEPS(N))
+          tot_cscav = tot_cscav + STTTN0(TRNR,NTND_CNSCAV) * 1000._r8 !// kg -> g
+       end do
+    end if
+
+    !// Burden [g] (instantaneous values)
+    SCAV3D(:,:,:,:) = 0._r8
+    do N = 1, ndep_soa
+       TRNR = trsp_idx(SOA_DEPS(N))
+       SCAV3D(:,:,:,N) = STT(:,:,:,TRNR) * 1000._r8
+    end do
+    tot_burden = sum(SCAV3D)
+
+    write(6,'(a,5es11.3,f5.1)') '* SOA AVG P/E/D/L/C/life:', &
+         tot_prod, tot_evap, tot_ddep, tot_lscav, tot_cscav, &
+         -tot_burden / (tot_ddep + tot_lscav + tot_cscav) &
+           * real(NDAY-NDAY0+1, r8)
+    !//---------------------------------------------------------------------
+
+
+
+
+    !//---------------------------------------------------------------------
+    !// Put out SOAGAS
+    !//---------------------------------------------------------------------
+
+    !//---------------------------------------------------------------------
+    !// Production in chemistry [kg]
+    status = nf90_put_var(ncid,soagas_prod_id,TOTAL_SOAG_PROD)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_PROD')
+
+    !// Production from SOAGAS_separate [kg]
+    status = nf90_put_var(ncid,soagas_sepprod_id,TOTAL_SOAG_SEPPROD)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_SEPPROD')
+
+    !// Evaporation from SOAGAS_separate [kg]
+    status = nf90_put_var(ncid,soagas_sepcond_id,TOTAL_SOAG_SEPCOND)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_SEPCOND')
+
+    !// Large scale wet scav loss
+    status = nf90_put_var(ncid,soagas_lsscav_id,TOTAL_SOAG_LSSCAV)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_LSSCAV')
+
+    !// Add convective wet scav loss to 3D loss
+    SCAV3D(:,:,:,:) = 0._r8
+    if (NTND_CNSCAV .gt. 0) then
+       do MP = 1, MPBLK
+          do J = MPBLKJB(MP),MPBLKJE(MP)
+             JJ    = J - MPBLKJB(MP) + 1
+             do I = MPBLKIB(MP),MPBLKIE(MP)
+                II    = I - MPBLKIB(MP) + 1
+                do N = 1, ngas_soa
+                   TRNR = trsp_idx(SOA_GAS(N))
+                   do L = 1, LPAR
+                      SCAV3D(I,J,L,N) = &
+                           + CONVWASHOUT(L,TRNR,II,JJ,MP) * 1000._r8 !// kg -> g
+                   end do
+                end do
+             end do
+          end do
+       end do
+    end if
+    status = nf90_put_var(ncid,soagas_cnvscav_id,SCAV3D)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_CNVSCAV')
+
+
+    !// --------------------------------------------------------------------
+    !// Even though wet loss is diagnosed using the CTM3 core diagnostic
+    !// arrays, namely the real*4 STTTND, we do a separate diagnotic here
+    !// real*8. For convective scavenging, the CTM3 diagnose CONVWASHOUT is
+    !// used. This means that SOA 3D diagnose is tied to BUDGET calendar
+    !// in LxxTyy-file.
+    tot_prod = sum(TOTAL_SOAG_PROD)
+    tot_SepProdGas = sum(TOTAL_SOAG_SEPPROD)
+    tot_SepCondGas = sum(TOTAL_SOAG_SEPCOND)
+    tot_lscav = sum(TOTAL_SOAG_LSSCAV)
+
+    !// Add convective wet scav loss to 3D loss
+    tot_cscav = 0._r8
+    if (NTND_CNSCAV .gt. 0) then
+       do N = 1, ngas_soa
+          TRNR = trsp_idx(SOA_GAS(N))
+          tot_cscav = tot_cscav + STTTN0(TRNR,NTND_CNSCAV) * 1000._r8 !// kg -> g
+       end do
+    end if
+
+    !// Burden [g] (instantaneous values)
+    SCAV3D(:,:,:,:) = 0._r8
+    do N = 1, ngas_soa
+       TRNR = trsp_idx(SOA_GAS(N))
+       SCAV3D(:,:,:,N) = STT(:,:,:,TRNR) * 1000._r8
+    end do
+    tot_burden = sum(SCAV3D)
+
+
+    !// Print out total production and loss and lifetime
+    write(6,'(a,5es11.3,f5.1)') '* SOAG AVG P/SP/SC/L/C/life:', &
+         tot_prod, tot_sepprodgas, tot_sepcondgas, tot_lscav, tot_cscav, &
+         -tot_burden / (tot_sepcondGas + tot_lscav + tot_cscav) &
+           * real(NDAY-NDAY0+1, r8)
+    !// --------------------------------------------------------------------
+
+
+    !//---------------------------------------------------------------------
+    !// close netcdf file
+    status = nf90_close(ncid)
+    if (status .ne. nf90_noerr) &
+         call handle_error(status,'close file: '//trim(filename))
+    write(6,'(a)') f90file//':'//subr//': wrote file '//trim(filename)
+    write(6,'(a71)') '--------------------------------------------'// &
+         '---------------------------'
+    !//---------------------------------------------------------------------
+
+
+    !// --------------------------------------------------------------------
+    !// Re-initialise diagnoses SOA
+    TOTAL_SOA_DDEP(:,:,:) = 0._r8
+    TOTAL_SOA_PROD(:,:,:,:) = 0._r8
+    TOTAL_SOA_EVAP(:,:,:,:) = 0._r8
+    TOTAL_SOA_LSSCAV(:,:,:,:) = 0._r8
+    !// Reset old values for nopsdiag
+    oldProd(:) = 0._r8
+    oldEvap(:) = 0._r8
+    oldDDep(:) = 0._r8
+    !// Must reset oldLscv and oldCscv also!
+    !// After this routine is completed, p-main will call TBGT_G to
+    !// reset STTTND and STTTN0.
+    oldLscv(:) = 0._r8
+    oldCscv(:) = 0._r8
+    !//---------------------------------------------------------------------
+    !// Re-initialise diagnoses SOAGAS
+    TOTAL_SOAG_PROD(:,:,:,:) = 0._r8
+    TOTAL_SOAG_SEPPROD(:,:,:,:) = 0._r8
+    TOTAL_SOAG_SEPCOND(:,:,:,:) = 0._r8
+    TOTAL_SOA_LSSCAV(:,:,:,:) = 0._r8
+    !// Reset old values for nopsdiag
+    oldProdGas(:) = 0._r8
+    oldSepProdGas(:) = 0._r8
+    oldSepCondGas(:) = 0._r8
+    !// Must reset oldLscv and oldCscv also!
+    !// After this routine is completed, p-main will call TBGT_G to
+    !// reset STTTND and STTTN0.
+    oldLscvGas(:) = 0._r8
+    oldCscvGas(:) = 0._r8
+    !// --------------------------------------------------------------------
+
+
+
+
+
+
+    !//---------------------------------------------------------------------
+    !// Write daily accumulated data to netCDF4 file
+    !// This routine is called after JDAY/JMON/JYEAR have been updated
+    if (JDATE.eq.1 .and. JMON.eq.1) then
+       write(cyear,'(i4.4)') JYEAR-1 !// Has been updated to next year
+    else
+       write(cyear,'(i4.4)') JYEAR   !// Current year
+    end if
+    filename = 'soa_dailybudgets_'//cyear//'.nc'
+    !// Open netCDF4 file for writing
+    status = nf90_create(path=filename, cmode=nf90_netcdf4, ncid=ncid)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': in creating file')
+    !//---------------------------------------------------------------------
+
+    !//File headers
+    status=nf90_put_att(ncid,nf90_global,'title','Oslo CTM3 SOA daily global budgets')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': file header')
+
+    !// Define NAER_SOA=NDEP_SOA and NGAS_SOA
+    status = nf90_def_dim(ncid,"NAER_SOA",NDEP_SOA,naer_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define NAER_SOA dim')
+    status = nf90_def_dim(ncid,"NGAS_SOA",NGAS_SOA,ngas_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define NGAS_SOA dim')
+
+    status = nf90_def_dim(ncid,"days",366,days_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define days dim')
+
+    !//---------------------------------------------------------------------
+    
+
+    status = nf90_def_var(ncid,"SOA_burden",nf90_float, &
+         (/naer_dim_id, days_dim_id/), soa_burden_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_burden variable')
+    status = nf90_def_var_deflate(ncid,soa_burden_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_burden variable')
+    status = nf90_put_att(ncid,soa_burden_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_burden')
+    status = nf90_put_att(ncid,soa_burden_id,'long_name','SOA daily global burden')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_burden')
+
+    status = nf90_def_var(ncid,"SOA_prod",nf90_float, &
+         (/naer_dim_id, days_dim_id/), soa_prod_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_prod variable')
+    status = nf90_def_var_deflate(ncid,soa_prod_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_prod variable')
+    status = nf90_put_att(ncid,soa_prod_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_prod')
+    status = nf90_put_att(ncid,soa_prod_id,'long_name','SOA daily global production by separation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_prod')
+
+    status = nf90_def_var(ncid,"SOA_evap",nf90_float, &
+         (/naer_dim_id, days_dim_id/), soa_evap_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_evap variable')
+    status = nf90_def_var_deflate(ncid,soa_evap_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_evap variable')
+    status = nf90_put_att(ncid,soa_evap_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_evap')
+    status = nf90_put_att(ncid,soa_evap_id,'long_name','SOA daily global evaporation by separation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_evap')
+
+    status = nf90_def_var(ncid,"SOA_ddep",nf90_float, &
+         (/naer_dim_id, days_dim_id/), soa_ddep_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_ddep variable')
+    status = nf90_def_var_deflate(ncid,soa_ddep_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_ddep variable')
+    status = nf90_put_att(ncid,soa_ddep_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_ddep')
+    status = nf90_put_att(ncid,soa_ddep_id,'long_name','SOA daily global drydeposition')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_ddep')
+
+    status = nf90_def_var(ncid,"SOA_lsscav",nf90_float, &
+         (/naer_dim_id, days_dim_id/), soa_lsscav_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_lsscav variable')
+    status = nf90_def_var_deflate(ncid,soa_lsscav_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_lsscav variable')
+    status = nf90_put_att(ncid,soa_lsscav_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_lsscav')
+    status = nf90_put_att(ncid,soa_lsscav_id,'long_name','SOA daily global lsscav')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_lsscav')
+
+    status = nf90_def_var(ncid,"SOA_cnvscav",nf90_float, &
+         (/naer_dim_id, days_dim_id/), soa_cnvscav_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOA_cnvscav variable')
+    status = nf90_def_var_deflate(ncid,soa_cnvscav_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOA_cnvscav variable')
+    status = nf90_put_att(ncid,soa_cnvscav_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOA_cnvscav')
+    status = nf90_put_att(ncid,soa_cnvscav_id,'long_name','SOA daily global cnvscav')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOA_cnvscav')
+
+
+
+
+    status = nf90_def_var(ncid,"SOAGAS_burden",nf90_float, &
+         (/ngas_dim_id, days_dim_id/), soagas_burden_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_burden variable')
+    status = nf90_def_var_deflate(ncid,soagas_burden_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_burden variable')
+    status = nf90_put_att(ncid,soagas_burden_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_burden')
+    status = nf90_put_att(ncid,soagas_burden_id,'long_name','SOAGAS daily global burden')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_burden')
+
+    status = nf90_def_var(ncid,"SOAGAS_prod",nf90_float, &
+         (/ngas_dim_id, days_dim_id/), soagas_prod_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_prod variable')
+    status = nf90_def_var_deflate(ncid,soagas_prod_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_prod variable')
+    status = nf90_put_att(ncid,soagas_prod_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_prod')
+    status = nf90_put_att(ncid,soagas_prod_id,'long_name','SOAGAS daily global produced in chemistry')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_prod')
+
+    status = nf90_def_var(ncid,"SOAGAS_sepprod",nf90_float, &
+         (/ngas_dim_id, days_dim_id/), soagas_sepprod_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_sepprod variable')
+    status = nf90_def_var_deflate(ncid,soagas_sepprod_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_sepprod variable')
+    status = nf90_put_att(ncid,soagas_sepprod_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_sepprod')
+    status = nf90_put_att(ncid,soagas_sepprod_id,'long_name','SOAGAS daily global prod in separation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_sepprod')
+
+    status = nf90_def_var(ncid,"SOAGAS_sepcond",nf90_float, &
+         (/ngas_dim_id, days_dim_id/), soagas_sepcond_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_sepcond variable')
+    status = nf90_def_var_deflate(ncid,soagas_sepcond_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_sepcond variable')
+    status = nf90_put_att(ncid,soagas_sepcond_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_sepcond')
+    status = nf90_put_att(ncid,soagas_sepcond_id,'long_name','SOAGAS daily global condensed in separation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_sepcond')
+
+
+    status = nf90_def_var(ncid,"SOAGAS_lsscav",nf90_float, &
+         (/ngas_dim_id, days_dim_id/), soagas_lsscav_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_lsscav variable')
+    status = nf90_def_var_deflate(ncid,soagas_lsscav_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_lsscav variable')
+    status = nf90_put_att(ncid,soagas_lsscav_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_lsscav')
+    status = nf90_put_att(ncid,soagas_lsscav_id,'long_name','SOAGAS daily global scavenged by large scale precipitation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_lsscav')
+
+    status = nf90_def_var(ncid,"SOAGAS_cnvscav",nf90_float, &
+         (/ngas_dim_id, days_dim_id/), soagas_cnvscav_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SOAGAS_cnvscav variable')
+    status = nf90_def_var_deflate(ncid,soagas_cnvscav_id,nc4shuffle,1,nc4deflate)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SOAGAS_cnvscav variable')
+    status = nf90_put_att(ncid,soagas_cnvscav_id,'units','g')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SOAGAS_cnvscav')
+    status = nf90_put_att(ncid,soagas_cnvscav_id,'long_name','SOAGAS daily global scavenged by convective precipitation')
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute long_name SOAGAS_cnvscav')
+
+    !//---------------------------------------------------------------------
+    !// End definition mode
+    status = nf90_enddef(ncid)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': end defmode')
+    !//---------------------------------------------------------------------
+
+    !// Burden [g]
+    status = nf90_put_var(ncid,soa_burden_id,dailyBrdn)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_burden')
+
+    status = nf90_put_var(ncid,soa_prod_id,dailyProd)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_prod')
+
+    status = nf90_put_var(ncid,soa_evap_id,dailyEvap)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_evap')
+
+    status = nf90_put_var(ncid,soa_ddep_id,dailyDdep)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_ddep')
+
+    status = nf90_put_var(ncid,soa_lsscav_id,dailyLscv)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_lsscav')
+
+    status = nf90_put_var(ncid,soa_cnvscav_id,dailyCscv)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOA_cnvscav')
+
+
+
+    !// SOAGAS
+    status = nf90_put_var(ncid,soagas_burden_id,dailyBrdnGas)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_burden')
+
+    status = nf90_put_var(ncid,soagas_prod_id,dailyProdGas)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_prod')
+
+    status = nf90_put_var(ncid,soagas_sepprod_id,dailySepProdGas)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_sepprod')
+
+    status = nf90_put_var(ncid,soagas_sepcond_id,dailySepCondGas)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_sepcond')
+
+    status = nf90_put_var(ncid,soagas_lsscav_id,dailyLscvGas)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_lsscav')
+
+    status = nf90_put_var(ncid,soagas_cnvscav_id,dailyCscvGas)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SOAGAS_cnvscav')
+
+    !//---------------------------------------------------------------------
+    !// close netcdf file
+    status = nf90_close(ncid)
+    if (status .ne. nf90_noerr) &
+         call handle_error(status,'close file: '//trim(filename))
+    write(6,'(a)') f90file//':'//subr//': wrote file '//trim(filename)
+    write(6,'(a71)') '--------------------------------------------'// &
+         '---------------------------'
+    !//---------------------------------------------------------------------
+
+
+    !// Reset if new year
+    !// Note that this will fail if diagnostics are not done 1Jan.
+    if (JDATE.eq.1 .and. JMON.eq.1) then
+       dailyProd(:,:) = 0._r8
+       dailyEvap(:,:) = 0._r8
+       dailyDDep(:,:) = 0._r8
+       dailyLscv(:,:) = 0._r8
+       dailyCscv(:,:) = 0._r8
+       dailyBrdn(:,:) = 0._r8
+
+       dailyProdGas(:,:) = 0._r8
+       dailySepProdGas(:,:) = 0._r8
+       dailySepCondGas(:,:) = 0._r8
+       dailyLscvGas(:,:) = 0._r8
+       dailyCscvGas(:,:) = 0._r8
+       dailyBrdnGas(:,:) = 0._r8
+    end if
+
+
+    !// --------------------------------------------------------------------
+  end subroutine soa_diag2file_nc4
+  !// ----------------------------------------------------------------------
+
 
 
   !// ----------------------------------------------------------------------

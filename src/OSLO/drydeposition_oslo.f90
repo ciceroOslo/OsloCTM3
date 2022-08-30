@@ -58,7 +58,7 @@ module drydeposition_oslo
   !// Monthly averaged Asn to be used if NH3 and SO2 are not included
   !real(r8) :: ASNCLIM(IPAR,JPAR,12) !// Not currently included
 
-    !// ----------------------------------------------------------------------
+  !// ----------------------------------------------------------------------
   character(len=*), parameter, private :: f90file = 'drydeposition_oslo.f90'
   !// ----------------------------------------------------------------------
 

@@ -60,6 +60,17 @@ c     in the QCA arrays, can be used, eg, 3 different ones every hour.
       BOXIWR(:,:) = 0._r8
       RANNUM(:) = -1._r8
 !
+!// Could possibly be a bit faster to put openmp here, but
+!// not much.
+c!$omp parallel private(J,I,IRAN,N,RANNUM,JX,IX,L,KBOX,
+c!$omp& ILNG,JLAT,GAREA,PSRF,AWT,TEM,ZL,CLDFN,BOXIWR,BOXLWR, 
+c!$omp& TAUQCA,JXQCA,WTQCA)
+c!$omp& shared(IRAN0,LTOP,ETAA,ETAB,SWSTORE,CLDSTORE,TYPSTORE,
+c!$omp&        LCLDAVG,LCLDQMD,LCLDQMN,LCLDRANA,LCLDRANQ,
+c!$omp&        IMAP,JMAP,AREAXYW,PW,ZDEGI,ZDEGJ,TW,ZOFLEW,CLDFRW,
+c!$omp&        CLDIWCW,CLDLWCW,RAN4)
+c!$omp& default(NONE)
+c!$omp do schedule(static)
       do J = 1,JPAR
       do I = 1,IPAR
 
@@ -110,7 +121,8 @@ c     in the QCA arrays, can be used, eg, 3 different ones every hour.
 
       enddo
       enddo
-
+c!$omp end do
+c!$omp end parallel
       return
       end
 !

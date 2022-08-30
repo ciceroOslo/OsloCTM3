@@ -2,6 +2,7 @@
 !// Oslo CTM3
 !//=========================================================================
 !// Amund Sovde Haslerud, June 2016
+!// Bugfixes pertaining to MHP 2022 Marit Sandstad
 !//=========================================================================
 !// Column driver for Oslo tropospheric chemistry.
 !//=========================================================================
@@ -14,6 +15,7 @@ module pchemc_ij
   !// Contains:
   !//   subroutine oslo_chem
   !//
+  !// Marit Sandstad, April 2022
   !// Amund Sovde Haslerud, June 2016
   !// Ole Amund Sovde, December 2014 (from .f to .f90)
   !//                  October 2009
@@ -97,7 +99,9 @@ contains
          r_no_ch3cob, r_no_ch3x, r_no_ch3cod, r_no_ch3xx, r_no_no3, &
          r_no3_dms, r_no3_ch3cho, r_no2_no3_b, &
          r_ho2_ch3o2, r_ho2_ch3x, &
-         r_ch3o2_ch3o2, r_ch3o2_ch3x_a, r_ch3o2_ch3x_b, r_ch3x_ch3x, &
+         !// Split previous rate in two May 2022 for ch3o2 + ch3o2
+         r_ch3o2_ch3o2_a, r_ch3o2_ch3o2_b, & 
+         r_ch3o2_ch3x_a, r_ch3o2_ch3x_b, r_ch3x_ch3x, &
          r_ch3o_o2, r_ho2_radical, &
          r_o3_soaC1, r_oh_soaC1, r_no3_soaC1, &
          r_o3_soaC2, r_oh_soaC2, r_no3_soaC2, &
@@ -182,7 +186,7 @@ contains
          M_O3,  M_PANX,  M_CO,   M_H2O2, M_HO2,  &
          M_O3P, M_O1D,   M_OH,   M_CH4, &
          M_C2H4,  M_C2H6,   M_C3H6,  M_C3H8, M_C4H10, M_ARAD, &
-         M_CH2O,  M_CH3CHO, M_HCOHCO, M_RCOHCO, &
+         M_CH2O,  M_CH3OH, M_CH3CHO, M_HCOHCO, M_RCOHCO, &
          M_ISOPREN, M_ISOR1, M_ISOK,   M_ISOR2, &
          M_C6H14,  M_C6HXR, &
          M_CH3CO, &
@@ -233,7 +237,8 @@ contains
          k_no_ch3cob, k_no_ch3x, k_no_ch3cod, k_no_ch3xx, k_no_no3, &
          k_no3_dms, k_no3_ch3cho, k_no2_no3_b, &
          k_ho2_ch3o2, k_ho2_ch3x, k_ho2_radical, &
-         k_ch3o2_ch3o2, k_ch3o2_ch3x_a, k_ch3o2_ch3x_b, k_ch3x_ch3x, &
+         k_ch3o2_ch3o2_a, k_ch3o2_ch3o2_b, &!Split previous rate in two May 2022
+         k_ch3o2_ch3x_a, k_ch3o2_ch3x_b, k_ch3x_ch3x, &
          k_ch3o_o2
 
     real(r8) :: &
@@ -410,7 +415,9 @@ contains
       k_ho2_ch3o2 = r_ho2_ch3o2(JTEMP)
       k_ho2_ch3x = r_ho2_ch3x(JTEMP)
       k_ho2_radical = r_ho2_radical(JTEMP)
-      k_ch3o2_ch3o2 = r_ch3o2_ch3o2(JTEMP)
+      !// Split previous ch3o2 + ch3o2 rate in two May 2022:
+      k_ch3o2_ch3o2_a = r_ch3o2_ch3o2_a(JTEMP)
+      k_ch3o2_ch3o2_b = r_ch3o2_ch3o2_b(JTEMP)
       k_ch3o2_ch3x_a = r_ch3o2_ch3x_a(JTEMP)
       k_ch3o2_ch3x_b = r_ch3o2_ch3x_b(JTEMP)
       k_ch3x_ch3x = r_ch3x_ch3x(JTEMP)
@@ -615,7 +622,7 @@ contains
         M_C3H7O2 = ZC(49,L)
         M_ACETON = ZC(50,L)
         M_CH3COD = ZC(51,L) !// CH3COD = CH3COCH2(O2)  
-
+        M_CH3OH  = ZC(52,L)
 
         !// Sulphur chemistry
         M_DMS    = ZC(71,L)
@@ -787,7 +794,8 @@ contains
                 + k_o3_no2 * M_O3 * M_NO2      &!NO2 + O3 -> NO3 + O2
                 + k_n2o5_m * M_N2O5             &!N2O5 + -heat-> NO3 + NO2
                 + POLLX(41)                 &!EMISX of NO3
-                + k_op_no2_m * M_O3P * M_NO2  !// O3P + NO2 + M -> NO3
+                + k_op_no2_m * M_O3P * M_NO2  &!// O3P + NO2 + M -> NO3
+                + DN2O5 * M_N2O5 !// N2O5 + hv -> NO3 + NO2 Added MS2022
            LOSS = &
                 k_no2_no3_m * M_NO2   &!NO3 + NO2 -M-> N2O5
                 + k_no_no3 * M_NO   &!NO3 + NO -> 2NO2
@@ -823,7 +831,8 @@ contains
                 + POLLX(42)             !EMISX of N2O5
            LOSS = &
                 k_n2o5_m &
-                + k_n2o5_h2o_aer
+                + k_n2o5_h2o_aer &
+                + DN2O5 !// N2O5 + hv -> NO3 + NO2 Added MS2022
 
            call QSSA(3,'NO3 N2O5',DTCH,QLIN,ST,PROD,LOSS,M_N2O5)
 
@@ -1031,7 +1040,7 @@ contains
 
         !//..CH3O-----------------------------------------------------------
         PROD = &
-             ( 0.8_r8 * k_ch3o2_ch3o2 * M_CH3O2        &!Produced from CH3O2
+             ( 2._r8 * k_ch3o2_ch3o2_a * M_CH3O2        &!Produced from CH3O2 rev 2022
                + k_no_ch3o2 * M_NO * fa_no_ch3o2    &!within this parenthesis
                + k_ch3o2_ch3xx * M_CH3XX              &
                + 0.5_r8 * (k_ch3o2_c4h9o2 * M_C4H9O2    &
@@ -1044,6 +1053,7 @@ contains
                + k_ch3o2_isor2 * M_ISOR2   &
              ) * M_CH3O2 &
              + 0.03_r8 * k_o3_c3h6 * M_C3H6 * M_O3 &
+             + 0.15_r8 * k_oh_ch3oh * M_CH3OH * M_OH &
              + DCH3O2H * M_CH3O2H
         if (.not. LOLD_H2OTREATMENT) PROD = PROD &
              + k_od_ch4_b * M_O1D * M_CH4 !O(1D) + CH4 -> (CH3O/CH2OH + H)
@@ -1083,7 +1093,8 @@ contains
           LOSS_OH = &
                k_no2_oh_m * M_NO2       &!OH + NO2 -M-> HNO3
                + k_oh_c2h4_m * M_C2H4    &!OH + C2H4 -> (HOCH2CH2) --> CH3 + HCHO
-               + k_oh_ch2o * M_CH2O    &!OH + HCHO -> 
+               + k_oh_ch2o * M_CH2O    &!OH + HCHO ->
+               + k_oh_ch3oh * M_CH3OH  &!OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2
                + (k_oh_co_a + k_oh_co_b) * M_CO      &!OH + CO   -> HO2 (CO2)
                + k_oh_ch4 * M_CH4     &!OH + CH4  -> CH3 + H2O
                + k_oh_h2o2 * M_H2O2    &!OH + H2O2 -> HO2 + H2O
@@ -1110,6 +1121,7 @@ contains
                + k_oh_pan * M_PAN     &!OH + PAN ->
                + k_oh_h2 * M_H2      &!OH + H2 -> H2O + H    c121205
                + 2._r8 * k_oh_oh_m * M_OH &!OH + OH + M -> H2O2 + M
+               + k_oh_aceton * M_ACETON &! OH + CH3COCH3 -> CH3COCH2O2 (was missing added may 2022)
                !// Extra terms for stability: Must be added to production below
                + k_no_ho2 * M_NO       !HO2 + NO -> OH + NO2 FOR STABILITY!
 
@@ -1188,6 +1200,7 @@ contains
           RLIM2 = &
                (k_oh_co_a + k_oh_co_b) * M_CO        &!OH + CO   -> HO2 (CO2)
                + k_oh_h2o2 * M_H2O2    &!OH + H2O2 -> HO2 + H2O
+               + 0.85_r8 * k_oh_ch3oh * M_CH3OH &!OH + CH3OH -> CH2OH + H2O -> CH2O + HO2
                + k_o3_oh * M_O3      &!OH + O3   -> HO2 + O2
                + k_oh_hcohco_m_c * M_HCOHCO &!OH + HCOHCO -O2-> 2CO + HO2
                + k_oh_ho2no2 * M_HO2NO2  &!HO2NO2 + OH -> NO2 + H2O + O2
@@ -1557,7 +1570,8 @@ contains
                + k_oh_ch3o2h_a * M_OH * M_CH3O2H 
           LOSS = &
                k_no_ch3o2 * M_NO &
-               + 2._r8 * k_ch3o2_ch3o2 * M_CH3O2 &
+               + 2._r8 * k_ch3o2_ch3o2_a * M_CH3O2 & ! Reaction split in two
+               + 2._r8 * k_ch3o2_ch3o2_b * M_CH3O2 & ! May 2022
                + k_ho2_ch3o2 * M_HO2 &
                + k_ch3o2_ch3xx * M_CH3XX &
                + k_ch3o2_c4h9o2 * M_C4H9O2 &
@@ -1578,7 +1592,7 @@ contains
 
           !//..CH3O recalculated --------------------------------------------
           PROD = &
-               0.8_r8 * k_ch3o2_ch3o2 * M_CH3O2 * M_CH3O2 &
+               2._r8 * k_ch3o2_ch3o2_a * M_CH3O2 * M_CH3O2 & !revision 2022
                + k_no_ch3o2 * M_CH3O2 * M_NO * fa_no_ch3o2 &
                + k_ch3o2_ch3xx * M_CH3O2 * M_CH3XX &
                + ( 0.5_r8 * (k_ch3o2_c4h9o2 * M_C4H9O2 &
@@ -1587,7 +1601,8 @@ contains
                    + k_ch3o2_ch3cob * M_CH3COB &
                    + k_ch3o2_c6h13o2 * M_C6H13O2 &
                  ) * M_CH3O2 &
-               + 0.03_r8 * k_o3_c3h6 * M_C3H6 * M_O3 &
+                 + 0.03_r8 * k_o3_c3h6 * M_C3H6 * M_O3 &
+                 + 0.15_r8 * k_oh_ch3oh * M_CH3OH * M_OH &
                + k_ch3o2_ch3x_a * M_CH3O2 * M_CH3X &
                + DCH3O2H * M_CH3O2H &
                + (k_ch3o2_isor1 * M_ISOR1 &
@@ -1620,6 +1635,7 @@ contains
                + k_ch3o_o2 * M_CH3O * M_O2 &
                + k_cho_o2 * M_CHO * M_O2 &
                + k_oh_h2o2 * M_OH * M_H2O2 &
+               + 0.85_r8 * k_oh_ch3oh * M_CH3OH &!OH + CH3OH -> CH2OH + H2O -> CH2O + HO2
                + k_o3_oh * M_OH * M_O3 &
                + 0.25_r8 * k_o3_c3h6 * M_C3H6 * M_O3 &
                + k_no_c4h9o2 * M_C4H9O2 * M_NO * fa_no_c4h9o2 * fb_no_c4h9o2 &
@@ -1656,6 +1672,7 @@ contains
                + k_ho2_ch3o2 * M_CH3O2 &
                + k_ho2_radical * M_ARAD &!HO2 + RADICAL --> CH3O2H
                + k_ho2no2_m &
+               + k_ho2_ch3x * M_CH3X & !HO2 + CH3X -> MHP, was missing (added may 2022)
                + DHO2NO2 &
                + RR_HO2_AER(L) &!QAER(L)
                + k_no_ho2_b * M_NO  !NO + HO2 -> HNO3
@@ -2276,19 +2293,26 @@ contains
              + k_o3_ho2 * M_O3 * M_HO2 &
              + k_no_ho2 * M_HO2 * M_NO &
              + 0.15_r8 * k_o3_c3h6 * M_O3 * M_C3H6
-        !// for CH3O2
+        if (.not. LOLD_H2OTREATMENT) PROD_2 = PROD_2 & !// Added MS2022
+               + k_od_ch4_a * M_O1D * M_CH4 &!O(1D) + CH4 -> OH + CH3 !// Added MS2022
+               + k_od_h2 * M_O1D * M_H2 !O(1D) + H2  -> OH + H !// Added MS2022
+
+        !// for CH3 !// Changed MS2022, used to be CH3O2, but that's just wrong
         PROD_2 = PROD_2 &
              + DCH3CHO * M_CH3CHO &
              + k_no_ch3x * M_NO * M_CH3X &
              + k_no_c2h5o2 * M_C2H5O2 * M_NO &
                            * fa_no_c2h5o2 * (1._r8 - fb_no_c2h5o2) &
              + k_no_c3h7o2 * M_C3H7O2 * M_NO &
-                           * fa_no_c3h7o2 * (1._r8 - fb_no_c3h7o2)
-        !// for CH3
+                           * fa_no_c3h7o2 * (1._r8 - fb_no_c3h7o2)&
+             + 0.31_r8 * k_o3_c3h6 * M_O3 * M_C3H6 & !// Moved MS2022
+             + (DACETON_A + 2._r8 * DACETON_B) * M_ACETON !// Moved MS2022
+        if (.not. LOLD_H2OTREATMENT) PROD_2 = PROD_2 &  !// Added MS2022
+             + k_od_ch4_a * M_O1D * M_CH4 !O(1D) + CH4 -> OH + CH3 !// Added MS2022
+        !// for CH3O2 !// Changed MS2022, 
+        !// used to be CH3, which was confusing and only partially correct
         PROD_2 = PROD_2 &
-             + 0.31_r8 * k_o3_c3h6 * M_O3 * M_C3H6 &
-             + k_oh_ch3o2h_a * M_OH * M_CH3O2H &
-             + (DACETON_A + 2._r8 * DACETON_B) * M_ACETON
+             + k_oh_ch3o2h_a * M_OH * M_CH3O2H
 
         !// for OH
         LOSS_2 = &
@@ -2313,6 +2337,12 @@ contains
              + k_oh_ho2no2 * M_HO2NO2 &
              + (k_oh_hcohco_m_a + k_oh_hcohco_m_b + k_oh_hcohco_m_c) * M_HCOHCO &
              + k_oh_rcohco * M_RCOHCO &
+             + k_oh_ch3oh * M_CH3OH  &!OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2 !//MS2022
+             + k_oh_c3h8 * M_C3H8    &!OH + C3H8 + O2 -> C3H7O2 + H2O !// Added MS2022
+             + k_oh_ch3o2h_a * M_CH3O2H &!OH + !// Added MS2022
+             + k_oh_ho2no2 * M_HO2NO2  &!OH + HO2NO2 -> NO2 + H2O + O2 !// Added MS2022
+             + k_oh_pan * M_PAN     &!OH + PAN -> !// Added MS2022
+             + k_oh_h2 * M_H2      !OH + H2 -> H2O + H    c121205 !// Added MS2022
              + 2._r8 * k_oh_oh_m * M_OH  !OH + OH + M -> H2O2 + M
         !// Sulphur reactions
         if (LSULPHUR) LOSS_2 = LOSS_2 &
@@ -2337,7 +2367,8 @@ contains
         !// for CH3O2
         LOSS_3 = &
              k_no_ch3o2 * M_NO &
-             + 2._r8 * k_ch3o2_ch3o2 * M_CH3O2 &
+             + 2._r8 * k_ch3o2_ch3o2_a * M_CH3O2 &
+             + 2._r8 * k_ch3o2_ch3o2_b * M_CH3O2 &
              + k_ch3o2_ch3xx * M_CH3XX &
              + k_ch3o2_c4h9o2 * M_C4H9O2 &
              + k_ch3o2_c2h5o2 * M_C2H5O2 &
@@ -2458,7 +2489,7 @@ contains
              k_ch3o_o2 * M_O2 * M_CH3O &
              + M_C2H4 * (k_oh_c2h4_m * M_OH &
                          + k_o3_c2h4 * M_O3) &
-             + 0.6_r8 * k_ch3o2_ch3o2 * M_CH3O2 * M_CH3O2 &
+             + k_ch3o2_ch3o2_b * M_CH3O2 * M_CH3O2 & !Reaction split update 2022
              + k_ch3o2_ch3x_b * M_CH3O2 * M_CH3X &
              + k_no_c2h5o2 * M_C2H5O2 * M_NO &
                            * fa_no_c2h5o2 * (1._r8 - fb_no_c2h5o2) &
@@ -2475,6 +2506,7 @@ contains
              + k_oh_pan * M_OH * M_PAN &
              + k_oh_ch3o2h_b * M_OH * M_CH3O2H &
              + k_ch3o2_ch3xx * M_CH3O2 * M_CH3XX &
+             + 0.85_r8 * k_oh_ch3oh * M_CH3OH * M_OH &
              + POLLX(13)
         if (.not. LOLD_H2OTREATMENT) PROD = PROD &
              + k_od_ch4_c * M_O1D * M_CH4 !O(1D) + CH4 -> H2 + CH2O
@@ -2498,7 +2530,7 @@ contains
         CHEMPROD(5,13,L) = CHEMPROD(5,13,L) + k_od_ch4_c*M_O1D*M_CH4*DTCH
         CHEMPROD(6,13,L) = CHEMPROD(6,13,L) + k_ch3o_o2*M_O2*M_CH3O*DTCH !not strat
         CHEMPROD(7,13,L) = CHEMPROD(7,13,L) &
-             + (0.6_r8 * k_ch3o2_ch3o2 * M_CH3O2 * M_CH3O2 & 
+             + (k_ch3o2_ch3o2_b * M_CH3O2 * M_CH3O2 & ! Update 2022
                 + k_ch3o2_ch3x_b * M_CH3O2 * M_CH3X &
                 + k_ch3o2_c2h5o2 * M_CH3O2 * M_C2H5O2 &
                                  * (0.25_r8 + 0.5_r8 * (1._r8 - fb_no_c2h5o2)) &
@@ -2509,6 +2541,15 @@ contains
 
         call QSSA(27,'HCHO',DTCH,QLIN,ST,PROD,LOSS,ZC(13,L))
 
+
+ 
+        !//..CH3OH-----------------------------------------------------------
+        !// Added production from CH3O2 + CH3O2 --> CH3OH + HCHO + O2
+        !// May 2022 (masan)
+        PROD = POLLX(52) +  k_ch3o2_ch3o2_b * M_CH3O2 * M_CH3O2
+        LOSS = k_oh_ch3oh * M_OH
+        call QSSA(27,'CH3OH',DTCH,QLIN,ST,PROD,LOSS,ZC(52,L))
+        
 
         !//..CH3CHO----------------------------------------------------------
         PROD = &

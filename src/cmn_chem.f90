@@ -25,8 +25,8 @@ module CMN_CHEM
 
   !// Tracer specific input files
   character(len=80) :: INFILE_T, INFILE_WET, INFILE_DRY
-  character(len=80) :: INFILE_EMIS, INFILE_POLAR_O3LOSS
-  character(len=80) :: INFILE_RES, INFILE_MEGAN, INFILE_LIGHTNING
+  character(len=80) :: INFILE_EMIS !, INFILE_POLAR_O3LOSS
+  ! character(len=80) :: INFILE_RES, INFILE_MEGAN, INFILE_LIGHTNING
 
   !// Basic chemistry & init info:
   logical, dimension(NPAR) ::  LZONE        ! for init, scaling of tracer
@@ -44,7 +44,7 @@ module CMN_CHEM
   !//-----------------------------------------------------------------------
   !// 2D stored as pattern with scale factor for each species
   !// Note that different patterns, including monthly stored as new table
-  integer, parameter :: ETPAR=1800         !// dim. no. of 2-D tables
+  integer, parameter :: ETPAR=2000         !// dim. no. of 2-D tables
   integer :: NE2TBL                        !// actual no. of 2-D tables
   integer :: NM2TBL(ETPAR)   !// Table of months the emissions apply for
   integer :: NY2TBL(ETPAR)   !// Table of years emissions apply for
