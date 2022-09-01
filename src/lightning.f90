@@ -118,8 +118,9 @@ contains
     real(r8), parameter :: Lecmwf_ifs_c36r1_T159 = 7.061138e-17_r8
 
     !// ECMWF oIFS cy38r1
+    real(r8) :: Oecmwf_oifs_c38r1_T159, Lecmwf_oifs_c38r1_T159
     !// T159L60: 1995 - 2005 (MODIS vegetation)
-        real(r8), parameter :: Oecmwf_oifs_c38r1_T159_MODPFT = 4.012695e-14_r8
+    real(r8), parameter :: Oecmwf_oifs_c38r1_T159_MODPFT = 4.012695e-14_r8
     real(r8), parameter :: Lecmwf_oifs_c38r1_T159_MODPFT = 9.542578e-17_r8
     !// Using CLM PFTs to calculate PLAND (1995-2005)
     real(r8), parameter :: Oecmwf_oifs_c38r1_T159_CLMPFT = 4.328769e-14_r8

@@ -275,7 +275,7 @@ program pmain
         !// Set climatological mass, O3 & T above CTM
         call SET_ATM
         !// Find lightning
-        call LIGHTNING_OAS2015(NDAY,NDAYI,DTMET,LNEWM;NMET)
+        call LIGHTNING_OAS2015(NDAY,NDAYI,DTMET,LNEWM,NMET)
         NCLDRAN   = 0
       end if
       call DYN0 (DTMET)             ! process wind/advection fields

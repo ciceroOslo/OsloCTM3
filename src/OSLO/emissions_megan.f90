@@ -343,7 +343,6 @@ contains
     use cmn_parameters, only: secDay
     use cmn_size, only: LOSLOCTROP
     use cmn_ctm, only: NROPSM, IYEAR, JMON
-    use cmn_chem, only: INFILE_MEGAN
     use cmn_sfc, only: StomRes
     use utilities, only: get_free_fileid
     use cmn_oslo, only: METHANEMIS, trsp_idx
@@ -377,7 +376,7 @@ contains
     if (.not. LMEGAN) return
 
     !// Read megan_tables.dat
-    filename = INFILE_MEGAN
+    filename = 'tables/megan_tables.dat'
     ifnr = get_free_fileid()
 
     !//---------------------------------------------------------------------

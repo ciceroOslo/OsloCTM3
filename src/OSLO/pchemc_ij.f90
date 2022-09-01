@@ -2342,8 +2342,8 @@ contains
              + k_oh_ch3o2h_a * M_CH3O2H &!OH + !// Added MS2022
              + k_oh_ho2no2 * M_HO2NO2  &!OH + HO2NO2 -> NO2 + H2O + O2 !// Added MS2022
              + k_oh_pan * M_PAN     &!OH + PAN -> !// Added MS2022
-             + k_oh_h2 * M_H2      !OH + H2 -> H2O + H    c121205 !// Added MS2022
-             + 2._r8 * k_oh_oh_m * M_OH  !OH + OH + M -> H2O2 + M
+             + k_oh_h2 * M_H2      &!OH + H2 -> H2O + H    c121205 !// Added MS2022
+             + 2._r8 * k_oh_oh_m * M_OH  !OH + OH + M -> H2O2 + M!// Added MS2022
         !// Sulphur reactions
         if (LSULPHUR) LOSS_2 = LOSS_2 &
              + k_oh_dms_a * M_DMS &

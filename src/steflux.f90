@@ -1536,7 +1536,7 @@ contains
     !// Ole Amund Sovde, February 2012
     !//---------------------------------------------------------------------
     use cmn_size, only: LLINOZ
-    use cmn_chem, only: E90VMR_TP, O3iso1, O3iso2, INFILE_POLAR_O3LOSS
+    use cmn_chem, only: E90VMR_TP, O3iso1, O3iso2
     use utilities, only: get_free_fileid
     !//---------------------------------------------------------------------
     implicit none
