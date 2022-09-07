@@ -2041,7 +2041,7 @@ contains
        !// 16    16    Barren or Sparsely Vegetated
        !// 17    17    Unclassified
        !//------------------------------------------------------------------
-       if (nPft .gt. NVGPAR) then
+       if (nPft .gt. NVGPAR+1) then
           write(6,'(a,2i5)') f90file//':'//subr// &
                ': nPft / NVGPAR mismatch: ',nPft,NVGPAR
           stop
