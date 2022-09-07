@@ -111,7 +111,7 @@ PFZON  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
 '$CTM3_INPUT/GROWING_SEASON/GROWING_SEASON_2005.nc'
 --- tracer specific section ---
  T  1  LCONT T: start from restart file, F: set START_AVG: 0: start from STT=0, 1: CTM3 average, 2: CTM2 average
-    F  LNCR T: use restart file in netCDF, F: old .sav format
+    T  LNCR T: use restart file in netCDF, F: old .sav format
 --- species information / tracer list --- read from the following file
 'tables/tracer_list_nitrate.d'
 --- General multi-species wet scavenging data set:  call WETSET_CTM3
@@ -120,22 +120,6 @@ PFZON  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
 'tables/scavenging_dry.inp'            DRY deposition data set
 --- Emission list ---
 'tables/dummy_Ltracer_emis_ceds17_2005_megan_gfed4blhdaily.inp'    See ./tables/ for more
---- Radiation (FASTJX) ---
-'tables/FJX_spec.dat'                   spectral data
-'tables/FJX_scat.dat'                   mie scattering data
-'tables/FJX_UMaer.dat'                  UMich aerosol optical data
-'tables/ratj_oc.d'                      FASTJ->Oslo CTM3 species mapping
-'tables/ratO1D.d'                       FASTJ->Oslo CTM3 species mapping O1D
-'tables/atmos_std.dat'                  T and O3 climatology
---- Polar Ozone Loss ---
-'tables/polar_o3loss.dat'
---- Chemical rates ---
-'tables/r42het_T159.dat'
---- MEGAN tables ---
-'tables/megan_tables.dat'
---- Lightning distribution ---
-'tables/light_dist.ott2010.dat'         Ott et al [JGR, 2010]
---------------------------------------------------------------------------------
 ---- DIAGNOSTICS ---------------------------------------------------------------
 LDUMP3HRS - T: Write diagnostic 3 hourly output and monthly means of defined tracers; F: Do not
    all air trp sul slt min nit bio moa ffc bfc soa ntr
