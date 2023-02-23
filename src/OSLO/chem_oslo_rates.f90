@@ -580,6 +580,7 @@ contains
        r_ch3o2_ch3o2(I)  = 9.5e-14_r8 * exp(390._r8 * ZTEM) !JPL06, 20080612
        r_ch3o2_ch3o2_a(I)  =  r_ch3o2_ch3o2(I) / (1._r8 + 1._r8/(26.6_r8*exp(-1130._r8 * ZTEM)))!JPL15, 201510
        r_ch3o2_ch3o2_b(I)  =  r_ch3o2_ch3o2(I) / (1._r8 + 26.6_r8*exp(-1130._r8 * ZTEM))!JPL15, 201510
+
        
        !// CH3O2 + CH3X --> CH3O + CH3 + (CO2 + O2)  R2237A
        !//              --> HCHO + (CH3COOH + O2)    R2237B
@@ -1042,7 +1043,7 @@ contains
     real(r8) :: P42H(LPARW)
     real(r8) :: WG(J159),WGT(J159), WY(J159+1),YBEDG(J159+1)
     real(r8) :: aw(J159), delta
-    integer :: J,J2,L,LL,ierr,itest
+    integer :: J,J2,L,LL,ierr
     character(len=80) :: filename
     !// --------------------------------------------------------------------
 

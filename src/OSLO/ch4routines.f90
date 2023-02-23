@@ -43,6 +43,7 @@ module ch4routines
   !//   subroutine ch4surface_retro
   !//   subroutine READCH4
   !//   subroutine setch4sfc
+  !//   subroutine seth2sfc
   !//   subroutine set_ch4_stt
   !//   subroutine updateSOILUPTAKEbousquet
   !//   subroutine read_ch4sfc4soiluptake
@@ -63,7 +64,8 @@ module ch4routines
   !// 1: HYMN (T42, will be interpolated to model resolution)
   !// 2: POET
   !// 3: RETRO
-  integer, parameter :: CH4TYPE = 1
+  !// 4: HYDROGEN
+  integer, parameter :: CH4TYPE = 4
 
   !// Fields for CH4 soil uptake (i.e. dry deposition process in the model)
   real(r8) :: CH4SOILUPTAKE(IDBLK,JDBLK,MPBLK)
@@ -74,7 +76,7 @@ module ch4routines
   !// variables, although Fortran claims it may not be.
   save
   private
-  public update_ch4surface, setch4sfc, set_ch4_stt, scale_ch4_stt, &
+  public update_ch4surface, setch4sfc, seth2sfc, set_ch4_stt, scale_ch4_stt, &
        updateSOILUPTAKEbousquet, ch4drydep_bousquet, reportsfcch4
   !// ----------------------------------------------------------------------
 
@@ -88,6 +90,7 @@ contains
     !// Amund Sovde, March 2011
     !// --------------------------------------------------------------------
     use cmn_oslo, only: trsp_idx, Xtrsp_idx, CH4FIELD, METHANEMIS
+    use strat_h2o, only: set_ch4_hydrogen
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
@@ -113,13 +116,16 @@ contains
        !// HYMN (default)
        call ch4surface_hymn()
        !// Scale hymn data - uses MYEAR for scaling.
-       !call ch4surface_scale_hymn()
+       call ch4surface_scale_hymn()
     else if (CH4TYPE .eq. 2) then
        !// POET
        call ch4surface_poet(2000)
     else if (CH4TYPE .eq. 3) then
        !// RETRO
        call ch4surface_retro(2000)
+    else if (CH4TYPE .eq. 4) then
+       !// HYDROGEN
+       call set_ch4_hydrogen()
     else
        write(6,'(a,i5)') f90file//':'//subr// &
             ': No such surface field type for CH4: ',CH4TYPE
@@ -264,14 +270,14 @@ contains
     !// Amund Sovde Haslerud, January 2017
     !// --------------------------------------------------------------------
     use cmn_met, only: MYEAR
-    use cmn_oslo, only: CH4FIELD
+    use cmn_oslo, only: CH4FIELD, HISTYEAR
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
     !// Input
 
     !// Local parameters
-    integer, parameter :: nObs = 33
+    integer, parameter :: nObs = 43
     real(r8), dimension(nObs), parameter :: ANNUAL_CH4 = &
       (/ 1644.56_r8, 1657.39_r8, 1669.79_r8, 1682.08_r8, 1693.18_r8, &
          1704.10_r8, 1714.00_r8, 1724.64_r8, 1735.35_r8, 1736.38_r8, &
@@ -279,28 +285,38 @@ contains
          1772.00_r8, 1773.00_r8, 1771.04_r8, 1772.59_r8, 1776.92_r8, &
          1776.94_r8, 1773.96_r8, 1774.69_r8, 1781.14_r8, 1786.77_r8, &
          1793.21_r8, 1798.65_r8, 1803.01_r8, 1808.23_r8, 1813.32_r8, &
-         1822.49_r8, 1833.99_r8, 1842.99_r8 /)
+         1822.49_r8, 1833.99_r8, 1842.99_r8, 1849.74_r8, &
+         1858.19_r8, 1868.93_r8, 1868.93_r8,&
+         1855.46_r8,1843.58_r8,1832.45_r8,1740.22_r8,1604.82_r8,1492.65_r8 /) !Moderate Green
+ !        1853.15_r8,1837.50_r8,1820.91_r8,1657.04_r8,1453.38_r8,1317.04_r8 /) !Strong Green
+         ! 1861.37_r8,1854.88_r8,1849.34_r8,1830.15_r8,1799.63_r8,1760.26_r8 /) !Base
+         !1857.89_r8,1849.98_r8,1844.59_r8,1827.91_r8,1798.86_r8,1760.00_r8 /) !TwoYearBlip
+
+
+!         1859.03_r8,1852.99_r8,1850.32_r8,1869.17_r8,1873.56_r8,1838.34_r8 /) !Fossil Fuel
     integer, dimension(nObs), parameter :: ANNUAL_YEAR = &
        (/ 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, &
           1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, &
           2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, &
-          2014, 2015, 2016 /)
+          2014, 2015, 2016, 2017, &
+          2018, 2019, 2020, &
+          2021,2022,2023,2030,2040,2050 /)
 
     integer :: YSC, YCH4
     real(r8) :: SCALE
     !// --------------------------------------------------------------------
     character(len=*), parameter :: subr='ch4surface_scale_hymn'
     !// --------------------------------------------------------------------
-
+    !// RBS Historical simulation. Replace MYEAR with HISTYEAR
     !// Scale to observed year, but not outside the range
-    if (MYEAR .lt. ANNUAL_YEAR(1)) then
+    if (HISTYEAR .lt. ANNUAL_YEAR(1)) then
        YSC = 1 !// Use the first year (1984)
-    else if (MYEAR .gt. maxval(ANNUAL_YEAR)) then
+    else if (HISTYEAR .gt. maxval(ANNUAL_YEAR)) then
        YSC = nObs !// Use the last year (2015)
     else
        !// Scale to year
        do YSC = 1, nObs
-          if (MYEAR .eq. ANNUAL_YEAR(YSC)) then
+          if (HISTYEAR .eq. ANNUAL_YEAR(YSC)) then
              exit
           end if
        end do
@@ -621,6 +637,67 @@ contains
 
     !// --------------------------------------------------------------------
   end subroutine setch4sfc
+  !// ----------------------------------------------------------------------
+  !//
+  !// RBS, add a similar subroutine for H2
+  !// 
+  !// ----------------------------------------------------------------------
+  subroutine seth2sfc(BTT,BTTBCK,AIRB,MP)
+    !// --------------------------------------------------------------------
+    !// Set H2 at surface to keep it constant.
+    !// H2 field is read in in routine set_h2_eurohydros
+    !//
+    !// Amund Sovde, October 2008
+    !// --------------------------------------------------------------------
+    use cmn_precision, only: r8
+    use cmn_size, only: LPAR, NPAR, IDBLK, JDBLK
+    use cmn_ctm, only: MPBLKIB, MPBLKIE, MPBLKJB, MPBLKJE
+    use cmn_chem, only: TMOLMIX2MASSMIX
+    use cmn_oslo, only: trsp_idx, Xtrsp_idx, XTMOLMIX2MASSMIX, &
+         H2FIELD, XSTT
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    real(r8), dimension(LPAR,NPAR,IDBLK,JDBLK), intent(inout) :: BTT, BTTBCK
+    real(r8), dimension(LPAR,IDBLK,JDBLK), intent(in) :: AIRB
+    integer, intent(in) :: MP
+    !// Locals
+    integer :: I,II,J,JJ, TNR, XTNR
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr='seth2sfc'
+    !// --------------------------------------------------------------------
+
+    !// Return if H2 is not included
+    if (trsp_idx(113).lt.0 .and. Xtrsp_idx(113).lt.0) return
+
+    TNR = trsp_idx(113)
+    XTNR = Xtrsp_idx(113)
+
+
+    !// Loop over latitude (J is global, JJ is block)
+    do J = MPBLKJB(MP), MPBLKJE(MP)
+       JJ    = J - MPBLKJB(MP) + 1
+
+       !// Loop over longitude (I is global, II is block)
+       do I = MPBLKIB(MP),MPBLKIE(MP)
+          II    = I - MPBLKIB(MP) + 1
+
+          !// Set ch4 (mass) from vmr
+          if (TNR .gt. 0) then
+             BTT(1,TNR,II,JJ) = H2FIELD(I,J)*AIRB(1,II,JJ) &
+                                * TMOLMIX2MASSMIX(TNR)
+             !// Resetting the diagnostics also
+             BTTBCK(1,TNR,II,JJ) =  BTT(1,TNR,II,JJ)
+          else if (XTNR .gt. 0) then
+             XSTT(1,XTNR,I,J) = H2FIELD(I,J)*AIRB(1,II,JJ) &
+                                * XTMOLMIX2MASSMIX(XTNR)
+          end if
+
+       end do !// do I = MPBLKIB(MP), MPBLKIE(MP)
+    end do !// do J = MPBLKJB(MP), MPBLKJE(MP)
+
+    !// --------------------------------------------------------------------
+  end subroutine seth2sfc
   !// ----------------------------------------------------------------------
 
 

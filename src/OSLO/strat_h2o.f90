@@ -56,7 +56,8 @@ module strat_h2o
   !// ----------------------------------------------------------------------
 
   !// Switch to use old stratospheric H2O treatment.
-  logical, parameter :: LOLD_H2OTREATMENT = .true.
+  !RBS-H2 logical, parameter :: LOLD_H2OTREATMENT = .true.
+  logical, parameter :: LOLD_H2OTREATMENT = .false.
 
   !// Sum of H2+2CH4+H2O:e sumH2 = 7.72ppm (Zöger et al, JGR 1999, vol 104,
   !// D1, pp 1817-1825) OLD VALUE: 6.97d-6
@@ -83,7 +84,7 @@ module strat_h2o
   private
   public strat_h2o_init, set_strat_h2o_b4chem, &
        reset_trop_h2o, strat_h2o_ubc2, strat_h2o_max, &
-       set_d_h2o, set_h2_eurohydros, &
+       set_d_h2o, set_h2_eurohydros, set_h2_hydrogen,set_ch4_hydrogen,&
        LOLD_H2OTREATMENT, str_h2o, zc_strh2o, sumH2, &
        strat_h2o_init_clim, set_trop_h2o_b4trsp_clim
   !// ----------------------------------------------------------------------
@@ -886,8 +887,178 @@ contains
     !// --------------------------------------------------------------------
   end subroutine zc_strh2o
   !// ----------------------------------------------------------------------
+ subroutine set_ch4_hydrogen
+    !// --------------------------------------------------------------------
+    !// Initialize CH4 based on input4MIPs
+    !// Fields provided by Marit Sanstad @CICERO.
+    !// Monthly fields
+    !//
+    !// Ragnhild Bieltvedt Skeie, February 2021
+    !// --------------------------------------------------------------------
+    use cmn_size, only: IPAR, JPAR
+    use cmn_ctm, only: JMON, &
+         XDEDG, YDEDG, AREAXY
+    use regridding, only: E_GRID
+    use cmn_parameters, only: A0, CPI180
+    use ncutils, only: GET_NETCDF_VAR_3D
+    use emisutils_oslo, only: get_xyedges
+    use cmn_oslo, only: CH4FIELD
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    !// Input
+    !logical, intent(in) :: LNEW_MONTH
+    !// Local parameters
+    character(len=100)  :: FILENAME
 
+    integer, parameter  :: ntime=12
+    integer, parameter  :: nlat=180
+    integer, parameter  :: nlon=360
+    real(r8)            :: R8XYT(nlon,nlat,ntime)
+    real(r8)            :: R8XY(nlon,nlat)
+    integer, parameter :: I1x1 = 360,  J1x1 = 180
+    real(r8) :: XBEDGE(I1x1+1), YBEDGE(J1x1+1), XYBOX(J1x1)
+    real(r8) :: EBOX(I1x1,J1x1)
+    real(r8),parameter :: scale_fact = 1.0_r8 !1.1_r8 !1.0_r8 
+    integer :: J
+    real(r8) :: tempfield(IPAR,JPAR)
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr='set_ch4_hydrogen'
+    !// --------------------------------------------------------------------
+    !//
+    !// Only update field every month
+    !if (.not.LNEW_MONTH) return
 
+    write(6,'(a)') f90file//':'//subr//': CH4 hydrogen'
+    write(6,'(a,f6.1)') 'Scale factor to be used: ' , scale_fact
+
+    !// Make sure to move this file to the work-directory
+    FILENAME = 'methane_concentrations_1by1.nc'
+
+    write(6,'(a)') FILENAME
+    write(6,'(a,i3)') 'Update surface field for month ' , JMON
+
+    call get_netcdf_var_3d(FILENAME, 'mole_fraction_of_methane_in_air', R8XYT, nlon,nlat,ntime )
+   
+    !// Choose current month
+    !// Scale to mixing ratios 
+    !// Do the perturbation
+    R8XY(:,:) = R8XYT(:,:,JMON)*1.e-9_r8*scale_fact 
+
+    print*,' Need to be interpolated!' 
+    !// Interpolate field to grid
+    !// Should be 0-360, -90-90, do not need to shift.
+
+    call get_xyedges(I1x1,J1x1,XBEDGE,YBEDGE,1) !1= Lower-left edge at (0,90S)
+
+    !// Grid box areas
+    do J=1,J1x1
+       XYBOX(J) =  A0*A0 * CPI180*(XBEDGE(2)-XBEDGE(1)) &
+            * (sin(CPI180*YBEDGE(J+1)) - sin(CPI180*YBEDGE(J)))
+    end do
+    !// Multiply to get per area
+    do J = 1, J1x1
+       EBOX(:,J) = R8XY(:,J)*XYBOX(J)
+    end do
+    
+    
+    !// Interpolate
+    call E_GRID(EBOX(:,:),XBEDGE,YBEDGE,I1x1,J1x1, &
+         tempfield,XDEDG,YDEDG,IPAR,JPAR,1)
+    
+    !// Divide by area
+    !//RRUN(:,:) = RRUN(:,:) / AREAXY(:,:)
+    CH4FIELD(:,:) = tempfield(:,:)/AREAXY(:,:)
+    !// --------------------------------------------------------------------
+  end subroutine set_ch4_hydrogen
+  !// ---------------------------------------------------------------------
+
+  subroutine set_h2_hydrogen(LNEW_MONTH)
+    !// --------------------------------------------------------------------
+    !// Initialize H2 based on surface fields generated from observations.
+    !// Fields provided by Marit Sanstad @CICERO.
+    !// Monthly fields
+    !//
+    !// Ragnhild Bieltvedt Skeie, February 2021
+    !// --------------------------------------------------------------------
+    use cmn_size, only: IPAR, JPAR
+    use cmn_ctm, only: JMON, &
+         XDEDG, YDEDG, AREAXY
+    use regridding, only: E_GRID
+    use cmn_parameters, only: A0, CPI180
+    use ncutils, only: GET_NETCDF_VAR_3D
+    use emisutils_oslo, only: get_xyedges
+    use cmn_oslo, only: H2FIELD
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    !// Input
+    logical, intent(in) :: LNEW_MONTH
+    !// Local parameters
+    character(len=100)  :: FILENAME
+
+    integer, parameter  :: ntime=12
+    integer, parameter  :: nlat=180
+    integer, parameter  :: nlon=360
+    real(r8)            :: R8XYT(nlon,nlat,ntime)
+    real(r8)            :: R8XY(nlon,nlat)
+    integer, parameter :: I1x1 = 360,  J1x1 = 180
+    real(r8) :: XBEDGE(I1x1+1), YBEDGE(J1x1+1), XYBOX(J1x1)
+    real(r8) :: EBOX(I1x1,J1x1)
+    real(r8),parameter :: scale_fact = 1.0_r8 !1.0_r8 !1.1_r8
+    integer :: J
+    real(r8) :: tempfield(IPAR,JPAR)
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr='set_h2_hydrogen'
+    !// --------------------------------------------------------------------
+    !//
+    !// Only update field every month
+    if (.not.LNEW_MONTH) return
+
+    write(6,'(a)') f90file//':'//subr//': H2 hydrogen'
+    write(6,'(a,f6.1)') 'Scale factor to be used: ' , scale_fact
+
+    !// Make sure to move this file to the work-directory
+    FILENAME = 'hydrogen_concentrations_average_lowess.nc'
+
+    write(6,'(a)') FILENAME
+    write(6,'(a,i3)') 'Update surface field for month ' , JMON
+
+    call get_netcdf_var_3d(FILENAME, 'mole_fraction_of_molecular_hydrogen_in_air', R8XYT, nlon,nlat,ntime )
+   
+    !// Choose current month
+    !// Scale to mixing ratios 
+    !// Do the perturbation
+    R8XY(:,:) = R8XYT(:,:,JMON)*1.e-9_r8*scale_fact 
+    !R8XY(:,:) = R8XYT(:,:,JMON)*0.0+531.74*1.e-9_r8*scale_fact 
+
+    print*,' Need to be interpolated!' 
+    !// Interpolate field to grid
+    !// Should be 0-360, -90-90, do not need to shift.
+
+    call get_xyedges(I1x1,J1x1,XBEDGE,YBEDGE,1) !1= Lower-left edge at (0,90S)
+
+    !// Grid box areas
+    do J=1,J1x1
+       XYBOX(J) =  A0*A0 * CPI180*(XBEDGE(2)-XBEDGE(1)) &
+            * (sin(CPI180*YBEDGE(J+1)) - sin(CPI180*YBEDGE(J)))
+    end do
+    !// Multiply to get per area
+    do J = 1, J1x1
+       EBOX(:,J) = R8XY(:,J)*XYBOX(J)
+    end do
+    
+    
+    !// Interpolate
+    call E_GRID(EBOX(:,:),XBEDGE,YBEDGE,I1x1,J1x1, &
+         tempfield,XDEDG,YDEDG,IPAR,JPAR,1)
+    
+    !// Divide by area
+    !//RRUN(:,:) = RRUN(:,:) / AREAXY(:,:)
+    H2FIELD(:,:) = tempfield(:,:)/AREAXY(:,:)
+    !// --------------------------------------------------------------------
+  end subroutine set_h2_hydrogen
+  !// ----------------------------------------------------------------------
 
   !// ----------------------------------------------------------------------
   subroutine set_h2_eurohydros()
@@ -899,10 +1070,13 @@ contains
     !// --------------------------------------------------------------------
     use cmn_precision, only: r4
     use cmn_size, only: LOSLOCSTRAT
-    use cmn_ctm, only: AIR, STT, AREAXY
+    use cmn_ctm, only: AIR, STT, AREAXY,xdedg, ydedg !RBS
+    use cmn_parameters, only: a0, CPI180, ZPI180 !RBS
+    use grid, only: GAUSST2 !RBS
+    use regridding, only: E_GRID !RBS
     use cmn_met, only: ZOFLE
     use utilities, only: get_free_fileid
-    use cmn_oslo, only: XSTT
+    use cmn_oslo, only: XSTT, H2FIELD
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
@@ -912,10 +1086,21 @@ contains
     character(len=80) :: FNAME
     integer :: ifnr, io_err, IR, JR, LR
     real(r4)  :: STTH2(IPAR,JPAR,LPAR)
+    !// For interpolation
+    integer,parameter :: IT42=128, JT42=64
+    real(r4) :: STTH2_ORG(IT42,JT42,LPAR),STTH2_ORG_READ(IT42,JT42,LPAR)
+    real(r8) :: INCH8(IT42,JT42),T42R8XY(IT42,JT42), dx
+    real(r8) :: T42AREA, T42XDEDG(IT42+1), T42YDEDG(JT42+1)
+    real(r8) :: WGAULAT(JT42),WGAUWT(JT42), WYEDG1P1(JT42+1)
+    real(r8) :: YEDG1P1(JT42+1)
+    real(r8) :: tempfield(IPAR,JPAR)
+    real(r8) :: scale_fact !For testing, scale only surfconc
     !// --------------------------------------------------------------------
     character(len=*), parameter :: subr = 'set_h2_eurohydros'
     !// --------------------------------------------------------------------
 
+    scale_fact = 0.65 !1.0 !1.5 !0.65 ! 1.5
+    
     !// If no stratospheric chemistry, skip H2O
     if (.not. LOSLOCSTRAT) return
 
@@ -951,43 +1136,129 @@ contains
        print*,'* Resolution problems for '//trim(FNAME)
        print*,'  file:',IR,JR,LR
        print*,'  run: ',IPAR,JPAR,LPAR
-       stop
-    end if
-    read(ifnr) STTH2
+    
+       print*,' Need to be interpolated!' 
+       !RBS stop
+       if (LR.ne.LPAR) then
+          print*,'* Resolution problems for '//trim(FNAME)
+          print*,'  file:',IR,JR,LR
+          print*,'  run: ',IPAR,JPAR,LPAR
+          stop
+       endif
+    end if   
+    
+    read(ifnr) STTH2_ORG_READ
     close(ifnr)
+
+    STTH2_ORG_READ(:,:,:) = STTH2_ORG_READ(:,:,:)*scale_fact 
+    !// Switch from -180:180 to 0:360
+    do J = 1, JR
+       STTH2_ORG(1:IR/2,J,:) = STTH2_ORG_READ(IR/2+1:IR,J,:)
+       STTH2_ORG(IR/2+1:IR,J,:) = STTH2_ORG_READ(1:IR/2,J,:)
+    end do
+
+
+
+
+    !RBS++
+    if (IPAR .ne. IT42) then
+       !Basert på subr='ch4surface_hymn'
+       
+       !// Interpolate - must multiply by area before interpolating
+       !// Find input edges
+       !// Zonal
+       dx = 360._r8/real(IT42,r8)
+       T42XDEDG(1) = -0.5*dx
+       do J=2,IT42+1
+          T42XDEDG(J) = T42XDEDG(J-1) + dx
+       end do
+
+
+       !// Meridional (gaussian, as in p-grid.f)
+       call GAUSST2(JT42,WGAULAT,WGAUWT)
+       WYEDG1P1(1) = -1._r8
+       do J = 2,JT42/2
+          WYEDG1P1(J) = WYEDG1P1(J-1) + WGAUWT(J-1)
+       end do
+       WYEDG1P1(JT42/2+1) = 0._r8
+       do J = JT42/2+2,JT42+1
+          WYEDG1P1(J) = -WYEDG1P1(JT42+2-J)
+       end do
+       !// T42 Y-edged (degrees)
+       do J = 1,JT42+1
+          T42YDEDG(J) = ZPI180 * asin(WYEDG1P1(J))
+       end do
+
+       do L = 1,LPAR !RBS
+          INCH8(:,:) = real(STTH2_ORG(:,:,L), r8) !One level at the time.
+          !// Grid box areas, multiply mmr-field with area
+          do J=1,JT42
+             T42AREA =  A0*A0 * CPI180*(T42XDEDG(2)-T42XDEDG(1)) &
+                  * (sin(CPI180*T42YDEDG(J+1)) - sin(CPI180*T42YDEDG(J)))
+
+             T42R8XY(:,J) = INCH8(:,J) * T42AREA
+          end do
+
+
+          Call E_GRID(T42R8XY,T42XDEDG,T42YDEDG,IT42,JT42, &
+               tempfield,XDEDG,YDEDG,IPAR,JPAR,1)
+
+          !// Finally divide by current area
+          STTH2(:,:,L) = tempfield(:,:)/AREAXY(:,:)
+       end do
+
+
+    else
+       !Continue
+    endif
+
+
+    !RBS--
+
 
     if (trsp_idx(113) .gt. 0) then
        old_h2 = sum(STT(:,:,:,trsp_idx(113)))
     else 
        old_h2 = sum(XSTT(:,Xtrsp_idx(113),:,:))
     end if
+    
+    !Keep surface field in volume mixing ratio
+    H2FIELD(:,:) = STTH2(:,:,1)
 
-    !// Data is volume mixing ratio; convert to mass
-    if (trsp_idx(113) .gt. 0) then
-       STT(:,:,:,trsp_idx(113)) = real(STTH2(:,:,:), r8) &
-                                  * AIR(:,:,:) * 2._r8 / M_AIR
-       rsum = sum(STT(:,:,:,trsp_idx(113)))
-    else if (Xtrsp_idx(113) .gt. 0) then
-       do MP=1,MPBLK
-          do J = MPBLKJB(MP), MPBLKJE(MP)
-             JJ    = J - MPBLKJB(MP) + 1
-             do I = MPBLKIB(MP), MPBLKIE(MP)
-                II    = I - MPBLKIB(MP) + 1
-                do L = 1, LPAR
-                   XSTT(L,Xtrsp_idx(113),I,J) = real(STTH2(I,J,L), r8) &
-                                *AIR(I,J,L) * 2._r8 / M_AIR
+    !If the whole field is initialized
+    if(.true.) then
+        write(*,'(a)') 'Shuld not be here if not spinup sim.'
+        !stop
+
+       !// Data is volume mixing ratio; convert to mass
+       if (trsp_idx(113) .gt. 0) then
+          !RBS already converted STT(:,:,:,trsp_idx(113)) = real(STTH2(:,:,:), r8) &
+          STT(:,:,:,trsp_idx(113)) = STTH2(:,:,:) &
+               * AIR(:,:,:) * 2._r8 / M_AIR
+          rsum = sum(STT(:,:,:,trsp_idx(113)))
+       else if (Xtrsp_idx(113) .gt. 0) then
+          do MP=1,MPBLK
+             do J = MPBLKJB(MP), MPBLKJE(MP)
+                JJ    = J - MPBLKJB(MP) + 1
+                do I = MPBLKIB(MP), MPBLKIE(MP)
+                   II    = I - MPBLKIB(MP) + 1
+                   do L = 1, LPAR
+                      !                   XSTT(L,Xtrsp_idx(113),I,J) = real(STTH2(I,J,L), r8) &
+                      XSTT(L,Xtrsp_idx(113),I,J) = STTH2(I,J,L) &
+                           *AIR(I,J,L) * 2._r8 / M_AIR
+                   end do
                 end do
              end do
           end do
-       end do
-       rsum = sum(XSTT(:,Xtrsp_idx(113),:,:))
-    else
-       write(6,'(a)') f90file//':'//subr//': How dit we get here???'
-       stop
+          rsum = sum(XSTT(:,Xtrsp_idx(113),:,:))
+       else
+          write(6,'(a)') f90file//':'//subr//': How did we get here???'
+          stop
+       end if
+
+       write(*,'(a,es14.7,a,es14.7)') '* Old H2: ',old_h2,' New H2: ',rsum
     end if
-
-    write(*,'(a,es14.7,a,es14.7)') '* Old H2: ',old_h2,' New H2: ',rsum
-
+    
     !// --------------------------------------------------------------------
   end subroutine set_h2_eurohydros
   !// ----------------------------------------------------------------------

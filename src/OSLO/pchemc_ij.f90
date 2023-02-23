@@ -1601,8 +1601,8 @@ contains
                    + k_ch3o2_ch3cob * M_CH3COB &
                    + k_ch3o2_c6h13o2 * M_C6H13O2 &
                  ) * M_CH3O2 &
-                 + 0.03_r8 * k_o3_c3h6 * M_C3H6 * M_O3 &
-                 + 0.15_r8 * k_oh_ch3oh * M_CH3OH * M_OH &
+               + 0.03_r8 * k_o3_c3h6 * M_C3H6 * M_O3 &
+               + 0.15_r8 * k_oh_ch3oh * M_CH3OH * M_OH &
                + k_ch3o2_ch3x_a * M_CH3O2 * M_CH3X &
                + DCH3O2H * M_CH3O2H &
                + (k_ch3o2_isor1 * M_ISOR1 &
@@ -2279,6 +2279,16 @@ contains
 
         if (L .eq. 1) DDDIAG(6) = DDDIAG(6) + VDEP_L(6) * M_CO * DTCH
 
+        !RBS ADDED
+        CHEMLOSS(1,6,L) = CHEMLOSS(1,6,L) + LOSS * M_CO * DTCH
+        CHEMLOSS(2,6,L) = CHEMLOSS(2,6,L) + VDEP_L(6) * M_CO * DTCH
+        CHEMLOSS(3,6,L) = CHEMLOSS(3,6,L) + (k_oh_co_a + k_oh_co_b) * M_OH * M_CO*DTCH
+        
+        CHEMPROD(1,6,L) = CHEMPROD(1,6,L) + PROD * DTCH
+        CHEMPROD(2,6,L) = CHEMPROD(2,6,L) + DBCH2O * M_CH2O * DTCH
+        CHEMPROD(3,6,L) = CHEMPROD(3,6,L) + k_cho_o2 * M_O2 * M_CHO * DTCH
+        !RBS ADDED END
+        
         call QSSA(24,'CO',DTCH,QLIN,ST,PROD,LOSS,ZC(6,L))
 
 
@@ -2304,7 +2314,7 @@ contains
              + k_no_c2h5o2 * M_C2H5O2 * M_NO &
                            * fa_no_c2h5o2 * (1._r8 - fb_no_c2h5o2) &
              + k_no_c3h7o2 * M_C3H7O2 * M_NO &
-                           * fa_no_c3h7o2 * (1._r8 - fb_no_c3h7o2)&
+                           * fa_no_c3h7o2 * (1._r8 - fb_no_c3h7o2) &
              + 0.31_r8 * k_o3_c3h6 * M_O3 * M_C3H6 & !// Moved MS2022
              + (DACETON_A + 2._r8 * DACETON_B) * M_ACETON !// Moved MS2022
         if (.not. LOLD_H2OTREATMENT) PROD_2 = PROD_2 &  !// Added MS2022
@@ -2313,7 +2323,7 @@ contains
         !// used to be CH3, which was confusing and only partially correct
         PROD_2 = PROD_2 &
              + k_oh_ch3o2h_a * M_OH * M_CH3O2H
-
+        !!// MS2022 moved two terms that where for CH3 from here
         !// for OH
         LOSS_2 = &
              k_no2_oh_m * M_NO2 &
@@ -2339,11 +2349,12 @@ contains
              + k_oh_rcohco * M_RCOHCO &
              + k_oh_ch3oh * M_CH3OH  &!OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2 !//MS2022
              + k_oh_c3h8 * M_C3H8    &!OH + C3H8 + O2 -> C3H7O2 + H2O !// Added MS2022
+             + 2._r8 * k_oh_oh_m * M_OH & !OH + OH + M -> H2O2 + M !// Added MS2022
              + k_oh_ch3o2h_a * M_CH3O2H &!OH + !// Added MS2022
              + k_oh_ho2no2 * M_HO2NO2  &!OH + HO2NO2 -> NO2 + H2O + O2 !// Added MS2022
              + k_oh_pan * M_PAN     &!OH + PAN -> !// Added MS2022
-             + k_oh_h2 * M_H2      &!OH + H2 -> H2O + H    c121205 !// Added MS2022
-             + 2._r8 * k_oh_oh_m * M_OH  !OH + OH + M -> H2O2 + M!// Added MS2022
+             + k_oh_h2 * M_H2      !OH + H2 -> H2O + H    c121205 !// Added MS2022
+             
         !// Sulphur reactions
         if (LSULPHUR) LOSS_2 = LOSS_2 &
              + k_oh_dms_a * M_DMS &
@@ -2394,6 +2405,20 @@ contains
 
         PROD = PROD + 0.5_r8 * PROD_2
 
+        !RBS ADDED
+        CHEMLOSS(1,16,L) = CHEMLOSS(1,16,L) + LOSS * ZC(16,L) * DTCH
+        CHEMLOSS(2,16,L) = CHEMLOSS(2,16,L) + k_oh_ch3o2h_a * M_OH * M_CH3O2H*DTCH
+        CHEMLOSS(3,16,L) = CHEMLOSS(3,16,L) + k_oh_ch3o2h_b * M_OH * M_CH3O2H*DTCH
+        CHEMLOSS(4,16,L) = CHEMLOSS(4,16,L) + 0.5_r8 * DCH3O2H* M_CH3O2H*DTCH
+        CHEMLOSS(5,16,L) = CHEMLOSS(5,16,L) + 0.5_r8 * (LOSS_2 * M_OH)*DTCH 
+        CHEMLOSS(6,16,L) = CHEMLOSS(6,16,L) + 0.5_r8 * (LOSS_3 * M_CH3O2)*DTCH 
+
+        CHEMPROD(1,16,L) = CHEMPROD(1,16,L) + PROD * DTCH
+        CHEMPROD(2,16,L) = CHEMPROD(2,16,L) + 0.5_r8 * PROD_2*DTCH
+        CHEMPROD(3,16,L) = CHEMPROD(3,16,L) + k_ho2_radical * M_HO2 * M_ARAD* DTCH
+        CHEMPROD(4,16,L) = CHEMPROD(4,16,L) + 0.5_r8 * k_ho2_ch3o2 * M_HO2 * M_CH3O2* DTCH
+        CHEMPROD(5,16,L) = CHEMPROD(5,16,L) + (k_ho2_ch3x * M_HO2  + k_ch3x_ch3x * M_CH3X) * M_CH3X* DTCH
+        
         call QSSA(25,'CH3O2H',DTCH,QLIN,ST,PROD,LOSS,ZC(16,L))
 
 
@@ -2459,18 +2484,21 @@ contains
         !// -----------------------------------------------------------------
         if (.not. LOLD_H2OTREATMENT) then
            !//..H2-----------------------------------------------------------
-           PROD = &
+           PROD = POLLX(113) + &
                 DBCH2O * M_CH2O       &! CH2O + hv   -> H2 + CO
                 + k_od_ch4_c * M_O1D *M_CH4 ! O(1D) + CH4 -> H2 + CH2O
            !// Not included (strat. reaction): ! H + HO2     -> H2 + O2
 
            LOSS = &
                 k_od_h2 * M_O1D          &! O(1D) + H2  -> OH + H
-                + k_oh_h2 * M_OH         ! OH + H2     -> H2O + H
+                + k_oh_h2 * M_OH         &! OH + H2     -> H2O + H
+                + VDEP_L(113)
            !// Not included (strat. reaction): ! H2 + Cl     -> HCl + H
 
+           if (L .eq. 1) DDDIAG(113) = DDDIAG(113) + VDEP_L(113) * M_H2 * DTCH
+
            CHEMLOSS(1,113,L) = CHEMLOSS(1,113,L) + LOSS*M_H2*DTCH
-           CHEMLOSS(2,113,L) = 0._r8 !// No drydep
+           CHEMLOSS(2,113,L) =  CHEMLOSS(2,113,L) + VDEP_L(113)* M_H2 * DTCH 
            CHEMLOSS(3,113,L) = CHEMLOSS(3,113,L) + k_od_h2*M_O1D*M_H2*DTCH
            CHEMLOSS(4,113,L) = CHEMLOSS(4,113,L) + k_oh_h2*M_OH*M_H2*DTCH
 
@@ -2538,6 +2566,25 @@ contains
                             + k_ch3o2_c3h7o2 * M_CH3O2 * M_C3H7O2) &
              + k_ch3o2_isor1 * M_ISOR1 * M_CH3O2 &
              + k_ch3o2_ch3xx * M_CH3O2 * M_CH3XX ) * DTCH
+                !RBS ADD
+        CHEMPROD(8,13,L) = CHEMPROD(8,13,L) &
+             + M_C2H4 * (k_oh_c2h4_m * M_OH + k_o3_c2h4 * M_O3)*DTCH 
+        CHEMPROD(9,13,L) = CHEMPROD(9,13,L) &
+             + 0.5_r8 * M_C3H6 * k_o3_c3h6 * M_O3*DTCH 
+        CHEMPROD(10,13,L) = CHEMPROD(10,13,L) &
+             + (k_no_isor1 * M_NO * M_ISOR1 * fa_no_isor1 &
+             + k_no_isor2 * M_NO * M_ISOR2 * 0.43_r8)*DTCH 
+        CHEMPROD(2,13,L) = CHEMPROD(2,13,L) &
+             + k_oh_pan * M_OH * M_PAN*DTCH  
+        CHEMPROD(3,13,L) = CHEMPROD(3,13,L) &
+             + k_oh_ch3o2h_b * M_OH * M_CH3O2H*DTCH   
+        CHEMPROD(4,13,L) = CHEMPROD(4,13,L) &
+             +  (k_no_c2h5o2 * M_C2H5O2 * M_NO &
+             * fa_no_c2h5o2 * (1._r8 - fb_no_c2h5o2) &
+             + k_no_ch3xx * M_NO * M_CH3XX &
+             + DHCOHCO * M_HCOHCO &
+             + 0.85_r8 * k_oh_ch3oh * M_CH3OH * M_OH)*DTCH  
+        !RBS ADD (Remeber to remove from strat-output)
 
         call QSSA(27,'HCHO',DTCH,QLIN,ST,PROD,LOSS,ZC(13,L))
 
