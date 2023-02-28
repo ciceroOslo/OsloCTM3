@@ -119,6 +119,7 @@ contains
     use aerosols2fastjx, only: initialize_tropaerosols4fjx
     use emissions_oslo, only: emis_input
     use emissions_ocean, only: emissions_ocean_organiccarbon_init
+    use sanderson, only:  h2drydep_init
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
@@ -210,6 +211,9 @@ contains
     !// Read emissions with new routine for the CTM3
     call emis_input()
 
+    !// Hydrogen deposition initializion
+    call h2drydep_init()
+    
     !// BCOC initializations
     if (LBCOC) call bcoc_init()
 

@@ -137,7 +137,8 @@ module cmn_oslo
 
   !// Fields for CH4 surface treatment (for fixed field)
   real(r8) :: CH4FIELD(IPAR,JPAR)
-
+  !// RBS Fields for H2 surface treatment (for fixed field)
+  real(r8) :: H2FIELD(IPAR,JPAR)
 
   !// --- Emissions --------------------------------------------------------
   !// Emissions for chemistry treatment [kg/s]
@@ -150,6 +151,8 @@ module cmn_oslo
   !// Decide whether we want to use methane emissions or methane surface
   !// fields based on monthly means
   logical, parameter ::  METHANEMIS = .false.
+  !// Same as for methane, but for H2
+  logical, parameter ::  H2EMIS = .true.
 
   !// --- Additions for 2D emissions ---------------------------------------
   !// Number of categories, given in E2D_CATNAMES
@@ -237,14 +240,17 @@ module cmn_oslo
   !// Table of vertical variations
   real(r8), dimension(NE2vertLVS,NE2vertVARS) :: E2vertSCALE
 
-
+  !// RBS For historical simulations
+  !// To be used for scaling concentration (n2o,halogener), CH4 concentration
+  !// and sr-files. In covid, only for CH4 concentrations.
+  integer :: HISTYEAR
 
 
   !// --- Specific 3D emissions --------------------------------------------
   !// Forest fires - only some layers
   integer :: FF_TYPE, FF_YEAR, NEFIR ! Type, year, # of components emitted
   character(len=120) :: FF_PATH
-  integer, parameter :: EPAR_FIR = 23    !// Number of components
+  integer, parameter :: EPAR_FIR = 25    !// Number of components
   integer, parameter :: EPAR_FIR_LM = 33 !// Number of layers
   integer,dimension(EPAR_FIR) :: ECOMP_FIR
   !// Emission array used in model

@@ -40,13 +40,13 @@ module emissions_aircraft
   integer, parameter :: maxlevels = 66
 
   !// Number of species emitted (used to be only 1: NO)
-  integer, parameter :: EPAR_AC = 19
+  integer, parameter :: EPAR_AC = 1 !RBS19
   !// List of all these component species
   character(len=10), dimension(EPAR_AC), parameter :: &
-       ECOMP_NAMES = (/'CO', 'C2H4', 'C2H6','C3H6', 'C6H14',&
-       'C6HXR', 'C6HXR_SOA', &
-       'CH2O','CH3CHO','NO','C3H8','ACETONE','SO2',&
-       'Tolmatic','Benzene','omFF1fob','omFF1fil','bcFF1fob','bcFF1fil'/)
+       ECOMP_NAMES = (/'NO'/)!(/'CO', 'C2H4', 'C2H6','C3H6', 'C6H14',&
+       !'C6HXR', 'C6HXR_SOA', &
+       !'CH2O','CH3CHO','NO','C3H8','ACETONE','SO2',&
+       !'Tolmatic','Benzene','omFF1fob','omFF1fil','bcFF1fob','bcFF1fil'/)
 
   !// Chemical idx and transport idx
   integer, dimension(EPAR_AC) :: ECOMP_AC, ECOMP_TRNR
@@ -250,6 +250,12 @@ contains
        dft_ac = 2000._r8
        dz_ac  = dft_ac*ft2km
        actual_levels = 25
+    else if (trim(AirScen).eq.'COVID') then
+       !// COVID based onCEDS/CMIP6 emissions
+       dft_ac = 2000._r8
+       dz_ac  = dft_ac*ft2km
+       actual_levels = 25
+       
     else if (    trim(AirScen).eq.'z1' &     ! 2025 subsonic
              .or.trim(AirScen).eq.'z2' &     ! 2025 sub- & supersonic
              .or.trim(AirScen).eq.'z3' &     ! 2050 subsonic
@@ -760,6 +766,8 @@ contains
        call read_quantify_original()
     else if (AirScen(1:8) .eq. 'CEDS2017') then
        call read_ceds_2017()
+    else if (AirScen(1:5) .eq. 'COVID') then
+       call read_covid_avi()
     else if (AirScen(1:4) .eq. 'CEDS') then
        call read_ceds_original()
     end if
@@ -2498,6 +2506,244 @@ contains
 
     !// --------------------------------------------------------------------
   end subroutine read_ceds_2017
+  !// ----------------------------------------------------------------------
+
+
+  !// ----------------------------------------------------------------------
+  subroutine read_covid_avi()
+    !// --------------------------------------------------------------------
+    !// Modified read_ceds_2017
+    !// MTL 07/01/17
+    !// --------------------------------------------------------------------
+    use cmn_met, only: MYEAR
+    use cmn_parameters, only: A0, CPI180
+    use ncutils, only: get_netcdf_var_1d, readnc_3d_from4d
+    use regridding, only: E_GRID
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+
+    !// Locals
+    integer :: I,J,H,LAC,NAC,N, ICOMP
+    integer :: MAX_ITER, grid_type
+
+    integer :: sTime, M, getY, start_year, daynr
+    integer :: nLon, nLat, nLev, nTime
+
+    !// For getting file name
+    character(len=300) :: infile
+    real(r8) :: scalefac
+    character(len=5), dimension(EPAR_AC) :: FILECOMP
+    !character(len=10) :: version
+    !character(len=4) :: ctag
+    !character(len=13) :: infileyear
+
+    !// File variables
+    logical :: fnr_ok
+    integer :: ifnr
+
+    !// Interpolated field
+    real(r8) :: in_src(IPAR,JPAR,maxlevels), R8CTM(IPAR,JPAR)
+   
+    real(r8) :: ESUM_AC(EPAR_AC), sumB, sumA
+
+    real(r8), dimension(:), allocatable :: &
+         XBEDGE, YBEDGE, XYBOX,inTime,inLon,inLat,inLev
+    real(r8), dimension(:,:,:), allocatable :: HLFDUM, RDUM
+
+    integer, dimension(12), parameter :: midmonth = &
+         (/15, 45, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349 /)
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'read_covid_avi'
+    !// --------------------------------------------------------------------
+
+    !// Generate file name
+    getY = AirScenYear  
+    start_year = 2015
+
+  
+    !// Set file component name and scale factor
+
+    FILECOMP(1) = 'NOx'
+    scalefac = 0.652_r8
+      
+          
+
+    !//Get resolution (latitude/longitude/time)
+    infile = trim(AirEmisPath)// &
+         'cut_NOx-em-AIR-anthro_input4MIPs_emissions_ScenarioMIP_IAMC-MESSAGE-GLOBIOM-ssp245-1-1_gn_201501-210012.nc'
+
+!trim(FILECOMP(1))// &
+!         '-em-AIR-anthro_input4MIPs_emissions_CMIP_CEDS-'// &
+!         trim(version)//ctag//trim(infileyear)//'.nc'
+
+    !// This routine allocates inLon/inLat/inTime
+    call get_netcdf_var_1d( infile, 'lon',  inLon  )
+    call get_netcdf_var_1d( infile, 'lat',  inLat  )
+    call get_netcdf_var_1d( infile, 'level', inLev  )
+    call get_netcdf_var_1d( infile, 'time', inTime )
+
+    nLon  = SIZE( inLon  )
+    nLat  = SIZE( inLat  )
+    nLev  = SIZE( inLev  )
+    nTime = SIZE( inTime )
+
+    if (nLev .ne. actual_levels) then
+       write(6,'(a,2i5)') f90file//':'//subr// &
+            ': nLev != actual_levels ',nLev,actual_levels
+       stop
+    end if
+
+    !// Time step to fetch
+    !// Day of mid-month, since 1750:
+    daynr = midmonth(JMON) + (getY - start_year)*365
+    sTime = -1
+    do M = 1, nTime
+       if (inTime(M) .eq. daynr) then
+          sTime = M !// Found the time step
+          exit
+       end if
+    end do
+
+    if (sTime .eq. -1) then
+       write(6,'(a)') f90file//':'//subr//': Wrong inTime index'
+       stop
+    else
+       write(6,'(a,4i5,f12.1)') f90file//':'//subr// &
+            ': mon/year/sTime/daynr:',JMON,getY,sTime,daynr,inTime(sTime)
+    end if
+
+    !// Allocate arrays
+    allocate (XBEDGE(nLon+1),YBEDGE(nLat+1), &
+              HLFDUM(nLon,nLat,nLev)&
+              ,RDUM(nLon,nLat,nLev),XYBOX(nLat))
+
+    !// Data starts at (180W,90S), i.e. grid_type 2
+    grid_type = 2
+    call get_xyedges(nLon,nLat,XBEDGE,YBEDGE,grid_type)
+
+    !// Grid box areas
+    do J = 1, nLat
+       XYBOX(J) =  A0*A0 * CPI180*(XBEDGE(2)-XBEDGE(1)) &
+            * (sin(CPI180*YBEDGE(J+1)) - sin(CPI180*YBEDGE(J)))
+    end do
+
+    !// Sum of emissions before interpolation
+    ESUM_AC(:) = 0._r8
+
+    do NAC = 1, EPAR_AC
+
+       !// Cycle if species is not included
+       if (ECOMP_AC(NAC) .le. 0) cycle
+
+       !// Initialize
+       RDUM(:,:,:) = 0._r8
+       HLFDUM(:,:,:) = 0._r8
+       in_src(:,:,:) = 0._r8
+
+       !// Emissions
+       !// ------------------------------------------------------
+
+       infile = trim(AirEmisPath)// &
+            'cut_NOx-em-AIR-anthro_input4MIPs_emissions_ScenarioMIP_IAMC-MESSAGE-GLOBIOM-ssp245-1-1_gn_201501-210012.nc'
+
+       !// Read data for this month
+       call readnc_3d_from4d(INFILE, 'lon', nLon, 'lat', nLat, &
+            'level', nLev, 'time', sTime, &
+            trim(FILECOMP(NAC))//'_em_AIR_anthro', RDUM)
+       write(*,'(a)') '    Read '//FILECOMP(NAC)//' data -> '//trim(ECOMP_NAMES(NAC))
+
+
+       !// Scale with corresponding fraction
+       HLFDUM(:,:,:) = RDUM(:,:,:) * scalefac
+
+       !// Scale with area (xybox is m2)--> kg/s. Done before interpolation,
+       !// since interpolation routine needs field to be per grid box.
+       do LAC = 1, nLev
+          do J = 1, nLat
+             HLFDUM(:,J,LAC) = HLFDUM(:,J,LAC) * XYBOX(J)
+          end do
+       end do
+      
+         
+          
+!$omp parallel private (LAC,R8CTM) &
+!$omp          shared (HLFDUM,nLon,nLat,XBEDGE,YBEDGE,in_src,nLev) &
+!$omp          shared (XDEDG,YDEDG) &
+!$omp          shared (XYBOX) &
+!$omp          default(NONE)
+!$omp do
+       do LAC = 1, nLev
+
+          !// No need to interpolate zero field
+          if (maxval(HLFDUM(:,:,LAC)) .eq. 0._r8) then
+             in_src(:,:,LAC) = 0._r8
+             cycle
+          end if
+
+          !// Interpolate into R8CTM (no moments, only mean field
+          call E_GRID(HLFDUM(:,:,LAC),XBEDGE,YBEDGE,nLon,nLat, &
+               R8CTM,XDEDG,YDEDG,IPAR,JPAR,2)
+
+          !// Put into 3D array
+          in_src(:,:,LAC) = R8CTM(:,:)
+
+       end do
+!$omp end do
+!$omp end parallel
+
+       !write(*,'(a,es20.12,es20.12,es20.12)'), 'Max/min in_src kg/s:',maxval(in_src),minval(in_src),sum(in_src)
+
+       !// Put into emission array, first hour
+       do J = 1, JPAR
+          do I = 1, IPAR
+             do LAC = 1, actual_levels
+                EMIS_AC_IN(LAC,NAC,I,J,1) = in_src(I,J,LAC)
+             end do
+          end do
+       end do
+       !// Assume no hour-to-hour variation
+       do H = 2, 24
+          do J = 1, JPAR
+             do I = 1, IPAR
+                do LAC = 1, actual_levels
+                   EMIS_AC_IN(LAC,NAC,I,J,H) = EMIS_AC_IN(LAC,NAC,I,J,1)
+                end do
+             end do
+          end do
+       end do
+          
+       !// Sum of original data as kg/year
+       ESUM_AC(NAC) = sum(HLFDUM) * 86400._r8 * 365._r8
+    end do !// do NAC = 1, EPAR_AC
+
+
+
+    !// De-allocate
+    deallocate (XBEDGE,YBEDGE,XYBOX,HLFDUM,RDUM)
+
+    !// Print total emissions
+    write(6,'(a)') '    Total emissions [Tg/year] for emitted species:'
+    do NAC = 1, EPAR_AC
+       N = ECOMP_TRNR(NAC)
+       if (N .gt. 0) then
+          sumB = ESUM_AC(NAC)*1.e-9_r8
+          sumA = sum(EMIS_AC_IN(:,NAC,:,:,:))*3600._r8*365.e-9_r8
+          if (abs(sumA-sumB)/sumB .gt. 1.e-5_r8) then
+             write(6,'(a,es20.12,es20.12)') f90file//':'//subr// &
+                  ':  Wrong sum before/after interp. ', sumB, sumA
+             stop
+          else
+             write(6,'(a,2f16.7)') '    '//TNAME(N)//' emitted (Tg/yr): ',sumB
+          end if
+       else
+          write(6,'(a)') '    '//ECOMP_NAMES(NAC)//' not included'
+       end if
+    end do
+
+
+    !// --------------------------------------------------------------------
+  end subroutine read_covid_avi
   !// ----------------------------------------------------------------------
 
 

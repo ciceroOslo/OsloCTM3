@@ -19,6 +19,8 @@ module emissions_volcanoes
   !//   subroutine init_volcPATH
   !//   subroutine read_volcEMIS
   !//   subroutine add_volcEMIS
+  !//  RBS: subroutine add_volcHoluhraun
+  !//  RBS: subroutine add_volcKilauea
   !//
   !// Amund Sovde, March 2014
   !// ----------------------------------------------------------------------
@@ -54,7 +56,7 @@ module emissions_volcanoes
   !// ----------------------------------------------------------------------
   save !// All variables are to be saved.
   private
-  public init_volcPATH, read_volcEMIS, add_volcEMIS
+  public init_volcPATH, read_volcEMIS, add_volcEMIS, add_volcHoluhraun,add_volcKilauea
   !// ----------------------------------------------------------------------
 
 contains
@@ -585,7 +587,440 @@ contains
   end subroutine add_volcEMIS
   !// ----------------------------------------------------------------------
 
+  !// ----------------------------------------------------------------------
+  subroutine add_volcHoluhraun(BX,DT,DAY,MONTH,MP)
+    !// --------------------------------------------------------------------
+    !// Routine to add volcanic SO2 emissions.
+    !// Routine is called from either emis4chem_oslo or SOURCE.
+    !// IMPORTANT:
+    !//   Note that the arguments are different things in the
+    !//   two routines!:
+    !//     emis4chem_oslo: BX is BEMIS [kg/s] and needs DT=1.d0
+    !//     SOURCE:         BX is BTT [kg] and needs DT to be the time step.
+    !//
+    !// Based on add_volcEMIS
+    !// RBS december 2017
+    !// --------------------------------------------------------------------
+    use cmn_size, only: IPAR, JPAR, LPAR, NPAR, IDBLK, JDBLK, MPBLK, LSULPHUR
+    use cmn_ctm, only:  XDEDG, YDEDG,MPBLKIB, MPBLKJB, all_mp_indices
+    use cmn_met, only: ZOFLE
+    use cmn_oslo, only: trsp_idx
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    !// Input
+    integer, intent(in) :: DAY, MONTH, MP
+    real(r8), intent(in)  :: DT
+    !// In/Out: Emissions (emis4chem_oslo) or tracer array (SOURCE)
+    real(r8), intent(inout)  :: BX(LPAR,NPAR,IDBLK,JDBLK)
 
+    !// Local
+    integer :: N_SO2, L,I,J, II,JJ, LV1, LV2, N, jjj, iii,DAYINYR
+    real(r8) :: frac, DZ, ZH, topoH, plumeH, topZ3bot
+    real(r8) :: temp_lat, temp_lon, inEmis,volc_elev,volc_cch,volc_emis_so2
+     !// Number of days in previous months
+    
+    integer, parameter, dimension(13)  :: JDOFM = &
+         [0,31,59,90,120,151,181,212,243,273,304,334,365]
+
+    !// --------------------------------------------------------------------
+
+    !// Skip volcanic emissions?
+    if (.not. LSULPHUR) return
+
+    !print*,'Volcanoe Holuhraun'
+    !print*, 'Day'
+    !print*, DAY
+
+    !print*, 'Month'
+    !print*, MONTH
+
+    DAYINYR = DAY + JDOFM(MONTH)
+    !print*, DAYINYR
+
+   
+    !//Check day, and set the correct emissions
+    if (DAYINYR .ge. 243 .and. DAYINYR .lt. 257) then
+       inEmis = 100._r8 !// kT SO2/day 
+    else if (DAYINYR.ge.257 .and. DAYINYR .lt. 274) then
+       inEmis = 57.5_r8 !// kT SO2/day 
+    else if (DAYINYR.ge.274 .and. DAYINYR .lt. 281) then
+       inEmis = 80._r8 !// kT SO2/day 
+    else if (DAYINYR.ge.281 .and. DAYINYR .lt. 335) then
+       inEmis = 45._r8 !// kT SO2/day 
+    else if (DAYINYR.ge.335 .and. DAYINYR .lt. 423) then
+       inEmis = 32.5_r8 !// kT SO2/day 
+    else
+       !print*,'Day', DAYINYR, 'No volcan emission'
+       return
+    endif
+
+    N_SO2 = trsp_idx(72) !// Transport number for SO2
+
+    !// Lon and lat of Holuhraun
+    temp_lat = 64.9 !// Degrees north
+    temp_lon = -16.8 + 360._r8 !// Degrees west
+
+    !print*, temp_lat
+    !print*, temp_lon
+
+
+    !// Find grid boxes J-index
+    do j = 1, JPAR
+       if ( temp_lat.ge.YDEDG(j) .and. (temp_lat.lt.YDEDG(j+1)) ) then
+          !// We have y-index
+          jjj = j
+          exit
+       end if
+    end do
+ 
+    J = jjj
+    !// Find grid boxes I-index
+    
+    do I = 1, IPAR
+       if ( (temp_lon .gt. XDEDG(i)) .and. &
+            (temp_lon .le. XDEDG(i+1)) ) then
+          !// We have x-index
+          iii = i
+          exit
+       end if
+    end do
+    
+    I = iii
+
+    !// Check if in right mp.
+    if (all_mp_indices(3,I,J) .ne. MP) then
+    !   print*, mp
+    !   print*, 'Not mp'
+       return
+    end if
+
+!    print*, YDEDG(J) 
+!    print*, YDEDG(J+1) 
+!    print*, XDEDG(I) 
+!    print*, XDEDG(I+1) 
+
+
+
+    !// Local indices
+    II = I + 1 - MPBLKIB(MP)
+    JJ = J + 1 - MPBLKJB(MP)
+!    print*, ii
+!    print*, jj
+
+!    print*,MPBLKIB(MP)
+!    print*, MPBLKJB(MP)
+
+!    print*, I
+!    print*, J
+
+
+    !Print*,BX(:,N_SO2,II,JJ)
+
+    !Print*,BX(1,N_SO2,II,:)
+    !Print*,BX(1,N_SO2,:,JJ)
+
+
+        
+
+!    print*, 'ZOEFLE'
+!    print*, ZOFLE(:,I,J)
+!    print*, 'YDEDG'
+!    print*, YDEDG
+!    print*, 'XDEDG'
+!    print*, XDEDG
+
+
+
+
+
+    !// Emissions (convert from kt(SO2)/d to kg(SO2)/s
+    volc_emis_so2 = inEmis * 1.e6_r8 / 86400._r8
+
+    !// Volcanoe elevation [m]   !//volc_elev(n)  
+    volc_elev = 800._r8 !// 800 meter
+    !// Volcanoe plume heigh [m] !//volc_cch(n)
+    volc_cch = 3000._r8 !// 3000 meter
+
+ 
+    !// Check volcanoe altitude vs model levels
+    LV1 = 1
+    do L = 1, LPAR
+       if (volc_elev .ge. ZOFLE(L,I,J) .and. volc_elev .lt. ZOFLE(L+1,I,J)) then
+          LV1 = L !// Model level where volcanoe is located
+          exit
+       end if
+    end do
+
+    !// Check volcanoe altitude vs model levels
+    LV2 = LV1
+    do L = 1, LPAR
+       if (volc_cch.ge. ZOFLE(L,I,J) .and. volc_cch .lt. ZOFLE(L+1,I,J)) then
+          LV2 = L !// Model level where volcanoe is located
+          exit
+       end if
+    end do
+
+    !Quick Fix. LV1+1 LV2-1
+    LV1 = LV1+1
+    LV2 = LV2-1
+
+    !print*, 'LV1-2'
+    !print*, LV1
+    !print*, LV2
+
+    !//The height of grid box bottoms are given by the array
+    !//ZOFLE(LPAR+1,IPAR,JPAR).
+    
+    !print*,'Height of the plume'
+    dZ = ZOFLE(LV2+1,I,J) - ZOFLE(LV1,I,J)
+    !print*, dZ
+    
+
+    print*, 'Holuhraun volcano:'
+    do L = LV1, LV2
+       frac = (ZOFLE(L+1,I,J) - ZOFLE(L,I,J)) / DZ
+       BX(L,N_SO2,II,JJ) = BX(L,N_SO2,II,JJ) &
+           + volc_emis_so2 * DT * frac
+       !print*, L
+       !print*, frac
+       !print*, volc_emis_so2 * DT*frac
+       !print*,ZOFLE(L,I,J),ZOFLE(L+1,I,J),volc_elev,volc_cch
+       write(6,'(i3,2f10.4,4f8.1)')  &
+                     L,volc_emis_so2 * DT*frac, frac,&
+                    ZOFLE(L,I,J),ZOFLE(L+1,I,J),volc_elev,volc_cch
+
+
+    end do
+    
+
+
+
+
+
+    !print*,'Stopping'
+ 
+    !stop
+
+
+    !// --------------------------------------------------------------------
+  end subroutine add_volcHoluhraun
+  !// ----------------------------------------------------------------------
+
+  
+  !// ----------------------------------------------------------------------
+  subroutine add_volcKilauea(BX,DT,DAY,MONTH,MP)
+    !// --------------------------------------------------------------------
+    !// Routine to add volcanic SO2 emissions.
+    !// Routine is called from either emis4chem_oslo or SOURCE.
+    !// IMPORTANT:
+    !//   Note that the arguments are different things in the
+    !//   two routines!:
+    !//     emis4chem_oslo: BX is BEMIS [kg/s] and needs DT=1.d0
+    !//     SOURCE:         BX is BTT [kg] and needs DT to be the time step.
+    !//
+    !// Based on add_volcEMIS
+    !// RBS december 2017
+    !// Based on add_volcHoluhraun
+    !// RBS july 2019
+    !// --------------------------------------------------------------------
+    use cmn_size, only: IPAR, JPAR, LPAR, NPAR, IDBLK, JDBLK, MPBLK, LSULPHUR
+    use cmn_ctm, only:  XDEDG, YDEDG,MPBLKIB, MPBLKJB, all_mp_indices
+    use cmn_met, only: ZOFLE, MYEAR
+    use cmn_oslo, only: trsp_idx
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    !// Input
+    integer, intent(in) :: DAY, MONTH, MP
+    real(r8), intent(in)  :: DT
+    !// In/Out: Emissions (emis4chem_oslo) or tracer array (SOURCE)
+    real(r8), intent(inout)  :: BX(LPAR,NPAR,IDBLK,JDBLK)
+
+    !// Local
+    integer :: N_SO2, L,I,J, II,JJ, LV1, LV2, N, jjj, iii,DAYINYR
+    real(r8) :: frac, DZ, ZH, topoH, plumeH, topZ3bot
+    real(r8) :: temp_lat, temp_lon, inEmis,volc_elev,volc_cch,volc_emis_so2
+     !// Number of days in previous months
+    
+    integer, parameter, dimension(13)  :: JDOFM = &
+         [0,31,59,90,120,151,181,212,243,273,304,334,365]
+
+    !// --------------------------------------------------------------------
+
+    !// Skip volcanic emissions?
+    if (.not. LSULPHUR) return
+
+    !print*,'Volcanoe Holuhraun'
+    !print*, 'Day'
+    !print*, DAY
+
+    !print*, 'Month'
+    !print*, MONTH
+
+    DAYINYR = DAY + JDOFM(MONTH)
+    !print*, DAYINYR
+
+    !//Check year, day, and set the correct emissions
+    if (MYEAR .eq. 2008 .and. DAYINYR .ge. 121) then 
+       inEmis = 10._r8 !// kT SO2/day 
+    else if(MYEAR .eq. 2009 .and. DAYINYR .lt. 121) then
+       inEmis = 10._r8 !// kT SO2/day 
+    else if(MYEAR .eq. 2018 .and. DAYINYR .ge. 121 .and. DAYINYR .lt. 213) then
+       inEmis = 10._r8 !// kT SO2/day 
+    else
+       return
+    end if
+
+
+    N_SO2 = trsp_idx(72) !// Transport number for SO2
+
+    !// Lon and lat 
+    !//  19.25°N;155.17°W.
+    temp_lat = 19.25 !// Degrees north
+    temp_lon = -155.17 + 360._r8 !// Degrees west
+
+    !print*, temp_lat
+    !print*, temp_lon
+
+
+    !// Find grid boxes J-index
+    do j = 1, JPAR
+       if ( temp_lat.ge.YDEDG(j) .and. (temp_lat.lt.YDEDG(j+1)) ) then
+          !// We have y-index
+          jjj = j
+          exit
+       end if
+    end do
+ 
+    J = jjj
+    !// Find grid boxes I-index
+    
+    do I = 1, IPAR
+       if ( (temp_lon .gt. XDEDG(i)) .and. &
+            (temp_lon .le. XDEDG(i+1)) ) then
+          !// We have x-index
+          iii = i
+          exit
+       end if
+    end do
+    
+    I = iii
+
+    !// Check if in right mp.
+    if (all_mp_indices(3,I,J) .ne. MP) then
+    !   print*, mp
+    !   print*, 'Not mp'
+       return
+    end if
+
+!    print*, YDEDG(J) 
+!    print*, YDEDG(J+1) 
+!    print*, XDEDG(I) 
+!    print*, XDEDG(I+1) 
+
+
+
+    !// Local indices
+    II = I + 1 - MPBLKIB(MP)
+    JJ = J + 1 - MPBLKJB(MP)
+!    print*, ii
+!    print*, jj
+
+!    print*,MPBLKIB(MP)
+!    print*, MPBLKJB(MP)
+
+!    print*, I
+!    print*, J
+
+
+    !Print*,BX(:,N_SO2,II,JJ)
+
+    !Print*,BX(1,N_SO2,II,:)
+    !Print*,BX(1,N_SO2,:,JJ)
+
+
+        
+
+!    print*, 'ZOEFLE'
+!    print*, ZOFLE(:,I,J)
+!    print*, 'YDEDG'
+!    print*, YDEDG
+!    print*, 'XDEDG'
+!    print*, XDEDG
+
+
+
+
+
+    !// Emissions (convert from kt(SO2)/d to kg(SO2)/s
+    volc_emis_so2 = inEmis * 1.e6_r8 / 86400._r8
+    !1200m (plume base) to 2500m (plume top).
+    !// Volcanoe elevation [m]   !//volc_elev(n)  
+    volc_elev = 1200._r8 !// 800 meter
+    !// Volcanoe plume heigh [m] !//volc_cch(n)
+    volc_cch = 2500._r8 !// 3000 meter
+
+ 
+    !// Check volcanoe altitude vs model levels
+    LV1 = 1
+    do L = 1, LPAR
+       if (volc_elev .ge. ZOFLE(L,I,J) .and. volc_elev .lt. ZOFLE(L+1,I,J)) then
+          LV1 = L !// Model level where volcanoe is located
+          exit
+       end if
+    end do
+
+    !// Check volcanoe altitude vs model levels
+    LV2 = LV1
+    do L = 1, LPAR
+       if (volc_cch.ge. ZOFLE(L,I,J) .and. volc_cch .lt. ZOFLE(L+1,I,J)) then
+          LV2 = L !// Model level where volcanoe is located
+          exit
+       end if
+    end do
+
+    !Quick Fix. LV1+1 LV2-1
+    LV1 = LV1+1
+    LV2 = LV2-1
+
+    !print*, 'LV1-2'
+    !print*, LV1
+    !print*, LV2
+
+    !//The height of grid box bottoms are given by the array
+    !//ZOFLE(LPAR+1,IPAR,JPAR).
+    
+    !print*,'Height of the plume'
+    dZ = ZOFLE(LV2+1,I,J) - ZOFLE(LV1,I,J)
+    !print*, dZ
+    
+
+    print*, 'Kilauea volcano:'
+    do L = LV1, LV2
+       frac = (ZOFLE(L+1,I,J) - ZOFLE(L,I,J)) / DZ
+       BX(L,N_SO2,II,JJ) = BX(L,N_SO2,II,JJ) &
+           + volc_emis_so2 * DT * frac
+       !print*, L
+       !print*, frac
+       !print*, volc_emis_so2 * DT*frac
+       !print*,ZOFLE(L,I,J),ZOFLE(L+1,I,J),volc_elev,volc_cch
+       write(6,'(i3,2f10.4,4f8.1)')  &
+                     L,volc_emis_so2 * DT*frac, frac,&
+                    ZOFLE(L,I,J),ZOFLE(L+1,I,J),volc_elev,volc_cch
+
+
+    end do
+    
+    !print*,'Stopping'
+ 
+    !stop
+
+
+    !// --------------------------------------------------------------------
+  end subroutine add_volcKilauea
+
+  
   !// ----------------------------------------------------------------------
 end module emissions_volcanoes
 !//=========================================================================

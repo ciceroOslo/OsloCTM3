@@ -1039,7 +1039,14 @@ contains
     status = nf90_def_dim(ncid,"NCOMPS",NPAR,ncomps_dim_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define NCOMPS dim')
+    status = nf90_def_dim(ncid,"DAYS",366,days_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define DAYS dim')
 
+    !// Define length of tracer name string (use TNAME for this)
+    status = nf90_def_dim(ncid,"tracer_name_len",TNAMELEN,tracer_name_len_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define tracer_name_len dim')
     !// All the component IDs
     status = nf90_def_var(ncid,"tracer_idx",nf90_int,ncomps_dim_id,tracer_idx_id)
     if (status .ne. nf90_noerr) call handle_error(status, &

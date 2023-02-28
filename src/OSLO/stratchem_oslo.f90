@@ -25,7 +25,6 @@ module stratchem_oslo
   character(len=*), parameter, private :: f90file = 'stratchem_oslo.f90'
   !// ----------------------------------------------------------------------
 
-
 contains
 
   !// ----------------------------------------------------------------------
@@ -738,8 +737,8 @@ contains
       !// NorESM L30
       LEV2D = 16
     else
-       write(6,'(a,i5)') f90file//':'//subr// &
-            ': Wrong resolution: ',LPARW
+      write(6,'(a,i5)') f90file//':'//subr// &
+           ': Wrong resolution: ',LPARW
       stop
     end if
 
@@ -960,6 +959,7 @@ contains
     real(r8)  :: MEM_FAC(maxmembers,NR_FAM)
 
     real(r8) :: RFRAC,OZONE
+    real(r8) :: scale_fact !RBS hydrogen scaling factor
     !// --------------------------------------------------------------------
 
     !// Upper and lower boundary conditions for H2O is set at the
@@ -1024,6 +1024,17 @@ contains
         do N = 101, 147
           !// No need to set H2O in lower boundary conditions; set from q.
           if (N.eq.114) cycle
+          if (N.eq.113) cycle  !RBS, use  seth2sfc instead.
+          !//RBS
+          !//MS: this part was used before and is not used in the
+          !//current setup because of the above cycle
+          if (N.eq.113) then
+             scale_fact = 1.d0 !1.50 !0.65
+          else 
+             scale_fact = 1.d0
+          endif
+          !//RBS
+
 
           !// Get transport number
           MTC_COMP = trsp_idx(N)
@@ -1033,7 +1044,7 @@ contains
             !// values are zero! It can then becom inconsistent with the
             !// moments and give negative values after transport.
             do L=1,LSFC !15       !// 0-2 km
-              BTT(L,MTC_COMP,II,JJ) = STT_2D_LB(J,1,N-100) &
+              BTT(L,MTC_COMP,II,JJ) = STT_2D_LB(J,1,N-100)*scale_fact &
                    !* AIRB(L,II,JJ) / TMASSMIX2MOLMIX(MTC_COMP)
                    * AIRB(L,II,JJ) * TMOLMIX2MASSMIX(MTC_COMP)
               !// Reset for diagnostics

@@ -19,10 +19,13 @@ module gmdump3hrs
   implicit none
   !// ----------------------------------------------------------------------
 
+  !// Switch for dumping every 3 hours or not
+  logical, parameter :: LDUMP3HRS = .false.
+  
   !// List of tracers to put out
   integer, parameter :: trp_nr = 7, sul_nr = 3, slt_nr = 8, min_nr = 8, &
        nit_nr = 5, bio_nr = 4, moa_nr=2, ffc_nr = 4, bfc_nr = 4, &
-       soa_ant_nr = 17, soa_nat_nr = 4, ntr_nr = 1
+       soa_ant_nr = 4, soa_nat_nr = 17, ntr_nr = 1
   integer, parameter,dimension(trp_nr) :: &
        trp_list = (/ 1, 6, 46, 41, 42, 43, 44 /)
   integer, parameter,dimension(sul_nr) :: &
@@ -46,11 +49,11 @@ module gmdump3hrs
        ntr_list = (/ 40 /)
 
   !// Not included yet (usually put out as the sum, not every species)
-  integer, parameter,dimension(soa_ant_nr) :: &
-       soa_ant_list = (/ 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, &
-                     175, 176, 177, 178, 179, 182, 183 /)
   integer, parameter,dimension(soa_nat_nr) :: &
-       soa_nat_list = (/ 188, 189, 190, 191 /)
+       soa_nat_list = (/ 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, &
+                     175, 176, 177, 178, 179, 182, 183 /)
+  integer, parameter,dimension(soa_ant_nr) :: &
+       soa_ant_list = (/ 188, 189, 190, 191 /)
 
   character(len=10),dimension(NPAR) :: gmname
   !// ----------------------------------------------------------------------

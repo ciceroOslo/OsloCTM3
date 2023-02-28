@@ -58,7 +58,8 @@ contains
     use emissions_aircraft, only: EPAR_AC, ECOMP_TRNR, EMIS_AC
     use emissions_megan, only: add_meganBiogenic
     use emissions_ocean, only: add_oceanOCemis
-    use emissions_volcanoes, only: add_volcEMIS
+    use emissions_volcanoes, only: add_volcEMIS,add_volcHoluhraun,&
+         add_volcKilauea
     use sulphur_oslo, only: DMSseaconc
     use utilities_oslo, only: SZA_PN
     !// --------------------------------------------------------------------
@@ -478,6 +479,10 @@ contains
 
     !// Volcanoes SO2 from HTAP or other dataset.
     call add_volcEMIS(BEMIS,1._r8,JDATE,JMON,MP)
+
+    !// AeroCom Experiment RBS
+    !call add_volcHoluhraun(BEMIS,1._r8,JDATE,JMON,MP)
+    !call add_volcKilauea(BEMIS,1._r8,JDATE,JMON,MP)
 
     !// Oceanic carbon emissions
     call add_oceanOCemis(BEMIS,1._r8,MP)

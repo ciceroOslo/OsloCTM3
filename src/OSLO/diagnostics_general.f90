@@ -101,8 +101,8 @@ module diagnostics_general
   real(r8), dimension(LPAR,IPAR,JPAR) :: OxCHEMLOSSMASS
   real(r8), dimension(LPAR,IPAR,JPAR) :: OxCHEMPRODMASS
   !// Only save prod and loss for selected components
-  integer,parameter :: ncPL = 4
-  integer,dimension(ncPL), parameter :: compsPL = (/13,46,113,114/)
+  integer,parameter :: ncPL = 6 !RBS 4-5 -> 6
+  integer,dimension(ncPL), parameter :: compsPL = (/13,46,113,114,6,16/) !Add CO, MHP
 
   !// ----------------------------------------------------------------------
   character(len=*), parameter, private :: f90file='diagnostics_general.f90'
@@ -115,7 +115,7 @@ module diagnostics_general
        write_snapshot, &
        ch4n2o_burden, &
        tnd_emis2file, &
-       nchemdiag, save_chemPL, save_chemOxPL, chembud_output, init_chembud
+       nchemdiag, save_chemPL, save_chemOxPL, chembud_output_nc, init_chembud
   !// ----------------------------------------------------------------------
 
 contains
@@ -724,7 +724,7 @@ contains
     use diagnostics_scavenging, only: scav_diag_collect_daily, &
          scav_diag_2fileB
     use cmn_ctm, only: LDLYSCAV
-    !use emissions_megan, only: megan_report
+    use emissions_megan, only: megan_report
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
@@ -744,7 +744,7 @@ contains
     end if
 
     !// Print MEGAN report (can be added temporarily if needed)
-    !call megan_report(NDAY, NDAYI)
+    call megan_report(NDAY, NDAYI)
 
     !// Collect total emissions this day
     call tnd_emis_daily(DDAY)
@@ -770,7 +770,7 @@ contains
     use ch4routines, only: reportsfcch4
     use satelliteprofiles_mls, only: satprofs_mls_master
     use verticalprofiles_stations2, only: vprofs_master
-    !use atom, only: atom_master
+    use atom, only: atom_master
     use caribic2, only: caribic2_master
     use hippo, only: hippo_master
     use troccinox_fal, only: troccifal_master
@@ -796,7 +796,7 @@ contains
     !     call satprofs_mls_master(JYEAR,JMON,JDATE,NDAY,NMET,NOPS,NDAYI)
 
     !// Process station profiles
-    call vprofs_master(JYEAR,JMON,JDATE,NDAY,NMET,NOPS,NDAYI)
+    !call vprofs_master(JYEAR,JMON,JDATE,NDAY,NMET,NOPS,NDAYI)
 
     !// Process flight data caribic (10 second data)
     !if (LOSLOCTROP .or. LOSLOCSTRAT) &
@@ -805,8 +805,8 @@ contains
     !// Process flight data hippo (10 second data)
     !// Do this for BC only, but can be set up to do other species
     !// as well.
-    if (LBCOC) &
-         call hippo_master(JYEAR,JMON,JDATE,NDAY,NMET,NOPS,NDAYI,LNEWM)
+    !if (LBCOC) &
+    !     call hippo_master(JYEAR,JMON,JDATE,NDAY,NMET,NOPS,NDAYI,LNEWM)
 
     !if (LBCOC) &
          !call atom_master(JYEAR,JMON,JDATE,NDAY,NMET,NOPS,NDAYI,LNEWM)
@@ -3509,21 +3509,38 @@ contains
     status = nf90_def_dim(ncid,"lev",LPAR,lev_dim_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define lev dim')
-    status = nf90_def_dim(ncid,"nchemdiag",nchemdiag_id,nchemdiag_dim_id)
+
+    !RBS++
+    !// Define spatial dimensions (ilat, ilon)
+    status = nf90_def_dim(ncid,"ilat",JPAR+1,ilat_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ilat dim')
+    status = nf90_def_dim(ncid,"ilon",IPAR+1,ilon_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ilon dim')
+    status = nf90_def_dim(ncid,"ilev",LPAR+1,ilev_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define ilev dim')
+    !RBS--
+    status = nf90_def_dim(ncid,"nchemdiag",nchemdiag,nchemdiag_dim_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define nchemdiag dim')
+    
+    !status = nf90_def_dim(ncid,"nchemdiag",nchemdiag_id,nchemdiag_dim_id)
+    !if (status .ne. nf90_noerr) call handle_error(status, &
+    !     f90file//':'//subr//': define nchemdiag dim')
 
 
     !// Define ilon/ilat/ilev
-    status = nf90_def_var(ncid,"ilon",nf90_double,ilon_dim_id,ilon_id)
-    if (status .ne. nf90_noerr) call handle_error(status, &
-         f90file//':'//subr//': define ilon variable')
-    status = nf90_def_var(ncid,"ilat",nf90_double,ilat_dim_id,ilat_id)
-    if (status .ne. nf90_noerr) call handle_error(status, &
-         f90file//':'//subr//': define ilat variable')
-    status = nf90_def_var(ncid,"ilev",nf90_double,ilev_dim_id,ilev_id)
-    if (status .ne. nf90_noerr) call handle_error(status, &
-         f90file//':'//subr//': define ilev variable')
+    !status = nf90_def_var(ncid,"ilon",nf90_double,ilon_dim_id,ilon_id)
+    !if (status .ne. nf90_noerr) call handle_error(status, &
+    !     f90file//':'//subr//': define ilon variable')
+    !status = nf90_def_var(ncid,"ilat",nf90_double,ilat_dim_id,ilat_id)
+    !if (status .ne. nf90_noerr) call handle_error(status, &
+    !     f90file//':'//subr//': define ilat variable')
+    !status = nf90_def_var(ncid,"ilev",nf90_double,ilev_dim_id,ilev_id)
+    !if (status .ne. nf90_noerr) call handle_error(status, &
+    !     f90file//':'//subr//': define ilev variable')
 
     !// Define size of date stamps
     status = nf90_def_dim(ncid,"date_size",size(start_time),date_size_dim_id)
@@ -3550,10 +3567,15 @@ contains
     status = nf90_def_var(ncid,"ilat",nf90_double,ilat_dim_id,ilat_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define ilat variable')
-    !// Define time
-    status = nf90_def_var(ncid,"time",nf90_double,time_dim_id,time_id)
+
+    status = nf90_def_var(ncid,"ilev",nf90_double,ilev_dim_id,ilev_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
-         f90file//':'//subr//': define time variable')
+         f90file//':'//subr//': define ilev variable')
+    
+!RBS    !// Define time
+!RBS    status = nf90_def_var(ncid,"time",nf90_double,time_dim_id,time_id)
+!RBS    if (status .ne. nf90_noerr) call handle_error(status, &
+!RBS         f90file//':'//subr//': define time variable')
 
     !// Putting attributes to lon/lat/lev variables
     status = nf90_put_att(ncid,lon_id,'units','degree_east')
@@ -3769,7 +3791,9 @@ contains
 
     !// For each tracer put out loss and prod
     do N = 1, ncPL
-
+       TRID = compsPL(N)
+       TRNR = trsp_idx(TRID)
+       
        !// Only put out if included
        if (trsp_idx(compsPL(N)) .le. 0) cycle
 

@@ -639,7 +639,7 @@ contains
     implicit none
     !// --------------------------------------------------------------------
     real(r8), intent(in) :: TEMP, TNAT, TICE, VAER, VICE
-    real(r8), intent(inout) :: n_particles
+    real(r8):: n_particles !// Fjernet intent in her
     logical, intent(in) :: SAT
     integer, intent(in) :: I,J,L
     real(r8), intent(inout) :: SAD_L
@@ -692,7 +692,12 @@ contains
           !// Could either skip and set SURFACE=0 or set n_particles=2,
           !// Try the latter:
           if (n_particles .le. 0._r8) n_particles = 2._r8
-          
+          !// set once again. !RBS kommenterte inn denne:
+          if (n_particles .le. 0._r8) then
+             write(6,'(a,3i5,6es12.3)') f90file//':'//subr// &
+                  ': n_particles == 0: ', I, J, L, n_particles, VAER,TEMP, SAD_L
+             stop
+          end if
           r_particle = (VAER / (PI43 * n_particles))**(1._r8 / 3._r8) * 0.595238_r8
           call DIS_LN(N_B,R_A,F_NAT_loc,r_particle,S_NAT, &
                   RNAT_loc,S2_NAT_loc,S3_NAT_loc)

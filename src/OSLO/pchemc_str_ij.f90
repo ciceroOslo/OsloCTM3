@@ -1149,6 +1149,14 @@ contains
         LOSS = k_clo_co * M_ClO           & ! ClO + CO  -> Cl + CO2
                + k_oh_co_b * M_OH         & ! OH + CO   -> CO2 + H
                + k_oh_co_a * M_OH           ! OH + CO   -> HOCO -O2-> HO2 + CO2
+        
+        !RBS ADD
+        CHEMLOSS(1,6,L) = CHEMLOSS(1,6,L) + LOSS * M_CO*DTS
+        CHEMLOSS(3,6,L) = CHEMLOSS(3,6,L) + (k_oh_co_a + k_oh_co_b) * M_OH * M_CO*DTS
+        CHEMLOSS(4,6,L) = CHEMLOSS(4,6,L) + k_clo_co * M_ClO * M_CO*DTS
+
+        CHEMPROD(1,6,L) = CHEMPROD(1,6,L) + PROD * DTS
+        !RBS ADD END
 
         call QSSA(208,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_CO)
 
@@ -1614,9 +1622,9 @@ contains
         CHEMLOSS(8,13,L) = CHEMLOSS(8,13,L) + k_br_ch2o*M_Br*M_CH2O*DTS
 
         CHEMPROD(1,13,L) = CHEMPROD(1,13,L) + PROD*DTS
-        CHEMPROD(2,13,L) = CHEMPROD(2,13,L) + k_no_ch3o2*M_CH3O2*M_NO*DTS
-        CHEMPROD(3,13,L) = CHEMPROD(3,13,L) + J_CH3O2H*M_CH3O2H*DTS
-        CHEMPROD(4,13,L) = CHEMPROD(4,13,L) + k_od_ch4_b*M_O1D*M_CH4*DTS
+        !RBS CHEMPROD(2,13,L) = CHEMPROD(2,13,L) + k_no_ch3o2*M_CH3O2*M_NO*DTS
+        !RBS CHEMPROD(3,13,L) = CHEMPROD(3,13,L) + J_CH3O2H*M_CH3O2H*DTS
+        !RBSCHEMPROD(4,13,L) = CHEMPROD(4,13,L) + k_od_ch4_b*M_O1D*M_CH4*DTS
         CHEMPROD(5,13,L) = CHEMPROD(5,13,L) + k_od_ch4_c*M_O1D*M_CH4*DTS
         CHEMPROD(6,13,L) = CHEMPROD(6,13,L) + k_oh_ch3o2h_b*M_CH3O2H*M_OH*DTS
 

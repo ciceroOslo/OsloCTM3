@@ -161,6 +161,7 @@ contains
     !// --------------------------------------------------------------------
     use cmn_size, only: LSALT, NPAR_SALT, NPAR
     use cmn_chem, only: TNAME
+    use cmn_sfc, only: LANDUSE_IDX
     use seasalt, only: get_rsalt80um, get_seasaltscheme
     !// --------------------------------------------------------------------
     implicit none
@@ -250,7 +251,7 @@ contains
        !// give the same using scaling factor 0.5.
        !// scaleEPOA = 0.57_r8
        !// RBS: I will use MODIS
-       scaleEPOA = 0.57_r8 !// CLM4-PFT 6.3Tg for mean of 2000 and 2016
+       scaleEPOA = 0.5_r8
     else
        write(6,'(a,i5)') f90file//':'//subr// &
             ': No scaleEPOA set for SeaSaltScheme ',SeaSaltScheme
