@@ -59,7 +59,7 @@ program pmain
   use diagnostics_general, only: &
        init_daily_diag, daily_diag_output, nops_diag, &
        mp_diag, TBGT_2FILE, reports_chemistry, &
-       tnd_emis2file, chembud_output
+       tnd_emis2file, chembud_output_nc
   use diagnostics_scavenging, only: &
        scav_diag_ls, scav_diag_cn, scav_diag_brd, scav_diag_2fileA, &
        scav_diag_nmet_output_nc
@@ -759,7 +759,7 @@ program pmain
 
       !// Chemistry budgets
       !call chembud_output(JYEAR,JMON,JDATE,NDAY)
-
+      call chembud_output_nc(NDAY)
       !// Write diagnostics: scavenging daily totals
       if (LDLYSCAV(1)) then
          call scav_diag_2fileA(JYEAR,JMON,JDAY,NDAY)

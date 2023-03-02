@@ -1085,6 +1085,145 @@ contains
     !// --------------------------------------------------------------------
   end subroutine stringUpCase
   !// ----------------------------------------------------------------------
+  !// ----------------------------------------------------------------------
+  subroutine landfrac2emep(LFemep,nLFemep,LFin,nLFin, lat, LANDUSE_IDX)
+    !// --------------------------------------------------------------------
+    !// Convert land type fractions to EMEP categories, to be used
+    !// in dry deposition scheme.
+    !// Used two times in drydeposition_oslo.f90 and one time in
+    !// bcoc_oslo.f90.
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    integer, intent(in) :: nLFemep, nLFin, LANDUSE_IDX
+    real(r8), intent(in) :: lat
+    real(r8), dimension(nLFin), intent(in) :: LFin
+    real(r8), dimension(nLFemep), intent(out) :: LFemep
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'landfrac2emep'
+    !// --------------------------------------------------------------------
+
+    LFemep(:) = 0._r8
+
+    !// Will set land categories, and then estimate ocean, since there
+    !// may be slight inconsistencies between 1-PLAND and 1 - land
+    !// categories. There should not be, but I have seen that
+    !// 1 - land categories can be a tiny negative number.
+
+    !// Vegetation type fractions (Fraction Land-use)
+    if (LANDUSE_IDX .eq. 2) then
+       !// ----------------------------------------------------------------
+       !// ISLSCP2 MODIS land fraction and type data
+       !// Note: Type 0 represents water and is not included in LS_FRAC.
+       !//       It has been used to calculate land fraction PLAND.
+       !//  0=Water Bodies                      1=Evergreen Needleleaf Forests
+       !//  2=Evergreen Broadleaf Forests       3=Deciduous Needleleaf Forests
+       !//  4=Deciduous Broadleaf Forests       5=Mixed Forests
+       !//  6=Closed Shrublands                 7=Open Shrublands
+       !//  8=Woody Savannas                    9=Savannas
+       !// 10=Grasslands                       11=Permanent Wetlands
+       !// 12=Croplands                        13=Urban and Built-Up
+       !// 14=Cropland/Natural Vegetation Mosaic 15=Permanent Snow and Ice
+       !// 16=Barren or Sparsely Vegetated       17=Unclassified
+       !// ----------------------------------------------------------------
+       !// EMEP categories
+       !//  1. Forests, Mediterranean scrub
+       !//  2. Crops
+       !//  3. Moorland (savanna++)
+       !//  4. Grassland
+       !//  5. Wetlands
+       !//  6. Tundra
+       !//  7. Desert
+       !//  8. Water
+       !//  9. Urban
+       !// MODIS -> EMEP
+       !// 1: 1,2,3,4,5
+       !// 2: 12,14
+       !// 3: 6,7,8,9
+       !// 4: 10
+       !// 5: 11
+       !// 6: 16(90S-60S,60N-90N)
+       !// 7: 16(60S-60N), 17
+       !// 8: 1.d0 - PLAND(I,J)
+       !// 9: 13
+       !// Missing: 15 (will be treated under snow/ice)
+       !// ----------------------------------------------------------------
+
+       LFemep(1) = sum(LFin(1:5))
+       LFemep(2) = LFin(12) + LFin(14)
+       LFemep(3) = sum(LFin(6:9))
+       LFemep(4) = LFin(10)
+       LFemep(5) = LFin(11)
+       if (lat.lt.-60._r8 .or. lat.gt.60._r8) then
+          LFemep(6) = LFin(16)
+          LFemep(7) = 0._r8
+       else
+          LFemep(6) = 0._r8
+          LFemep(7) = LFin(16)
+       end if
+       LFemep(7) = LFemep(7) + LFin(17)
+       LFemep(9) = LFin(13)
+       LFemep(10)= LFin(15)
+       !// Set LFemep(8) at the end
+       LFemep(8) = max(0._r8, 1._r8 - (sum(LFemep(1:7)) + sum(LFemep(9:10))))
+
+    else if (LANDUSE_IDX .eq. 3) then
+
+       !// --------------------------------------------------------------------
+       !// EMEP categories
+       !//  1. Forests, Mediterranean scrub
+       !//  2. Crops
+       !//  3. Moorland (savanna++)
+       !//  4. Grassland
+       !//  5. Wetlands
+       !//  6. Tundra
+       !//  7. Desert
+       !//  8. Water
+       !//  9. Urban
+       !// CLM categories
+       !// CLM  CTM indices
+       !//  1    17    Barren land
+       !//  2     1    Needleaf evergreen temperate tree
+       !//  3     2    Needleaf evergreen boreal tree
+       !//  4     3    Needleaf deciduous boreal tree
+       !//  5     4    Broadleaf evergreen tropical tree
+       !//  6     5    Broadleaf evergreen temperate tree
+       !//  7     6    Broadleaf deciduous tropical tree
+       !//  8     7    Broadleaf deciduous temperate tree
+       !//  9     8    Broadleaf deciduous boreal tree
+       !// 10     9    Broadleaf evergreen temperate shrub
+       !// 11    10    Broadleaf deciduous temperate shrub
+       !// 12    11    Broadleaf deciduous boreal shrub
+       !// 13    12    Arctic C3 grass (cold)
+       !// 14    13    C3 grass (cool)
+       !// 15    14    C4 grass (warm)
+       !// 16    15    Crop1
+       !// 17    16    Crop2
+       !// --------------------------------------------------------------------
+       LFemep(1) = sum(LFin(1:10))
+       LFemep(2) = sum(LFin(15:16))
+       LFemep(3) = LFin(14)
+       LFemep(4) = sum(LFin(12:13))
+       LFemep(5) = 0._r8
+       LFemep(6) = LFin(11)
+       LFemep(7) = LFin(17)
+       !Set LFemep(8) from sum at the end
+       LFemep(9) = 0._r8
+       LFemep(10) = 0._r8
+
+       !// Ocean may not be fully compatible with 1-PLAND:
+       LFemep(8) = max(0._r8, 1._r8 - (sum(LFemep(1:7)) + sum(LFemep(9:10))))
+
+    else
+       write(6,'(a,i5)') f90file//':'//subr// &
+            ': unknown LANDUSE_IDX ',LANDUSE_IDX
+       stop
+    end if
+
+    !// --------------------------------------------------------------------
+  end subroutine landfrac2emep
+  !// ----------------------------------------------------------------------
+
 
 
   !// ----------------------------------------------------------------------

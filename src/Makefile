@@ -49,7 +49,7 @@ STRATCHEM :=Y
 #Sulfur scheme
 SULPHUR :=Y
 #BC/OC
-BCOC :=N
+BCOC :=Y
 #Nitrate (requires SALT and SULPHUR)
 NITRATE :=Y
 #Sea salt
@@ -57,9 +57,9 @@ SEASALT :=Y
 #Dust
 DUST :=N
 #Secondary organic aerosols
-SOA :=N
+SOA :=Y
 #E90 (MUST be Y to calculate STE fluxes!)
-E90 :=Y
+E90 :=N
 #LINOZ (NOT set up to replace stratospheric chemistry, only included
 #       to calculate STE flux as UCI does it.
 LINOZ :=N
@@ -339,6 +339,7 @@ OSLO_SRC := \
 	physics_oslo.f90 \
 	qssa_integrator.f90 \
 	ch4routines.f90 \
+	sanderson.f90 \
 	satelliteprofiles_mls.f90 \
 	seasaltprod.f90 \
 	strat_aerosols.f90 \
@@ -917,6 +918,7 @@ $(filter %pmain.o, $(ALL_OBJ)): \
 	$(filter %main_oslo.o, $(ALL_OBJ)) \
 	$(filter %physics_oslo.o, $(ALL_OBJ)) \
 	$(filter %ch4routines.o, $(ALL_OBJ)) \
+	$(filter %sanderson.o, $(ALL_OBJ)) \
 	$(filter %seasalt.o, $(ALL_OBJ)) \
 	$(filter %soa_oslo.o, $(ALL_OBJ)) \
 	$(filter %stratchem_oslo.o, $(ALL_OBJ)) \
@@ -1002,6 +1004,14 @@ $(filter %ch4routines.o, $(ALL_OBJ)): \
 	$(filter %cmn_oslo.o, $(ALL_OBJ)) \
 	$(filter %emisutils_oslo.o, $(ALL_OBJ)) \
 	$(filter %ncutils.o, $(ALL_OBJ))
+# sanderson.o dependencies
+$(filter %sanderson.o, $(ALL_OBJ)): \
+	$(filter %cmn_precision.o, $(ALL_OBJ)) \
+	$(filter %cmn_size.o, $(ALL_OBJ)) \
+	$(filter %cmn_ctm.o, $(ALL_OBJ)) \
+	$(filter %cmn_met.o, $(ALL_OBJ)) \
+	$(filter %cmn_parameters.o, $(ALL_OBJ)) \
+	$(filter %cmn_oslo.o, $(ALL_OBJ)) \
 # chem_oslo_rates.o dependencies
 $(filter %chem_oslo_rates.o, $(ALL_OBJ)): \
 	$(filter %cmn_precision.o, $(ALL_OBJ)) \
@@ -1432,8 +1442,10 @@ $(filter %strat_h2o.o, $(ALL_OBJ)): \
 	$(filter %utilities.o, $(ALL_OBJ)) \
 	$(filter %cmn_oslo.o, $(ALL_OBJ)) \
 	$(filter %ncutils.o, $(ALL_OBJ)) \
-	$(filter %utilities_oslo.o, $(ALL_OBJ))
-
+	$(filter %utilities_oslo.o, $(ALL_OBJ)) \
+	$(filter %regridding.o, $(ALL_OBJ)) \
+	$(filter %emisutils_oslo.o, $(ALL_OBJ)) \
+	$(filter %grid.o, $(ALL_OBJ)) 
 # strat_o3noy_clim.o dependencies
 $(filter %strat_o3noy_clim.o, $(ALL_OBJ)): \
 	$(filter %cmn_precision.o, $(ALL_OBJ)) \

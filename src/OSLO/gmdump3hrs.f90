@@ -20,7 +20,7 @@ module gmdump3hrs
   !// ----------------------------------------------------------------------
 
   !// Switch for dumping every 3 hours or not
-  logical, parameter :: LDUMP3HRS = .false.
+  !logical, parameter :: LDUMP3HRS = .false.
   
   !// List of tracers to put out
   integer, parameter :: trp_nr = 7, sul_nr = 3, slt_nr = 8, min_nr = 8, &

@@ -265,6 +265,7 @@ contains
     use bcoc_oslo, only: bcoc_setdrydep, bcoc_vdep2
     use soa_oslo, only: soa_setdrydep
     use ch4routines, only: ch4drydep_bousquet
+    use sanderson, only: h2drydep
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
@@ -503,7 +504,7 @@ contains
        call get_ctm2dep(MDAY,MSEASON,RFR, MP, &
             VO3,VHNO3,VPAN,VCO,VH2O2,VNO2, VSO2,VSO4,VMSA, VNH3)
 
-       if (LDDEPmOSaic) .or. (LDDEPEMEP2012) then
+       if (LDDEPmOSaic .or. LDEPEMEP2012) then
           if (LDDEPmOSaic) then 
              !// New dry deposition scheme (aka mOSaic)
              !// Get new dry deposition values [m/s]
