@@ -94,6 +94,18 @@ module CMN_SIZE
   integer, parameter :: NRFFT   = 32
   integer, parameter :: FFTPTS  = 3*(NTRUNW+2)
 
+#elif defined(HNATIVEnorESM)
+  integer, parameter :: IPARW      = 144
+  integer, parameter :: JPARW      = 94
+  logical, parameter :: LGAUGRD    = .TRUE.
+
+  integer, parameter :: NSPGT   = 3-(IPARW/300)
+  integer, parameter :: NTRUNW  = 1
+  integer, parameter :: NRNM    = (NTRUNW+1)*(NTRUNW+2)
+  integer, parameter :: NMMAX   = (NTRUNW+1)*(NTRUNW+4)/2
+  integer, parameter :: NRFFT   = 1
+  integer, parameter :: FFTPTS  = 1
+  
 #endif
 
   !// Metdata: Native vertical resolution
@@ -104,6 +116,9 @@ module CMN_SIZE
 #elif defined(VNATIVEL60)
   integer, parameter :: LPARW    = 60
   integer, parameter :: LWEPARW  = 40
+#elif defined(VNATIVEnorESM)
+  integer, parameter :: LPARW    = 30
+  integer, parameter :: LWEPARW  = 22  
 #endif
 
 
@@ -197,6 +212,19 @@ module CMN_SIZE
   integer, parameter :: MPJPAR  = JPAR
 #endif
 
+
+#elif defined(HNATIVEnorESM)
+#if defined(HORIGINAL)
+  integer, parameter :: MPIPAR  = 1
+  integer, parameter :: MPJPAR  = JPAR
+#elif defined(HTWO)
+  integer, parameter :: MPIPAR  = 2
+  integer, parameter :: MPJPAR  = JPAR
+#else
+  integer, parameter :: MPIPAR  = 1
+  integer, parameter :: MPJPAR  = JPAR
+#endif
+  
 #endif
 
   !// OpenMP blocks
@@ -255,9 +283,10 @@ module CMN_SIZE
 #endif /* TROPCHEM */
 
   !// Stratospheric chemistry parameters
+  !// RBS H2 38 +3=41, 7 - 2=5
 #if defined(STRATCHEM)
-  integer, parameter :: NPAR_STRAT    = 38
-  integer, parameter :: NOTRPAR_STRAT = 7
+  integer, parameter :: NPAR_STRAT    = 41
+  integer, parameter :: NOTRPAR_STRAT = 5
   logical, parameter :: LOSLOCSTRAT   = .true.
 #else
   integer, parameter :: NPAR_STRAT    = 0
@@ -339,7 +368,7 @@ module CMN_SIZE
 
 #if defined(STRATCHEM)
   !// Number of species in Oslo chemistry (strat+trop) requiring J-values
-  integer, parameter :: JPPJ          = 51 !// Number of photolysis reactionsW
+  integer, parameter :: JPPJ          = 52 !// Number of photolysis reactionsW
   integer, parameter :: W_chem        = 18
 #else
   !// Number of species in Oslo chemistry (trop only) requiring J-values

@@ -1094,6 +1094,7 @@ $(filter %drydeposition_oslo.o, $(ALL_OBJ)): \
 	$(filter %bcoc_oslo.o, $(ALL_OBJ)) \
 	$(filter %ncutils.o, $(ALL_OBJ)) \
 	$(filter %ch4routines.o, $(ALL_OBJ)) \
+	$(filter %sanderson.o, $(ALL_OBJ)) \
 	$(filter %soa_oslo.o, $(ALL_OBJ)) \
 	$(filter %utilities_oslo.o, $(ALL_OBJ))
 # dust_oslo.o dependencies
@@ -1271,6 +1272,7 @@ $(filter %input_oslo.o, $(ALL_OBJ)): \
 	$(filter %psc_microphysics.o, $(ALL_OBJ)) \
 	$(filter %ncutils.o, $(ALL_OBJ)) \
 	$(filter %nitrate.o, $(ALL_OBJ)) \
+	$(filter %sanderson.o, $(ALL_OBJ)) \
 	$(filter %seasalt.o, $(ALL_OBJ)) \
 	$(filter %soa_oslo.o, $(ALL_OBJ)) \
 	$(filter %sulphur_oslo.o, $(ALL_OBJ))

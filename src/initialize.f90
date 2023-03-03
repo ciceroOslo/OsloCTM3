@@ -161,6 +161,8 @@ contains
        HnativeRES = 'T21'
     else if (IPARW .eq. 128) then
        HnativeRES = 'T42'
+    else if (IPARW .eq. 144) then
+       HnativeRES = 'NESM'
     else if (IPARW .eq. 196) then
        HnativeRES = 'T63'
     else if (IPARW .eq. 320) then
@@ -525,7 +527,7 @@ contains
        if (START_AVG .eq. 0) then
           write(6,'(a)') '  Initializing tracers with zero'
        else if (START_AVG .eq. 1) then
-          write(6,'(a)') '  Initializing tracerswith CTM3 month average'
+          write(6,'(a)') '  Initializing tracers with CTM3 month average'
        else
           write(6,'(a,i5)') '  Unknown START_AVG; ',START_AVG
        end if
@@ -920,6 +922,7 @@ contains
     use cmn_met, only: MYEAR
     use utilities, only: calendar, get_soldecdis
     use cmn_oslo, only: trsp_idx, ZEROINIT, XZEROINIT
+    use cmn_chem, only: TNAME
     use bcoc_oslo, only: bcsnow_init
     use stt_save_load, only: load_restart_file, &
          oslo_con_run, oslo_con_run42, oslo_con_runxx, &
@@ -944,6 +947,7 @@ contains
     if (LCONT) then
 
        !// Reload a continuation/restart run
+       
        if (LNCR) then
           FN_CON = 'restart.nc'
           call load_restart_file(FN_CON, 0)
@@ -961,6 +965,29 @@ contains
           call OSLO_CON_RUN42(FN_CON, 0)
        end if
 
+
+       !RBS SCALE H2
+       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(113)), 0.65d0 
+       !STT(:,:,:,trsp_idx(113)) =STT(:,:,:,trsp_idx(113))*0.65d0 
+
+       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(113)), 1.5d0 
+       !STT(:,:,:,trsp_idx(113)) =STT(:,:,:,trsp_idx(113))*1.5d0 
+       
+
+       !RBS SCALE MHP
+       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(16)), 0.5d0 
+       !STT(:,:,:,trsp_idx(16)) =STT(:,:,:,trsp_idx(16))*0.5d0 
+       !SUT(:,:,:,trsp_idx(16)) =SUT(:,:,:,trsp_idx(16))*0.5d0 
+       !SVT(:,:,:,trsp_idx(16)) =SVT(:,:,:,trsp_idx(16))*0.5d0 
+       !SWT(:,:,:,trsp_idx(16)) =SWT(:,:,:,trsp_idx(16))*0.5d0 
+       !SUU(:,:,:,trsp_idx(16)) =SUU(:,:,:,trsp_idx(16))*0.5d0 
+       !SVV(:,:,:,trsp_idx(16)) =SVV(:,:,:,trsp_idx(16))*0.5d0 
+       !SWW(:,:,:,trsp_idx(16)) =SWW(:,:,:,trsp_idx(16))*0.5d0 
+       !SUV(:,:,:,trsp_idx(16)) =SUV(:,:,:,trsp_idx(16))*0.5d0 
+       !SUW(:,:,:,trsp_idx(16)) =SUW(:,:,:,trsp_idx(16))*0.5d0 
+       !SVW(:,:,:,trsp_idx(16)) =SVW(:,:,:,trsp_idx(16))*0.5d0 
+
+       
        !// Restart fields for BCsnow
        if (LBCOC) call bcsnow_init(NDAYI)
 

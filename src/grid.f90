@@ -2187,7 +2187,17 @@ contains
        
     !// At the end
     deallocate( XBEDGE, YBEDGE, inTime, XYBOX, inPFT, R8DATA )
-
+    
+    !// Check for wrong file
+    RTMP = sum(PLAND*AREAXY)/sum(AREAXY)
+    if (RTMP .lt. 0.28_r8 .or. RTMP .gt. 0.34_r8) then
+       write(6,'(a)') f90file//':'//subr// &
+            ': Land fraction (PLAND) is probably wrong.'
+       write(6,'(a,f6.2)') 'Total land area (%): ',RTMP*100._r8
+       write(6,'(a)') 'Did you set wrong PFT-file in input file?'
+       stop
+    end if
+    
     write(6,'(a)') f90file//':'//subr//': landSurfTypeFrac is set'
 
 

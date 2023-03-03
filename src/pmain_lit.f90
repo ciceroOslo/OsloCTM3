@@ -31,7 +31,7 @@ program pmain
   use cmn_met, only: MYEAR,precls, CLDFR, CLDIWC, CLDLWC
   use cmn_parameters, only: LDEBUG
   !//-----------------------------------------------------------------------
-  use averages, only: AVG_P1, AVG_WRT2, AVG_ADD2, AVG_CLR2
+  use averages, only: AVG_P1, AVG_WRT_NC4, AVG_ADD2, AVG_CLR2
   use budgets, only: TBGT_G, TBGT_P0, TBGT_P1, TBGT_P2, TBGT_IJ, TBGT_L
   use cloudjx, only: cloud_init
   use convection, only: CONVW_OSLO
@@ -48,7 +48,7 @@ program pmain
   use steflux, only: CHEMFLUX, CHEMFLUX_E90, dumpuvflux, DUMPTRMASS, &
        DUMPTRMASS_E90, SAVETRMASS, STEBGT_CLR, STEBGT_WRITE, &
        ctm3_pml, ctm3_o3scav
-  use stt_save_load, only: oslo_con_sav
+  use stt_save_load, only: oslo_con_sav, save_restart_file
   use utilities, only: write_log, ctmExitC, LCM, CALENDR, CALENDL, &
        get_dinm, check_btt, calendar, get_soldecdis
   !//-----------------------------------------------------------------------
@@ -63,14 +63,14 @@ program pmain
   use diagnostics_scavenging, only: &
        scav_diag_ls, scav_diag_cn, scav_diag_brd, scav_diag_2fileA
   use drydeposition_oslo, only: setdrydep
-  use dust_oslo, only: dustbdg2d, dustInstBdg
+  use dust_oslo, only: dustbdg2dfile, dustInstBdg
   use emissions_ocean, only: emissions_ocean_total
   use emissions_oslo, only: update_emis, update_emis_ij
   use gmdump3hrs, only: dump3hrs
   use input_oslo, only: init_oslo
   use main_oslo, only: master_oslo, update_chemistry
   use physics_oslo, only: update_physics, set_blh_ij
-  use seasalt, only: seasaltbdg2d, emissions_seasalt_total
+  use seasalt, only: saltbdg2file, emissions_seasalt_total
   use utilities_oslo, only: get_chmcycles, &
        source_e90, decay_e90, &
        tpauseb_e90, tpauseb_o3
@@ -524,7 +524,7 @@ program pmain
     !//---write/reset average tracer
     call CALENDL (JYEAR,JDAY,LYEAR,  JDO_A, LAVGS,L2)
 !    if (LAVGS .or. LEND) then
-!      call AVG_WRT2    !// Write averages
+!      call AVG_WRT_NC4    !// Write averages
 !
 !      if (L2) then
 !        call AVG_P1
@@ -536,7 +536,7 @@ program pmain
     !//---restart file save (at least at end of run)
     call CALENDL (JYEAR,JDAY,LYEAR,  JDO_C, LCONT,L2)
 !    if (LCONT .or. LEND)  then
-!      call OSLO_CON_SAV(NDAY+1)
+!      call save_restart_file(NDAY+1,NDAYI)
 !      if (LBCOC) call bcsnow_save_restart(NDAY+1)
 !    end if
 

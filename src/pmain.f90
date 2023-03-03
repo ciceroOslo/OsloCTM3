@@ -52,10 +52,10 @@ program pmain
   use utilities, only: write_log, LCM, calendar, get_soldecdis, &
        CALENDL, get_dinm, check_btt
   !//-----------------------------------------------------------------------
-  use cmn_oslo, only: METHANEMIS, JVAL_IJ
+  use cmn_oslo, only: METHANEMIS, H2EMIS, JVAL_IJ
   use emissions_aircraft, only: aircraft_h2o_zero
   use bcoc_oslo, only: bcsnow_master, bcsnow_save_restart
-  use ch4routines, only: set_ch4_stt, setch4sfc
+  use ch4routines, only: set_ch4_stt, setch4sfc, seth2sfc
   use diagnostics_general, only: &
        init_daily_diag, daily_diag_output, nops_diag, &
        mp_diag, TBGT_2FILE, reports_chemistry, &
@@ -77,9 +77,10 @@ program pmain
        tpauseb_e90, tpauseb_o3
   !//-----------------------------------------------------------------------
   use stratchem_oslo, only: update_strat_boundaries
-  use strat_h2o, only: set_h2_eurohydros
-  use soa_oslo, only: soa_diag2file, soa_nopsdiag
+  use strat_h2o, only: set_h2_eurohydros, set_h2_hydrogen
+  use soa_oslo, only: soa_diag2file_nc4, soa_nopsdiag
   use fallingaerosols, only: aerosolsettling
+  use sanderson, only: get_cover
   !//-----------------------------------------------------------------------
   implicit none
   !//-----------------------------------------------------------------------
@@ -202,7 +203,12 @@ program pmain
   !// Set CH4 to HYMN-results
   !call set_ch4_stt()
   !// Set (non-transported) H2 to Eurohydros-results
+  !// RBS
   !call set_h2_eurohydros()
+  !call set_h2_hydrogen()
+  !write(6,'(a)') 'RBS H2 set from EUROHYDROS'
+  call get_cover()
+  
   !// Set aircraft H2O to zero
   !call aircraft_h2o_zero()
 
@@ -262,7 +268,10 @@ program pmain
 
     !// Set up number of days in months
     call get_dinm(LYEAR)
-
+    
+    !// Set Hydrogen fields 
+    !write(6,'(a)') 'RBS H2 set from HYDROGEN'
+    if (.not.H2EMIS) call set_h2_hydrogen(LNEWM)
 
     !//---------------------------------------------------------------------
     do NMET = 1, NRMETD
@@ -408,7 +417,8 @@ program pmain
                   call mp_diag(BTT,NDAY,NMET,NOPS,NSUB,CCYC,M)
                   !// Reset CH4 at surface
                   if (.not.METHANEMIS) call setch4sfc(BTT,BTTBCK,AIRB,M)
-
+                  if (.not.H2EMIS) call seth2sfc(BTT,BTTBCK,AIRB,M)
+                  
                   !// Emissions
                   call SOURCE(BTT,BXT,BXX,BYT,BYY,BXY,BZT,DTCHM2,M)
                   call source_e90(BTT,DTCHM2,M)
@@ -418,6 +428,7 @@ program pmain
                   call CNVDBL(BTT,BXT,BXX,BYT,BYY,BZT,BZZ,BXY,BXZ,BYZ,&
                               AIRB,DTCHM2,M)
                   if (.not.METHANEMIS) call setch4sfc(BTT,BTTBCK,AIRB,M)
+                  if (.not.H2EMIS) call seth2sfc(BTT,BTTBCK,AIRB,M)
                   !// add to PML
                   if (N_STE .gt. 0) &
                        call ctm3_pml(BTT,BTTBCK,AIRB,LSTRATAIR_E90B,LSTRATAIR_O3,M)
@@ -476,7 +487,8 @@ program pmain
 !//-------------------------------------------------------------------------
 
                 if (.not.METHANEMIS) call setch4sfc(BTT,BTTBCK,AIRB,M)
-
+                if (.not.H2EMIS) call seth2sfc(BTT,BTTBCK,AIRB,M)
+                
                 !// Update boundary cond. for stratosphere before transport
                 call update_strat_boundaries(BTT,BTTBCK,AIRB,BTEM,DTADV,M)
 
@@ -512,6 +524,7 @@ program pmain
                 WSTEP(M) = WSTEP(M) + MSTEPW
 
                 if (.not.METHANEMIS) call setch4sfc(BTT,BTTBCK,AIRB,M)
+                if (.not.H2EMIS) call seth2sfc(BTT,BTTBCK,AIRB,M)
                 call TBGT_IJ (BTT,BTTBCK,BTTTND,BTTTN0,M,1,NTM,NTND_WADV)
 
 !//-------------------------------------------------------------------------
@@ -755,7 +768,7 @@ program pmain
       !// Print 2D budgets to file
       call TBGT_2FILE(1)
 
-      if (LSOA) call soa_diag2file(NDAY,NDAYI)
+      if (LSOA) call soa_diag2file_nc4(NDAY,NDAYI)
 
       !// Chemistry budgets
       !call chembud_output(JYEAR,JMON,JDATE,NDAY)
