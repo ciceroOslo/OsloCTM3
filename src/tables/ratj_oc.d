@@ -55,6 +55,7 @@
    49 CHBr3      PHOTON                                     0.00E+00  0.00    100.0  CHBr3    
    50 ACETONE    PHOTON                                     0.00E+00  0.00    100.0  Acet-a   
    51 ACETONE    PHOTON                                     0.00E+00  0.00    100.0  Acet-b   
+   52 H2O        PHOTON                                     0.00E+00  0.00    100.0  H2O      
  9999                                                       0.00E-00  0.00      0.0                 
                                                                                  
                                                                                  
