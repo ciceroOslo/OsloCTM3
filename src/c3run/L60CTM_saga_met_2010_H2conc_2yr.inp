@@ -119,9 +119,8 @@ PFZON  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
 --- General multi-species dry scavenging data set:  call DRYSET_CTM3
 'tables/scavenging_dry.inp'            DRY deposition data set
 --- Emission list ---
-'tables/Ltracer_emis_ceds17_2010_forAeroCom_saga_testiso_add_alc.inp'  See ./tables/ for more
---------------------------------------------------------------------------------
----- DIAGNOSTICS ---------------------------------------------------------------
+'tables/Ltracer_emis_ceds17_2010_H2conc.inp'  See ./tables/ for more
+DIAGNOSTICS -------------------------------------------------------------
 LDUMP3HRS - T: Write diagnostic 3 hourly output and monthly means of defined tracers; F: Do not
    all air trp sul slt min nit bio moa ffc bfc soa ntr
     T  T  T  T  F  T  F  T  T  T  T  T  T
