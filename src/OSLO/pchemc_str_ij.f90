@@ -1149,7 +1149,7 @@ contains
         LOSS = k_clo_co * M_ClO           & ! ClO + CO  -> Cl + CO2
                + k_oh_co_b * M_OH         & ! OH + CO   -> CO2 + H
                + k_oh_co_a * M_OH           ! OH + CO   -> HOCO -O2-> HO2 + CO2
-        
+
         !RBS ADD
         CHEMLOSS(1,6,L) = CHEMLOSS(1,6,L) + LOSS * M_CO*DTS
         CHEMLOSS(3,6,L) = CHEMLOSS(3,6,L) + (k_oh_co_a + k_oh_co_b) * M_OH * M_CO*DTS
@@ -1600,7 +1600,7 @@ contains
                + J_CH3O2H * M_CH3O2H          &! CH3O2H + hv -> CH2O + OH + H (->HO2)
                + ( k_od_ch4_b  &! O(1D) + CH4 -> (CH3O/CH2OH + H)  -O2-> CH2O + HO2 + H
                  + k_od_ch4_c ) * M_O1D * M_CH4 &! O(1D) + CH4 -> H2 + CH2O
-               + k_oh_ch3o2h_b * M_CH3O2H * M_OH& ! OH + CH3OOH -> CH2O + OH + H2O (30%)
+               + k_oh_ch3o2h_b * M_CH3O2H * M_OH &! OH + CH3OOH -> CH2O + OH + H2O (30%)
                + k_oh_ch3oh * M_CH3OH * M_OH &! OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2
                + k_cl_ch3oh * M_CH3OH * M_Cl  ! Cl + CH3OH -> HCl + CH2OH -O2-> CH2O + HO2
 
@@ -1898,63 +1898,92 @@ contains
            !// Included H + HO2 -> 2OH
            !//                  -> O + H2O
            !//                  -> H2 + O2
-           PROD = EMISX(114,L)                 &!// Emissions, i.e. aircraft
-                  + k_oh_oh * M_OH * M_OH     &! OH + OH      -> H2O + O(3P)
-                  + k_oh_ho2 * M_OH * M_HO2    &! OH + HO2     -> H2O + O2
-                  + k_oh_h2 * M_OH * M_H2     &! OH + H2      -> H2O + H
-                  + k_oh_h2o2 * M_OH * M_H2O2   &! OH + H2O2    -> H2O + HO2
-                  + k_oh_hno3 * M_HNO3 * M_OH   &! OH + HNO3    -> H2O + NO3
-                  + k_oh_hocl * M_HOCl * M_OH   &! OH + HOCl    -> H2O + ClO
-                  + k_oh_hcl * M_HCl * M_OH    &! OH + HCl     -> H2O + Cl
-                  + k_oh_ch2o * M_CH2O * M_OH   &! OH + CH2O    -> H2O + HCO
-                  + k_oh_ch4 * M_CH4 * M_OH    &! OH + CH4     -> CH3 + H2O
-                  + (k_oh_ch3o2h_a + k_oh_ch3o2h_b) &
-                       * M_CH3O2H * M_OH &! OH + CH3OOH  -> CH3O2/CH2OOH + H2O
-                  + k_oh_hbr  * M_HBr * M_OH    &! OH + HBr     -> H2O + Br
-                  + k_oh_ho2no2 * M_HO2NO2 * M_OH  &! OH + HO2NO2  -> H2O + O2 + NO2
-                  + k_oh_hcfc123 * M_HCFC123 * M_OH &! CF3CHCl2 + OH  -> H2O + ...
-                  + k_oh_hcfc141 * M_HCFC141 * M_OH &! CH3CFCl2 + OH  -> H2O + ...
-                  + k_oh_hcfc142 * M_HCFC142 * M_OH &! CH3CF2Cl + OH  -> H2O + ...
-                  + k_oh_chclf2 * M_OH * M_HCFC22 &! OH + CHF2Cl -> CF2Cl + H2O
-                  + k_oh_ch3ccl3 * M_OH * M_MCF &! OH + CH3CCl3 -> CH2CCl3 + H2O
-                  + k_oh_ch3cl * M_OH * M_CH3Cl   &! OH + CH3Cl   -> CH2Cl + H2O
-                  + k_oh_ch3br * M_OH * M_CH3Br   &! OH + CH3Br   -> CH2Br + H2O
-                  + LC_spsECPARBK * M_HOCl       &! HOCl + HCl(sad) -> Cl2 + H2O
-                  + LC_spsGCPARBK * M_HOBr       &! HOBr + HCl(sad) -> BrCl + H2O
-                  + k_h_ho2_b * M_H * M_HO2       &! H + HO2      -> O + H2O
-                  + k_oh_ch3oh * M_CH3OH * M_OH ! OH + CH3OH -> CH3O/CH2OH + H2O
+           !H2Onew = H2O + HOx, since HOx is very small comapred with H2O, this is fine
+           
+           PROD = EMISX(114,L)                    &!// Emissions, i.e. aircraft
+                  + 2 * k_oh_ch4 * M_CH4 * M_OH   &! OH + CH4     -> CH3 + H2O
+                  + 2 * k_cl_ch4 * M_CH4 * M_Cl   & ! Cl + CH4    -> HCl + CH3
+                  + 2 *(k_od_ch4_a + k_od_ch4_b)* M_O1D*M_CH4& ! O(1D) + CH4 ->... CH2O + 2 HOx's
+                  + k_od_ch4_c  * M_O1D * M_CH4   & ! O(1D) + CH4 -> H2 + CH2O
+                  + k_od_h2 * M_O1D * M_H2        &! O(1D) + H2  -> OH + H
+                  + k_oh_h2 * M_OH * M_H2            &! OH + H2     -> H2O + H
+                  + k_cl_h2 * M_Cl * M_H2             ! H2 + Cl     -> HCl + H
 
-           LOSS = k_od_h2o * M_O1D             &! O(1D) + H2O  -> OH + OH
-                  + J_H2O                     &! H2O + hv     -> H + OH
-                  + k_h2o_clono2 * M_ClONO2   &! H2O + ClONO2 -> HNO3 + HOCl
-                  !//Gaseous reactions on PSCs
-                  + LC_spsADPAR * M_N2O5/M_H2O     &! N2O5 + H2O   -> 2HNO3s
-                  + LC_spsBDPAR * M_ClONO2/M_H2O   &! ClONO2 + H2O -> HOCl + HNO3s
-                  + LC_spsFDPAR * M_BrONO2/M_H2O    ! BrONO2 + H2O -> HOBr + HNO3s
-
+           LOSS = k_h_ho2_c * M_H * M_HO2 / M_H2O    &! H + HO2     -> H2 + O2
+                  + J_CH2O_b * M_CH2O / M_H2O       ! all CH4 is counted as production, so we have to account for the fraction that goes to H2
            !// Diagnose loss processes [molecules/cm3 in this time step]
            CHEMLOSS(1,114,L) = CHEMLOSS(1,114,L) + LOSS * M_H2O*DTS
            CHEMLOSS(2,114,L) = 0._r8 !// No drydep
-           CHEMLOSS(3,114,L) = CHEMLOSS(3,114,L) + k_od_h2o * M_O1D*M_H2O*DTS
-           CHEMLOSS(4,114,L) = CHEMLOSS(4,114,L) + J_H2O*M_H2O*DTS
-           CHEMLOSS(5,114,L) = CHEMLOSS(5,114,L) + k_h2o_clono2*M_ClONO2*M_H2O*DTS
-           CHEMLOSS(6,114,L) = CHEMLOSS(6,114,L) + (LC_spsADPAR * M_N2O5 &
-                + LC_spsBDPAR * M_ClONO2 + LC_spsFDPAR * M_BrONO2) * DTS
-
+           CHEMLOSS(3,114,L) = CHEMLOSS(3,114,L) + k_h_ho2_c * M_H * M_HO2*DTS
+           CHEMLOSS(4,114,L) = CHEMLOSS(4,114,L) + J_CH2O_b*M_CH2O*DTS !NBNB this is really a negative term to compensate for to high production, as this part goes to H2
            !// Diagnose production [molecules/cm3 in this time step]
            CHEMPROD(1,114,L) = CHEMPROD(1,114,L) + PROD*DTS
-           CHEMPROD(2,114,L) = CHEMPROD(2,114,L) + k_oh_ho2*M_OH*M_HO2*DTS
-           CHEMPROD(3,114,L) = CHEMPROD(3,114,L) + k_oh_ch4*M_CH4*M_OH*DTS
-           CHEMPROD(4,114,L) = CHEMPROD(4,114,L) + k_oh_hcl*M_HCl*M_OH*DTS
-           CHEMPROD(5,114,L) = CHEMPROD(5,114,L) + k_oh_hno3*M_HNO3*M_OH*DTS
+           CHEMPROD(3,114,L) = CHEMPROD(3,114,L) + 2*k_oh_ch4*M_CH4*M_OH*DTS
+           CHEMPROD(4,114,L) = CHEMPROD(4,114,L) + 2*k_cl_ch4*M_CH4*M_Cl*DTS
+           CHEMPROD(5,114,L) = CHEMPROD(5,114,L) + (2*k_od_ch4_a + 2*k_od_ch4_b + k_od_ch4_c)* M_O1D*M_CH4*DTS
            CHEMPROD(6,114,L) = CHEMPROD(6,114,L) + k_oh_h2*M_OH*M_H2*DTS
-           CHEMPROD(7,114,L) = CHEMPROD(7,114,L) + k_oh_ch2o*M_CH2O*M_OH*DTS
-           CHEMPROD(8,114,L) = CHEMPROD(8,114,L) + k_oh_ho2no2*M_HO2NO2*M_OH*DTS
-           CHEMPROD(9,114,L) = CHEMPROD(9,114,L) + (k_oh_oh*M_OH*M_OH &
-                                                   + k_oh_h2o2*M_OH*M_H2O2)*DTS
-           CHEMPROD(10,114,L) = CHEMPROD(10,114,L) &
-                + (k_oh_ch3o2h_a + k_oh_ch3o2h_b)*M_CH3O2H*M_OH*DTS
+           CHEMPROD(7,114,L) = CHEMPROD(7,114,L) + k_od_h2 * M_O1D * M_H2*DTS
+           CHEMPROD(8,114,L) = CHEMPROD(8,114,L) + k_cl_h2 * M_Cl * M_H2*DTS
 
+             !//Old version with full chem:
+           !PROD = EMISX(114,L)                 &!// Emissions, i.e. aircraft
+           !       + k_oh_oh * M_OH * M_OH     &! OH + OH      -> H2O + O(3P)
+           !       + k_oh_ho2 * M_OH * M_HO2    &! OH + HO2     -> H2O + O2
+           !       + k_oh_h2 * M_OH * M_H2     &! OH + H2      -> H2O + H
+           !       + k_oh_h2o2 * M_OH * M_H2O2   &! OH + H2O2    -> H2O + HO2
+           !       + k_oh_hno3 * M_HNO3 * M_OH   &! OH + HNO3    -> H2O + NO3
+           !       + k_oh_hocl * M_HOCl * M_OH   &! OH + HOCl    -> H2O + ClO
+           !       + k_oh_hcl * M_HCl * M_OH    &! OH + HCl     -> H2O + Cl
+           !       + k_oh_ch2o * M_CH2O * M_OH   &! OH + CH2O    -> H2O + HCO
+           !       + k_oh_ch4 * M_CH4 * M_OH    &! OH + CH4     -> CH3 + H2O
+           !       + (k_oh_ch3o2h_a + k_oh_ch3o2h_b) &
+           !            * M_CH3O2H * M_OH &! OH + CH3OOH  -> CH3O2/CH2OOH + H2O
+           !       + k_oh_hbr  * M_HBr * M_OH    &! OH + HBr     -> H2O + Br
+           !       + k_oh_ho2no2 * M_HO2NO2 * M_OH  &! OH + HO2NO2  -> H2O + O2 + NO2
+           !       + k_oh_hcfc123 * M_HCFC123 * M_OH &! CF3CHCl2 + OH  -> H2O + ...
+           !       + k_oh_hcfc141 * M_HCFC141 * M_OH &! CH3CFCl2 + OH  -> H2O + ...
+           !       + k_oh_hcfc142 * M_HCFC142 * M_OH &! CH3CF2Cl + OH  -> H2O + ...
+           !       + k_oh_chclf2 * M_OH * M_HCFC22 &! OH + CHF2Cl -> CF2Cl + H2O
+           !       + k_oh_ch3ccl3 * M_OH * M_MCF &! OH + CH3CCl3 -> CH2CCl3 + H2O
+           !       + k_oh_ch3cl * M_OH * M_CH3Cl   &! OH + CH3Cl   -> CH2Cl + H2O
+           !       + k_oh_ch3br * M_OH * M_CH3Br   &! OH + CH3Br   -> CH2Br + H2O
+           !       + LC_spsECPARBK * M_HOCl       &! HOCl + HCl(sad) -> Cl2 + H2O
+           !       + LC_spsGCPARBK * M_HOBr       &! HOBr + HCl(sad) -> BrCl + H2O
+           !       + k_h_ho2_b * M_H * M_HO2      &! H + HO2      -> O + H2O
+           !       + k_oh_ch3oh * M_CH3OH * M_OH ! OH + CH3OH -> CH3O/CH2OH + H2O
+
+           !LOSS = k_od_h2o * M_O1D             &! O(1D) + H2O  -> OH + OH
+           !       + J_H2O                     &! H2O + hv     -> H + OH
+           !       + k_h2o_clono2 * M_ClONO2   &! H2O + ClONO2 -> HNO3 + HOCl
+           !       !//Gaseous reactions on PSCs
+           !       + LC_spsADPAR * M_N2O5/M_H2O     &! N2O5 + H2O   -> 2HNO3s
+           !       + LC_spsBDPAR * M_ClONO2/M_H2O   &! ClONO2 + H2O -> HOCl + HNO3s
+           !       + LC_spsFDPAR * M_BrONO2/M_H2O    ! BrONO2 + H2O -> HOBr + HNO3s
+
+           !// Diagnose loss processes [molecules/cm3 in this time step]
+           !CHEMLOSS(1,114,L) = CHEMLOSS(1,114,L) + LOSS * M_H2O*DTS
+           !CHEMLOSS(2,114,L) = 0._r8 !// No drydep
+           !CHEMLOSS(3,114,L) = CHEMLOSS(3,114,L) + k_od_h2o * M_O1D*M_H2O*DTS
+           !CHEMLOSS(4,114,L) = CHEMLOSS(4,114,L) + J_H2O*M_H2O*DTS
+           !CHEMLOSS(5,114,L) = CHEMLOSS(5,114,L) + k_h2o_clono2*M_ClONO2*M_H2O*DTS
+           !CHEMLOSS(6,114,L) = CHEMLOSS(6,114,L) + (LC_spsADPAR * M_N2O5 &
+           !     + LC_spsBDPAR * M_ClONO2 + LC_spsFDPAR * M_BrONO2) * DTS
+
+           !// Diagnose production [molecules/cm3 in this time step]
+           !CHEMPROD(1,114,L) = CHEMPROD(1,114,L) + PROD*DTS
+           !CHEMPROD(2,114,L) = CHEMPROD(2,114,L) + k_oh_ho2*M_OH*M_HO2*DTS
+           !CHEMPROD(3,114,L) = CHEMPROD(3,114,L) + k_oh_ch4*M_CH4*M_OH*DTS
+           !CHEMPROD(4,114,L) = CHEMPROD(4,114,L) + k_oh_hcl*M_HCl*M_OH*DTS
+           !CHEMPROD(5,114,L) = CHEMPROD(5,114,L) + k_oh_hno3*M_HNO3*M_OH*DTS
+           !CHEMPROD(6,114,L) = CHEMPROD(6,114,L) + k_oh_h2*M_OH*M_H2*DTS
+           !CHEMPROD(7,114,L) = CHEMPROD(7,114,L) + k_oh_ch2o*M_CH2O*M_OH*DTS
+           !CHEMPROD(8,114,L) = CHEMPROD(8,114,L) + k_oh_ho2no2*M_HO2NO2*M_OH*DTS
+           !CHEMPROD(9,114,L) = CHEMPROD(9,114,L) + (k_oh_oh*M_OH*M_OH &
+           !                                        + k_oh_h2o2*M_OH*M_H2O2)*DTS
+           !CHEMPROD(10,114,L) = CHEMPROD(10,114,L) &
+           !     + (k_oh_ch3o2h_a + k_oh_ch3o2h_b)*M_CH3O2H*M_OH*DTS
+           
+           !End of old treatment, now do integration:
            call QSSA(271,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_H2O)
 
            !// Integrate H2Os

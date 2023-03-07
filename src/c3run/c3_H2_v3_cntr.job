@@ -2,13 +2,14 @@
 # Script for running on Saga.
 # --------------------------------------------------------------------------
 # Job name (enter your distinct job name):
-#SBATCH --job-name=CTM3_git_H2conc_CNTR_yr7
+#SBATCH --job-name=CTM3_git_H2conc_CNTR_yr7_test
 #
 # Project (enter your noturn project number):
 #SBATCH --account=nn9188k
 #
 # Wall clock limit (setting for one year 96:0:0):
-#SBATCH --time=150:00:0
+#SBATCH --time=15:00:0
+##SBATCH --time=150:00:0
 ##SBATCH --time=80:00:0
 ##SBATCH --time=28:00:0
 ###SBATCH --qos=devel
