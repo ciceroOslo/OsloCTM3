@@ -1056,11 +1056,6 @@ contains
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': attribute description tracer_idx')
 
-    !// Define length of tracer name string (use TNAME for this)
-    status = nf90_def_dim(ncid,"tracer_name_len",TNAMELEN,tracer_name_len_dim_id)
-    if (status .ne. nf90_noerr) call handle_error(status, &
-         f90file//':'//subr//': define tracer_name_len dim')
-
         !// Defining the DAYS variable
     status = nf90_def_dim(ncid,"DAYS",366,days_dim_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
