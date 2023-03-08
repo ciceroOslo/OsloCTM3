@@ -1057,9 +1057,9 @@ contains
          f90file//':'//subr//': attribute description tracer_idx')
 
         !// Defining the DAYS variable
-    status = nf90_def_dim(ncid,"DAYS",366,days_dim_id)
-    if (status .ne. nf90_noerr) call handle_error(status, &
-         f90file//':'//subr//': define DAYS dim')
+    !status = nf90_def_dim(ncid,"DAYS",366,days_dim_id)
+    !if (status .ne. nf90_noerr) call handle_error(status, &
+    !     f90file//':'//subr//': define DAYS dim')
     status = nf90_def_var(ncid,"DAYS",nf90_int,days_dim_id,days_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define DAYS variable')
