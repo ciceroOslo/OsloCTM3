@@ -87,7 +87,7 @@ export H2SURF=/cluster/projects/nn9188k/ragnhibs/H2_INPUT/hydrogen_concentration
 export CH4SURF=/cluster/projects/nn9188k/ragnhibs/H2_INPUT/methane_concentrations_1by1.nc 
 
 # Name of main program
-export PROGFILE=osloctm3
+export PROGFILE=osloctm3_conc_cntr
 
 # Job file (this file)
 export JOBFILENAME=c3_H2_jobfile.job
