@@ -102,7 +102,7 @@ module bcoc_oslo
   !// BCsnow
   !// ----------------------------------------------------------------------
   !// Switch for turning on/off BCsnow (could be moved to Makefile?)
-  logical, parameter :: LBCsnow = .true.
+  logical, parameter :: LBCsnow = .false.
   !// Number of max snow layers
   integer, parameter :: ILMM = 10
   !// Snow layer and BC on snow
