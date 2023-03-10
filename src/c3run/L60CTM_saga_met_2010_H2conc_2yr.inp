@@ -2,7 +2,7 @@
 --------------------------------------------------------------------------------
  2009  IYEAR = reference year to which NDAI/NDAYE are offset
     1  NDAYI = day of year to begin CTM run at 0000 hhmm UT (can be >365)
-    3  NDAYE = day at end of CTM run, finishes at end of day=NDAYE-1
+   33  NDAYE = day at end of CTM run, finishes at end of day=NDAYE-1
 --------------------------------------------------------------------------------
     F  LCLDQMD  = Mid point of quadrature cloud cover ICAs                     
     F  LCLDQMN  = Mean quadrature cloud cover ICAs                             
@@ -123,9 +123,9 @@ PFZON  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
 DIAGNOSTICS -------------------------------------------------------------
 LDUMP3HRS - T: Write diagnostic 3 hourly output and monthly means of defined tracers; F: Do not
    all air trp sul slt min nit bio moa ffc bfc soa ntr
-    T  T  T  T  F  T  F  T  T  T  T  T  T
+    F  T  T  T  F  T  F  T  T  T  T  T  T
 LSTOM1HRS - T: Write diagnostic 1 hourly output of GstO3 and FstO3; F: Do not
-    T  
+    F  
 LDLYSCAV - T: Write daily total and 2d scavenging; F: Do not
    TOT 2D brd ls cnv dry sto 
     T  T  T  T  T  T  T
