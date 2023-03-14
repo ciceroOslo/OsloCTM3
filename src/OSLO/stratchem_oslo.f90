@@ -371,7 +371,7 @@ contains
     use cmn_ctm, only: JMON, YDGRD
     use cmn_met, only: MYEAR
     use utilities, only: get_free_fileid
-    use cmn_oslo, only: STT_2D_LB, STT_2D_LT
+    use cmn_oslo, only: STT_2D_LB, STT_2D_LT, HISTYEAR
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
@@ -531,7 +531,16 @@ contains
     if (.not. LNEW_MONTH) return
 
     !// Year and month as strings
-    write(YEAR,'(I4)') MYEAR
+
+    !// For historical simulation
+    !write(YEAR,'(I4)') MYEAR
+    if (HISTYEAR .eq. 1950) then
+       write(YEAR,'(I4)') 1850
+    else
+       write(YEAR,'(I4)') HISTYEAR
+    end if
+    
+    
     write(MON,'(I2.2)') JMON
 
     write(6,'(a)') f90file//':'//subr//': Updating boundary conditions'

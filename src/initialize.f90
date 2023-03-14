@@ -967,26 +967,11 @@ contains
 
 
        !RBS SCALE H2
-       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(113)), 0.65d0 
-       !STT(:,:,:,trsp_idx(113)) =STT(:,:,:,trsp_idx(113))*0.65d0 
-
-       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(113)), 1.5d0 
-       !STT(:,:,:,trsp_idx(113)) =STT(:,:,:,trsp_idx(113))*1.5d0 
+      
+       write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(113)), 1.5d0 
+       STT(:,:,:,trsp_idx(113)) =STT(:,:,:,trsp_idx(113))*0.6d0 
        
-
-       !RBS SCALE MHP
-       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(16)), 0.5d0 
-       !STT(:,:,:,trsp_idx(16)) =STT(:,:,:,trsp_idx(16))*0.5d0 
-       !SUT(:,:,:,trsp_idx(16)) =SUT(:,:,:,trsp_idx(16))*0.5d0 
-       !SVT(:,:,:,trsp_idx(16)) =SVT(:,:,:,trsp_idx(16))*0.5d0 
-       !SWT(:,:,:,trsp_idx(16)) =SWT(:,:,:,trsp_idx(16))*0.5d0 
-       !SUU(:,:,:,trsp_idx(16)) =SUU(:,:,:,trsp_idx(16))*0.5d0 
-       !SVV(:,:,:,trsp_idx(16)) =SVV(:,:,:,trsp_idx(16))*0.5d0 
-       !SWW(:,:,:,trsp_idx(16)) =SWW(:,:,:,trsp_idx(16))*0.5d0 
-       !SUV(:,:,:,trsp_idx(16)) =SUV(:,:,:,trsp_idx(16))*0.5d0 
-       !SUW(:,:,:,trsp_idx(16)) =SUW(:,:,:,trsp_idx(16))*0.5d0 
-       !SVW(:,:,:,trsp_idx(16)) =SVW(:,:,:,trsp_idx(16))*0.5d0 
-
+       call HIST_SCALE_AFTER_RESTART
        
        !// Restart fields for BCsnow
        if (LBCOC) call bcsnow_init(NDAYI)
@@ -1205,6 +1190,155 @@ contains
     !// --------------------------------------------------------------------
   end subroutine report_zeroinit
   !//-----------------------------------------------------------------------
+
+  subroutine HIST_SCALE_AFTER_RESTART
+    !// --------------------------------------------------------------------
+    use cmn_precision, only: r8
+    use cmn_size, only: IPAR, JPAR, LPAR, NPAR
+    use cmn_ctm, only: AIR, STT, AREAXY,NTM
+    use cmn_chem, only: TNAME, TMASS
+    use cmn_oslo, only: CHEM_IDX, TRSP_IDX, HISTYEAR
+    use cmn_parameters, only: M_AIR
+    use cmn_met, only: MYEAR
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+
+    !// Locals
+    real(r8) :: SUMT, SUMA
+    integer :: &
+         I,J,L,N
+    integer, parameter :: nComp = 16
+    real(r8), dimension(nComp) :: scale_array 
+    integer, dimension(nComp), parameter :: comp_list = &
+         (/46,107,104,103,121,122,123,102,128,129,101,105,106,116,117,118 /)
+    !// --------------------------------------------------------------------
+
+
+
+    select case(HISTYEAR)
+    case(1750)
+       scale_array = (/0.40,0.84,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.85,0.74,0.00,0.00/)
+    case(1850)
+       scale_array = (/0.45,0.84,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.85,0.74,0.00,0.00/)
+    case(1950)
+       scale_array = (/0.64,0.90,0.01,0.00,0.01,0.09,0.00,0.00,0.00,0.00,0.00,0.41,0.89,0.85,0.01,0.00/)
+    case(1970)
+       scale_array = (/0.78,0.92,0.23,0.24,0.08,0.41,0.02,0.06,0.00,0.00,2.31,0.88,1.01,0.99,0.01,0.00/)
+    case(1980)
+       scale_array = (/0.88,0.93,0.57,0.69,0.27,0.66,0.19,0.21,0.00,0.02,11.11,1.08,1.02,1.09,0.17,0.12/)
+    case(1990)
+       scale_array = (/0.95,0.96,0.91,1.09,0.94,0.95,0.64,0.44,0.00,0.07,16.81,1.22,1.03,1.22,0.59,0.59/)
+    case(2000)
+       scale_array = (/0.98,0.98,1.02,1.09,1.09,1.01,0.97,0.69,0.63,0.59,5.95,1.12,1.03,1.24,1.00,0.90/)
+    case(2007)
+       scale_array = (/0.99,0.99,1.01,1.02,1.03,1.00,1.00,0.89,0.92,0.86,1.67,1.04,1.02,1.07,1.05,0.98/)
+    case(2010)
+       scale_array = (/1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00/)
+    case(2014)
+       scale_array = (/1.01,1.01,0.98,0.97,0.97,0.99,1.01,1.10,1.15,1.07,0.48,0.95,1.01,0.94,0.91,1.03/)
+    case(2017) !Use same as 2014.
+       scale_array = (/1.01,1.01,0.98,0.97,0.97,0.99,1.01,1.10,1.15,1.07,0.48,0.95,1.01,0.94,0.91,1.03/)
+    case(2020) !Use same as 2014.
+       scale_array = (/1.01,1.01,0.98,0.97,0.97,0.99,1.01,1.10,1.15,1.07,0.48,0.95,1.01,0.94,0.91,1.03/)
+    case DEFAULT
+       write(6,'(a)') 'Scale_array not defined for the selected year (stopping)'
+       stop
+    end select
+
+    !!RBS Test strat pre ind, trop present.
+    !scale_array = (/1.00,0.84,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.85,0.74,0.00,0.00/)
+
+
+    write(6,'(a)') 'Scale_array:'
+    write(6,'(16f8.2)') scale_array
+
+    !// Transported species
+    write(6,'(a)') 'Scale after restart:'
+    write(6,'(a)') 'CH4,N2O,CFC-12,CFC-11,CFC-113,CFC-114,CFC-115,HCFC-22,HCFC-141b,HCFC-142b,CH3CCl3,CCl4,CH3Cl,CH3Br,Halon-1211,Halon-1301'
+
+    do N = 1,nComp
+       write(6,'(a)') TNAME(trsp_idx(comp_list(N)))
+    end do
+    write(6,'(a)') 'Before:'
+    L = 1 !// SURFACE LAYER
+    do N = 1,NPAR
+       SUMT = 0._r8
+       SUMA = 0._r8
+       do J = 1,JPAR
+          do I = 1,IPAR
+             SUMT = SUMT + STT(I,J,L,N)/AIR(I,J,L)*M_AIR/TMASS(N)*AREAXY(I,J)             
+             SUMA = SUMA + AREAXY(I,J)
+          end do
+       end do
+       write(6,'(a,i4,1x,i4,1x,a10,0P,f8.2,1P,es14.6)') &
+            'tracer',CHEM_IDX(N),N,TNAME(N),TMASS(N),SUMT/SUMA
+    end do
+    write(6,'(a,es14.6)') & 
+         'Sum area :',SUMA
+   
+
+!// Do scaling here:
+    do N = 1,nComp
+       write(6,'(a,f8.2)') 'Scale comp :' // TNAME(trsp_idx(comp_list(N))),scale_array(N) 
+       STT(:,:,:,trsp_idx(comp_list(N))) =STT(:,:,:,trsp_idx(comp_list(N)))*scale_array(N) 
+    end do
+
+!// Crude assumptions
+    N = 108 !CLx
+    write(6,'(a,f8.2)') 'Scale comp :' // TNAME(trsp_idx(N)),0.5_r8*(scale_array(3)+ scale_array(13))    
+    STT(:,:,:,trsp_idx(N)) =STT(:,:,:,trsp_idx(N))*0.5_r8*(scale_array(3)+ scale_array(13))    
+    N = 111 !Hcl
+    write(6,'(a,f8.2)') 'Scale comp :' // TNAME(trsp_idx(N)),0.5_r8*(scale_array(3)+ scale_array(13))    
+    STT(:,:,:,trsp_idx(N)) =STT(:,:,:,trsp_idx(N))*0.5_r8*(scale_array(3)+ scale_array(13))    
+    N = 112 !Cly
+    write(6,'(a,f8.2)') 'Scale comp :' // TNAME(trsp_idx(N)),0.5_r8*(scale_array(3)+ scale_array(13))    
+    STT(:,:,:,trsp_idx(N)) =STT(:,:,:,trsp_idx(N))*0.5_r8*(scale_array(3)+ scale_array(13))    
+    N = 119 !Bry
+    write(6,'(a,f8.2)') 'Scale comp :' // TNAME(trsp_idx(N)),scale_array(14)    
+    STT(:,:,:,trsp_idx(N)) =STT(:,:,:,trsp_idx(N))*scale_array(14)   
+    
+    N=127 !HCFC123 (assume same as  HCFC142b
+    write(6,'(a,f8.2)') 'Scale comp :' // TNAME(trsp_idx(N)),scale_array(10)    
+    STT(:,:,:,trsp_idx(N)) =STT(:,:,:,trsp_idx(N))*scale_array(10)   
+    
+    write(6,'(a)') 'After:'
+    L = 1 !// SURFACE LAYER
+    do N = 1,NPAR
+       SUMT = 0._r8
+       SUMA = 0._r8
+       do J = 1,JPAR
+          do I = 1,IPAR
+             SUMT = SUMT + STT(I,J,L,N)/AIR(I,J,L)*M_AIR/TMASS(N)*AREAXY(I,J)             
+             SUMA = SUMA + AREAXY(I,J)
+          end do
+       end do
+       write(6,'(a,i4,1x,i4,1x,a10,0P,f8.2,1P,es14.6)') &
+            'tracer',CHEM_IDX(N),N,TNAME(N),TMASS(N),SUMT/SUMA
+    end do
+
+
+!// Total mass (To be compared with unscaled restart fields)
+!// Transported species
+    write(6,'(a)') 'Transported species (after scaling):'
+    do N = 1,NTM
+       SUMT = 0._r8
+       do L = 1,LPAR
+          do J = 1,JPAR
+             do I = 1,IPAR
+                SUMT = SUMT + STT(I,J,L,N)
+             end do
+          end do
+       end do
+       write(6,'(a,i4,1x,a10,0P,f8.2,1P,es14.6)') &
+            'tracer',N,TNAME(N),TMASS(N),SUMT
+    end do
+
+    
+  end subroutine HIST_SCALE_AFTER_RESTART
+
+
+
 
   !//-----------------------------------------------------------------------
 end module initialize
