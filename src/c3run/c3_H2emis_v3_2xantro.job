@@ -2,7 +2,7 @@
 # Script for running on Saga.
 # --------------------------------------------------------------------------
 # Job name (enter your distinct job name):
-#SBATCH --job-name=CTM3_git_H2emis_CNTR_yr5_test
+#SBATCH --job-name=CTM3_git_H2emis_2xantro_yr5_test
 #
 # Project (enter your noturn project number):
 #SBATCH --account=nn9188k
@@ -81,7 +81,7 @@ export RESTARTDIR=$RESULTDIR/restart_$PID
 
 # Set input file name
 export INPUTFILE=L60CTM_saga_met_${CYY}_H2emis_2yr.inp
-export EMISFILE=Ltracer_emis_ceds17_${CYY}_h2_emission.inp 
+export EMISFILE=Ltracer_emis_ceds17_${CYY}_h2_emission_2xantro.inp 
 export EMISFILE_OUT=Ltracer_emis_ceds17_h2emis.inp
 
 #export H2SURF=/cluster/projects/nn9188k/ragnhibs/H2_INPUT/hydrogen_concentrations_average_lowess.nc
