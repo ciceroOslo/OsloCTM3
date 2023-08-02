@@ -18,13 +18,18 @@ filename / description  (See detailed description below)
   ID     SCALE       RES MONTH YEAR  CAT TYPE UNIT DIURN VERT DATASET_NAME SCENYEAR
     SPECIES SCALING ('xxx' to close dataset)
 
-'$CICERO/EMIS/H2/emissions.h2.0.5x0.5.1970-2017_ceds_format.nc'
-  460    1.0000d+00  HLF   99  9999  OCE   2    0    0    0   'ocean'  2010
+'$CICERO/EMIS/H2/emissions.h2.0.5x0.5.1850_ceds_format.nc'
+  460    1.0000d+00  HLF   99  9999  TRA   2    0    0    0   'anthro'  1850
     H2 1.d0
     xxx 0 To close this data set
 
-'$CICERO/EMIS/H2/emissions.h2.0.5x0.5.1970-2017_ceds_format.nc'
-  460    1.0000d+00  HLF   99  9999  NAT   2    0    0    0   'soil'  2010
+'$CICERO/EMIS/H2/emissions.h2.0.5x0.5.1850_ceds_format.nc'
+  460    1.0000d+00  HLF   99  9999  OCE   2    0    0    0   'ocean'  1850
+    H2 1.d0
+    xxx 0 To close this data set
+
+'$CICERO/EMIS/H2/emissions.h2.0.5x0.5.1850_ceds_format.nc'
+  460    1.0000d+00  HLF   99  9999  NAT   2    0    0    0   'soil'  1850
     H2 1.d0
     xxx 0 To close this data set
 
