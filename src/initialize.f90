@@ -968,10 +968,25 @@ contains
 
        !RBS SCALE H2
       
-       write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(113)), 1.5d0 
-       STT(:,:,:,trsp_idx(113)) =STT(:,:,:,trsp_idx(113))*0.6d0 
+       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(113)), 1.5d0 
+       !STT(:,:,:,trsp_idx(113)) =STT(:,:,:,trsp_idx(113))*0.6d0 
        
-       call HIST_SCALE_AFTER_RESTART
+       write(6,'(a,f8.2)') 'Scale comp after restart AGAIN:'
+       STT(:,:,:,trsp_idx(127)) =STT(:,:,:,trsp_idx(127))*0.0d0 
+       STT(:,:,:,trsp_idx(104)) =STT(:,:,:,trsp_idx(104))*0.0d0 
+       STT(:,:,:,trsp_idx(103)) =STT(:,:,:,trsp_idx(103))*0.0d0 
+       STT(:,:,:,trsp_idx(121)) =STT(:,:,:,trsp_idx(121))*0.0d0 
+       STT(:,:,:,trsp_idx(122)) =STT(:,:,:,trsp_idx(122))*0.0d0 
+       STT(:,:,:,trsp_idx(123)) =STT(:,:,:,trsp_idx(123))*0.0d0 
+       STT(:,:,:,trsp_idx(102)) =STT(:,:,:,trsp_idx(102))*0.0d0 
+       STT(:,:,:,trsp_idx(128)) =STT(:,:,:,trsp_idx(128))*0.0d0 
+       STT(:,:,:,trsp_idx(101)) =STT(:,:,:,trsp_idx(101))*0.0d0 
+       STT(:,:,:,trsp_idx(105)) =STT(:,:,:,trsp_idx(105))*0.0d0 
+       STT(:,:,:,trsp_idx(117)) =STT(:,:,:,trsp_idx(117))*0.0d0 
+       STT(:,:,:,trsp_idx(118)) =STT(:,:,:,trsp_idx(118))*0.0d0
+
+ 
+       !call HIST_SCALE_AFTER_RESTART
        
        !// Restart fields for BCsnow
        if (LBCOC) call bcsnow_init(NDAYI)

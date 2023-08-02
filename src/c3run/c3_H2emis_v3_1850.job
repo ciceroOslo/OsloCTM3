@@ -2,14 +2,14 @@
 # Script for running on Saga.
 # --------------------------------------------------------------------------
 # Job name (enter your distinct job name):
-#SBATCH --job-name=CTM3_git_H2emis_1850_test
+#SBATCH --job-name=CTM3_git_H2emis_1850_yr3
 #
 # Project (enter your noturn project number):
 #SBATCH --account=nn9188k
 #
 # Wall clock limit (setting for one year 96:0:0):
-#SBATCH --time=15:00:0
-##SBATCH --time=150:00:0
+###SBATCH --time=15:00:0
+#SBATCH --time=140:00:0
 ##SBATCH --time=80:00:0
 ##SBATCH --time=28:00:0
 ###SBATCH --qos=devel
@@ -91,7 +91,8 @@ export CH4SURF=/cluster/projects/nn9188k/ragnhibs/H2_INPUT/methane_concentration
  
 export CH4SURF_SCRATCH=methane_concentrations_1by1.nc 
 # Name of main program
-export PROGFILE=osloctm3_spin
+##export PROGFILE=osloctm3_spin_2
+export PROGFILE=osloctm3_hist
 
 # Job file (this file)
 export JOBFILENAME=c3_H2_jobfile.job
@@ -103,7 +104,9 @@ export DUSTFILE=OSLO/DEAD_COLUMN/dustinput/dst_T159.nc
 # ! In example.inp: LNCR T: use restart file in netCD/cluster/work/users/ragnhibs/CTM3_H2emis_cntr_yr4.061221.13385/F, F: old .sav format
 
 
-export RESTARTFILE=$CTM3_USR_INPUT/H2/H2_EMIS_v3_CNTR/YR4/ctm3_restart_20110101.nc
+#export RESTARTFILE=$CTM3_USR_INPUT/H2/H2_EMIS_v3_CNTR/YR4/ctm3_restart_20110101.nc
+#export RESTARTFILE=$CTM3_USR_INPUT/H2/H2_EMIS_1850/YR1/ctm3_restart_20110101.nc
+export RESTARTFILE=$CTM3_USR_INPUT/H2/H2_EMIS_1850/YR2/ctm3_restart_20110101.nc
 
 # --------------------------------------------------------------------------
 # Initialize the model run
