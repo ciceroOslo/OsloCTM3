@@ -60,7 +60,7 @@ contains
          FF_TYPE, FF_YEAR, FF_PATH, EMIS_FIR, &
          ECOMP_FIR, E22dTBL, E22dSCALE, E2L2dTBL, METHANEMIS, &
          EPAR_FIR, FF_CNAMES, FF_BNAMES, EPAR_NPARTS, FF_PARTITIONS, &
-         FF_SCALE, NEFIR, FF_VARNAME
+         FF_SCALE, NEFIR, FF_VARNAME, HISTYEAR
     use emisutils_oslo, only: reademis_2d, reademis_3d, reademis_stv, &
          set_diurnal_scalings, set_vertical_scalings, gfed4_init
     use sulphur_oslo, only: DMSseaconc
@@ -164,6 +164,11 @@ contains
     write(6,'(a)') 'Aircraft emissions year: '//trim(AirScen)
     write(6,'(a)') 'Aircraft emissions path: '//trim(AirEmisPath)
 
+    !// RBS Read in historical year
+    read(ifnr,*) !// skip header
+    read(ifnr,*) ELINE, HISTYEAR
+    write(6,'(a,i5)') 'Historical year: ', HISTYEAR
+    
     !// Read in lightning emissions
     !// --------------------------------------------------------------------
     read(ifnr,*) !// skip line

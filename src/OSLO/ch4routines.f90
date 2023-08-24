@@ -113,7 +113,7 @@ contains
        !// HYMN (default)
        call ch4surface_hymn()
        !// Scale hymn data - uses MYEAR for scaling.
-       !call ch4surface_scale_hymn()
+       call ch4surface_scale_hymn()
     else if (CH4TYPE .eq. 2) then
        !// POET
        call ch4surface_poet(2000)
@@ -264,14 +264,14 @@ contains
     !// Amund Sovde Haslerud, January 2017
     !// --------------------------------------------------------------------
     use cmn_met, only: MYEAR
-    use cmn_oslo, only: CH4FIELD
+    use cmn_oslo, only: CH4FIELD, HISTYEAR
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
     !// Input
 
     !// Local parameters
-    integer, parameter :: nObs = 33
+    integer, parameter :: nObs = 38
     real(r8), dimension(nObs), parameter :: ANNUAL_CH4 = &
       (/ 1644.56_r8, 1657.39_r8, 1669.79_r8, 1682.08_r8, 1693.18_r8, &
          1704.10_r8, 1714.00_r8, 1724.64_r8, 1735.35_r8, 1736.38_r8, &
@@ -279,12 +279,15 @@ contains
          1772.00_r8, 1773.00_r8, 1771.04_r8, 1772.59_r8, 1776.92_r8, &
          1776.94_r8, 1773.96_r8, 1774.69_r8, 1781.14_r8, 1786.77_r8, &
          1793.21_r8, 1798.65_r8, 1803.01_r8, 1808.23_r8, 1813.32_r8, &
-         1822.49_r8, 1833.99_r8, 1842.99_r8 /)
+         1822.49_r8, 1833.99_r8, 1842.99_r8, &
+         1849.58_r8, 1857.33_r8, 1866.58_r8, 1878.93_r8, 1895.27_r8 /)
+    
     integer, dimension(nObs), parameter :: ANNUAL_YEAR = &
        (/ 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, &
           1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, &
           2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, &
-          2014, 2015, 2016 /)
+          2014, 2015, 2016 , &
+          2017, 2018, 2019, 2020, 2021/)
 
     integer :: YSC, YCH4
     real(r8) :: SCALE
@@ -293,14 +296,15 @@ contains
     !// --------------------------------------------------------------------
 
     !// Scale to observed year, but not outside the range
-    if (MYEAR .lt. ANNUAL_YEAR(1)) then
+    !Replace histyear with MYEAR if the met year will be used.
+    if (HISTYEAR .lt. ANNUAL_YEAR(1)) then
        YSC = 1 !// Use the first year (1984)
-    else if (MYEAR .gt. maxval(ANNUAL_YEAR)) then
+    else if (HISTYEAR .gt. maxval(ANNUAL_YEAR)) then
        YSC = nObs !// Use the last year (2015)
     else
        !// Scale to year
        do YSC = 1, nObs
-          if (MYEAR .eq. ANNUAL_YEAR(YSC)) then
+          if (HISTYEAR .eq. ANNUAL_YEAR(YSC)) then
              exit
           end if
        end do

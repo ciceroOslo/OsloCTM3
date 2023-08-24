@@ -49,17 +49,17 @@ STRATCHEM :=Y
 #Sulfur scheme
 SULPHUR :=Y
 #BC/OC
-BCOC :=N
+BCOC :=Y
 #Nitrate (requires SALT and SULPHUR)
 NITRATE :=Y
 #Sea salt
 SEASALT :=Y
 #Dust
-DUST :=N
+DUST :=Y
 #Secondary organic aerosols
-SOA :=N
+SOA :=Y
 #E90 (MUST be Y to calculate STE fluxes!)
-E90 :=Y
+E90 :=N
 #LINOZ (NOT set up to replace stratospheric chemistry, only included
 #       to calculate STE flux as UCI does it.
 LINOZ :=N

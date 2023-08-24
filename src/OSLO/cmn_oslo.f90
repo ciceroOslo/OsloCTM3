@@ -237,7 +237,8 @@ module cmn_oslo
   !// Table of vertical variations
   real(r8), dimension(NE2vertLVS,NE2vertVARS) :: E2vertSCALE
 
-
+  !//RBS To be used to scale methane concentrations.
+  integer :: HISTYEAR
 
 
   !// --- Specific 3D emissions --------------------------------------------
