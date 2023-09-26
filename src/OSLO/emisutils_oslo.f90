@@ -4128,7 +4128,7 @@ contains
     !// inTime is given as days since 1750, and starts at mid-month
     !// (15 Jan for each year).
     sTime = -1
-    if (getY .le. 2014) then 
+    if (getY .le. 2019) then 
        do M = 1, nTime
           if (inTime(M) .ge. (getY - 1750)*365 + 15) then
              sTime = M

@@ -54,7 +54,6 @@ Number    Name(8)  Weight
 073       'SO4'         96.060    'Sulfate - bulk aerosol+gas'
 074       'H2S'         34.076    'Hydrogen sulfide'
 075       'MSA'         96.102    'Methanesulfonic acid [CH3SO3H]'
-099       'E090'        12.010    'e090 tracer'
 101       'MCF'        133.394    'CH3CCl3'
 102       'HCFC22'      86.468    'CF2HCl'
 103       'CFC11'      137.360    'CCl3F'
