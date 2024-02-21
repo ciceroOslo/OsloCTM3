@@ -966,6 +966,21 @@ contains
        end if
 
 
+       !RBS SCALE CH4
+       !SSP119
+       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(46)), 0.787d0 
+       !STT(:,:,:,trsp_idx(46)) =STT(:,:,:,trsp_idx(46))*0.787d0 
+
+       !SSP434
+       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(46)), 1.2263d0 
+       !STT(:,:,:,trsp_idx(46)) =STT(:,:,:,trsp_idx(46))*1.2263d0
+
+       !SSP585
+       !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(46)), 1.3493d0 
+       !STT(:,:,:,trsp_idx(46)) =STT(:,:,:,trsp_idx(46))*1.3493d0 
+
+
+       
        !RBS SCALE H2
        !write(6,'(a,f8.2)') 'Scale comp after restart :' // TNAME(trsp_idx(113)), 0.65d0 
        !STT(:,:,:,trsp_idx(113)) =STT(:,:,:,trsp_idx(113))*0.65d0 
