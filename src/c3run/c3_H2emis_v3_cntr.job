@@ -2,14 +2,13 @@
 # Script for running on Saga.
 # --------------------------------------------------------------------------
 # Job name (enter your distinct job name):
-#SBATCH --job-name=CTM3_git_H2emis_CNTR_yr5_test
+#SBATCH --job-name=CTM3_v3_H2emis_CNTR_yr12
 #
 # Project (enter your noturn project number):
 #SBATCH --account=nn9188k
 #
 # Wall clock limit (setting for one year 96:0:0):
-#SBATCH --time=15:00:0
-##SBATCH --time=150:00:0
+#SBATCH --time=150:00:0
 ##SBATCH --time=80:00:0
 ##SBATCH --time=28:00:0
 ###SBATCH --qos=devel
@@ -100,7 +99,9 @@ export DUSTFILE=OSLO/DEAD_COLUMN/dustinput/dst_T159.nc
 # ! In example.inp: LNCR T: use restart file in netCD/cluster/work/users/ragnhibs/CTM3_H2emis_cntr_yr4.061221.13385/F, F: old .sav format
 
 
-export RESTARTFILE=$CTM3_USR_INPUT/H2/H2_EMIS_v3_CNTR/YR4/ctm3_restart_20110101.nc
+#export RESTARTFILE=$CTM3_USR_INPUT/H2/H2_EMIS_v3_CNTR/YR4/ctm3_restart_20110101.nc
+#export RESTARTFILE=$CTM3_USR_INPUT/H2/H2_EMIS_v3_CNTR/YR10/ctm3_restart_20110101.nc
+export RESTARTFILE=$CTM3_USR_INPUT/H2/H2_EMIS_v3_CNTR/YR11/ctm3_restart_20110101.nc
 
 # --------------------------------------------------------------------------
 # Initialize the model run

@@ -919,10 +919,10 @@ contains
     integer, parameter :: I1x1 = 360,  J1x1 = 180
     real(r8) :: XBEDGE(I1x1+1), YBEDGE(J1x1+1), XYBOX(J1x1)
     real(r8) :: EBOX(I1x1,J1x1)
-    !real(r8),parameter :: scale_fact = 1.0_r8 !1.1_r8 !1.0_r8
+    real(r8),parameter :: scale_fact = 1.0_r8 !1.1_r8
     !real(r8),parameter :: scale_fact = 0.787_r8*1.1_r8 !1.0_r8 ssp119
     !real(r8),parameter :: scale_fact = 1.226_r8*1.1_r8 !1.0_r8 ssp434
-    real(r8),parameter :: scale_fact = 1.349_r8*1.1_r8 !1.0_r8 ssp585
+    !real(r8),parameter :: scale_fact = 1.349_r8*1.1_r8 !1.0_r8 ssp585
     integer :: J
     real(r8) :: tempfield(IPAR,JPAR)
     !// --------------------------------------------------------------------

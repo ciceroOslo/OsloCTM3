@@ -67,7 +67,10 @@ program pmain
   use dust_oslo, only: dustbdg2file, dustInstBdg
   use emissions_ocean, only: emissions_ocean_total
   use emissions_oslo, only: update_emis, update_emis_ij
-  use gmdump3hrs, only: dump3hrs
+!  use gmdump3hrs, only: dump3hrs
+!++OEH:
+  use gmdump3hrs, only: dump3hrs, dump1hr
+!--OEH
   use input_oslo, only: init_oslo
   use main_oslo, only: master_oslo, update_chemistry
   use physics_oslo, only: update_physics, set_blh_ij
@@ -332,6 +335,10 @@ program pmain
         !//---Diagnoses (names set in LxxTyy-file)
         !//--- 0=INITIA, 1=SOURCE, 2=BndryL, 3=DRYDEP, 4=UV_ADV, 5=W_ADV_,
         !//--- 6=LSSCAV, 7=CHEMIS, 8=C_SCAV, 9=
+!++OEH:
+!        !// Dump surface layer data each hour? (gmdump3hrs.f90)
+!        call dump1hr(NDAYI,NDAY,NMET,NOPS)
+!--OEH
         call SYSTEM_CLOCK(count=stime)
         nops_dt = - real(stime, r8) / rtime
 

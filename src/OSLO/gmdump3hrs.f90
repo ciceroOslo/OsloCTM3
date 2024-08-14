@@ -23,11 +23,11 @@ module gmdump3hrs
   !logical, parameter :: LDUMP3HRS = .false.
   
   !// List of tracers to put out
-  integer, parameter :: trp_nr = 2, sul_nr = 2, slt_nr = 8, min_nr = 8, &
+  integer, parameter :: trp_nr = 5, sul_nr = 2, slt_nr = 8, min_nr = 8, &
        nit_nr = 5, bio_nr = 4, moa_nr=2, ffc_nr = 4, bfc_nr = 4, &
-       soa_ant_nr = 4, soa_nat_nr = 17, ntr_nr = 1
+       soa_ant_nr = 4, soa_nat_nr = 17, ntr_nr = 1, sfc_nr = 39 !OEH
   integer, parameter,dimension(trp_nr) :: &
-       trp_list = (/ 1, 6 /)
+       trp_list = (/ 1, 6, 13, 43, 44 /)
   integer, parameter,dimension(sul_nr) :: &
        sul_list = (/ 71, 72 /)
   integer, parameter,dimension(slt_nr) :: &
@@ -54,13 +54,24 @@ module gmdump3hrs
                      175, 176, 177, 178, 179, 182, 183 /)
   integer, parameter,dimension(soa_ant_nr) :: &
        soa_ant_list = (/ 188, 189, 190, 191 /)
-
+!++OEH
+  !// Surface hourly files
+  integer, parameter,dimension(sfc_nr) :: &
+       sfc_list = (/ 1, 4, 5, 6, 37, 41, 42, 43, 44, 61, 62, 63, 64, 65, &
+       72, 73, 201, 202, 203, 204, 205, 206, 207, 208, 230, 231, 232,  &
+       233, 234, 235, 236, 237, 240, &
+       241, 242, 243, 244, 245, 999 /)
+!--OEH
   character(len=10),dimension(NPAR) :: gmname
+!++OEH
+  character(len=10),dimension(sfc_nr+1) :: HRNAME
+  integer :: HRLIST(sfc_nr+1)
+!--OEH
   !// ----------------------------------------------------------------------
   character(len=*), parameter, private :: f90file = 'gmdump3hrs.f90'
   !// ----------------------------------------------------------------------
   private
-  public dump3hrs
+  public dump3hrs, dump1hr !OEH
   !// ----------------------------------------------------------------------
 
 contains
@@ -580,6 +591,421 @@ contains
     !// --------------------------------------------------------------------
   end subroutine gm_dump_nc
   !// ----------------------------------------------------------------------
+!++OEH: Adding 1-hourly output of lowermost layer
+  !// ----------------------------------------------------------------------
+  subroutine dump1hr(NDAYI,NDAY,NMET,NOPS)
+    !// --------------------------------------------------------------------
+    !// Dump data to files.
+    !// The routine dump1hr_nc will divide by volume, so whatever is sent
+    !// to that routine will be per volume.
+    !// --------------------------------------------------------------------
+    use cmn_precision, only: r8
+    use cmn_size, only: IPAR,JPAR
+    use cmn_ctm, only: STT, AIR, JYEAR, JMON, JDATE, NRMETD, NROPSM
+    use cmn_chem, only: TNAME
+    use cmn_oslo, only: trsp_idx
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+
+    !// Input
+    integer, intent(in) :: NDAYI, NDAY, NMET, NOPS
+
+    !// Locals
+    real(r8) :: TMPFIELD(IPAR,JPAR,sfc_nr+1), time
+    character(len=3)  :: cday                            !Char of day of year
+    character(len=4)  :: cyear                           !Char of year
+    character(len=14) :: ncfilename                      !Output filename
+    character(len=80) :: time_label                      !Time label or unit
+    integer :: N, NSOA
+
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'dump1hr'
+    !// --------------------------------------------------------------------
+
+    !// Initialize
+    If ((NDAY.eq.NDAYI).AND.(NMET.eq.1).AND.(NOPS.eq.1)) Then
+
+       HRLIST(1) = 998
+       HRNAME(1) = 'airdensity'
+       do N = 1, sfc_nr
+          HRLIST(N+1) = sfc_list(N)
+          if (sfc_list(N).eq.999) then
+             HRNAME(N+1) = 'SOATOTAL  '
+          else
+             HRNAME(N+1) = TNAME(trsp_idx(sfc_list(N)))
+          end if
+       end do
+
+       ! DEBUG:
+       !write(6,*) 'HRNAME: ',HRNAME
+       
+       write(6,'(a71)') '--------------------------------------------'// &
+         '---------------------------'
+       write(6,'(a)') f90file//':'//subr// &
+            ' Will write surface layer data to netCDF every hour'
+    end if
+
+    !// Strings for filenames
+    write(cyear,'(i4.4)') JYEAR
+    write(cday,'(i3.3)') NDAY
+
+    !// String for time label and filename
+    time_label='hours since yyyy-mm-dd 00:00:00'
+       write(time_label(13:23),'(i4.4,a1,i2.2,a1,i2.2)') &
+            JYEAR,'-',JMON,'-',JDATE
+    ncfilename = 'sfc'//cyear//'_'//cday//'.nc'
+
+    !// Determine hour counter from 0 to 23
+    if (NROPSM.ne.3) then
+       write(6,'(a)') f90file//':'//subr//': ERROR: NROPSM/=3!'
+       stop
+    end if
+    time = real(NOPS-1, r8) + real(NMET-1, r8)*24._r8 / real(NRMETD, r8)
+       
+    !// All variables will be divided by volume in dump1hr_nc, so we
+    !// send in air mass (AIR).
+    TMPFIELD(:,:,1) = AIR(:,:,1)
+
+    !// Loop through selected compounds and add to TMPFIELD
+    do N = 1, sfc_nr
+
+       !// SOA aerosols will be lumped into one variable
+       if (sfc_list(N).eq.999) then
+
+          !// SOA - first ANT then NAT
+          TMPFIELD(:,:,N+1) = STT(:,:,1,trsp_idx(soa_ant_list(1)))
+          do NSOA = 2, soa_ant_nr
+             TMPFIELD(:,:,N+1) = TMPFIELD(:,:,N+1) &
+                  + STT(:,:,1,trsp_idx(soa_ant_list(NSOA)))
+          end do
+          do NSOA = 1, soa_nat_nr
+             TMPFIELD(:,:,N+1) = TMPFIELD(:,:,N+1) &
+                  + STT(:,:,1,trsp_idx(soa_nat_list(NSOA)))
+          end do
+
+       !// Other compounds will be output directly
+       else
+          TMPFIELD(:,:,N+1) = STT(:,:,1,trsp_idx(sfc_list(N)))
+       end if
+       
+    end do
+
+    !// Dump data to nc file
+    call dump1hr_nc(sfc_nr+1, HRNAME, TMPFIELD, &
+         time, sfc_nr+1, HRLIST, time_label, ncfilename)
+
+    !// --------------------------------------------------------------------
+  end subroutine dump1hr
+  !// ----------------------------------------------------------------------
+
+
+  !// ----------------------------------------------------------------------
+  subroutine dump1hr_nc( &
+       NPAR_IN,     & !I Number of components in STT_IN (not necessarily STT)
+       TNAME_IN,    & !I Name of all the tracers sent in
+       STT_IN,      & !I 4-D array with components
+       time,        & !I Counter for netCDF timestep (i.e. NMET)
+       NCOMP,       & !I Number of compenents to put out (size of ICOMP_LIST)
+       ICOMP_LIST,  & !I Array with component names to dump
+       time_label,  & !I Correct time label (hours since yyyy-mm-dd 00:00:00)
+       filename)      !I Name of file (minYYYY_DDD.nc)
+    !// --------------------------------------------------------------------
+    !// Purpose: Write data to netcdf output file.
+    !// This is basically copied from gm_dump_nc but with some modifications
+    !// --------------------------------------------------------------------
+    use netcdf
+    use cmn_precision, only: r8
+    use cmn_size, only: IPAR, JPAR
+    use cmn_ctm, only:  AREAXY, XDGRD, YDGRD
+    use cmn_met, only:  ZOFLE
+    use ncutils, only:  handle_error
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+
+    !// Input
+    !// IM,JM,LM are fixed to global
+    !// MTC_IN may differ from MTC
+    !// STT_IN may differ from STT
+    !// 
+    integer, intent(in)           :: NPAR_IN                         !Number of components
+    character(len=10),intent(in)  :: TNAME_IN(NPAR_IN)               !Tracer names
+    real(r8), intent(in)          :: STT_IN(IPAR,JPAR,NPAR_IN)  !4-D fields
+    integer, intent(in)           :: NCOMP                           !Number of components in list
+    integer, intent(in)           :: ICOMP_LIST(NCOMP)               !Numbers of comps to put out
+    character(len=*),intent(in)   :: filename                        !Name of file (minYYYY_DDD.nc)
+!   integer, intent(in)           :: nbr_steps                       !Step number
+    real(r8), intent(in)          :: time                            !Hour
+    character(len=80), intent(in) :: time_label                      !Time label or unit
+    !// Output
+    !// No output from this file
+  
+    !// Locals
+    character(len=3)        :: cday                            !Name of start day in character
+    character(len=4)        :: cyear                           !Name of start year in character
+    character(len=10)       :: field_name                      !Name of field 
+    integer                 :: cnt_lon_lat_time(3)             !Count memory for added tracer field
+    integer                 :: dim_lon_lat_time(3)             !Dimension id for field
+    integer                 :: lat_dim_id                      !Dimension id for latitude
+    integer                 :: lat_id                          !Variable id for latitude
+    integer                 :: lon_dim_id                      !Dimension id for longitude
+    integer                 :: lon_id                          !Variable id for longitude
+    integer                 :: nlats                           !Number of latitudes from nc-file
+    integer                 :: nlons                           !Number of longitudes from nc-file
+    integer                 :: ncid                            !fileno for output netcdf file
+    integer                 :: nsteps                          !Number of timesteps already in nc-file
+    real(r8)                :: rtcdmp(IPAR,JPAR)               !2D field to dump to file
+    character(len=10)       :: TCNAME_AVG(NPAR_IN)             !Tracer name in the order not following MTC
+    integer                 :: nbr_steps                       !Step number
+    integer                 :: time_dim_id                     !Dimension id for time
+    integer                 :: time_id                         !Variable id for time
+    integer                 :: TCINFO(NPAR_IN,2)               !Tracer info (compno,dim_id,comp_id)
+    integer                 :: srt_lon_lat_time(3)             !Start value for tracer
+    integer                 :: srt_time(1)                     !Start value for time
+    integer                 :: status                          !Status for netcdf file 0 =OK, other value = error
+    integer :: I, J, N
+    real(r8) :: xdgrd_loc(ipar) !// To put out xdgrd inreasing monotonically
+
+    integer, parameter :: nc4deflate=9 !1:141597536, 5:131449992 9:128082865
+    integer, parameter :: nc4shuffle=1
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'dump1hr_nc'
+    !// --------------------------------------------------------------------
+    
+    !// Get the names and components in MTC order
+    DO N = 1, NCOMP
+
+       ! DEBUG:
+       !write(6,*) 'N,IC,TN: ',N,ICOMP_LIST(N),TNAME_IN(N)
+
+       TCNAME_AVG(N) = TNAME_IN(N) !Component name
+       TCINFO(N,1)   = ICOMP_LIST(N)        !Transport number
+       if ( TCINFO(N,1) .le. 0) then 
+          write(6,'(a,i5,a)') f90file//':'//subr//': COMPONENT ', &
+               ICOMP_LIST(N), 'is not included.'
+          stop
+       end if
+    END DO
+  
+    !// longitudes 0:360
+    do i = 1, ipar
+       if (XDGRD(i) .lt. 0._r8) then
+          xdgrd_loc(i) = XDGRD(i) + 360._r8
+       else
+          xdgrd_loc(i) = XDGRD(i)
+       end if
+    end do
+
+    !// No errors so far
+    status=nf90_noerr 
+
+    !// Step number
+    nbr_steps = NINT(time)+1
+    
+    if (nbr_steps .eq. 1) then
+       !First time this is done. Need to define variables
+
+       !// Create file
+       write(6,*)'creating file: ',filename,status
+       !// Clobber means you can overwrite existing data (netcdf3 only):
+       !// Use nf90_netcdf4 to create netcdf4:
+       status=nf90_create(path=filename,cmode=nf90_netcdf4,ncid=ncid)
+       if (status/=nf90_noerr) call handle_error(status,'in creating file')
+
+       !//File headers
+       status=nf90_put_att(ncid,nf90_global,'title','1h output fields from Oslo CTM3')
+       if (status/=nf90_noerr) call handle_error(status,'file header')
+       status=nf90_put_att(ncid,nf90_global,'Modelinfo1','Oslo CTM3 is a 3D Chemical Transport Model')
+       if (status/=nf90_noerr) call handle_error(status,'modelifo1')
+       status=nf90_put_att(ncid,nf90_global,'Modelinfo2','Oslo CTM3 is driven by ECMWF meteorological data')
+       if (status/=nf90_noerr) call handle_error(status,'modelinfo2')
+       status=nf90_put_att(ncid,nf90_global,'contactinfo','For errors, contact CICERO')
+       if (status/=nf90_noerr) call handle_error(status,'contactinfo')
+
+       !// Define dimensions (JM, IM, time)
+       status = nf90_def_dim(ncid,"lat",JPAR,lat_dim_id)
+       if (status/=nf90_noerr) call handle_error(status,'define lat dim')
+       status = nf90_def_dim(ncid,"lon",IPAR,lon_dim_id)
+       if (status/=nf90_noerr) call handle_error(status,'define lon dim')
+       !// Defining dimension time of length unlimited
+       status = nf90_def_dim(ncid,"time",nf90_unlimited,time_dim_id)
+       if (status/=nf90_noerr) call handle_error(status,'define time dim')
+     
+       !// Defining the combined id for a field (lon /lat /time)
+       dim_lon_lat_time(1)=lon_dim_id
+       dim_lon_lat_time(2)=lat_dim_id
+       dim_lon_lat_time(3)=time_dim_id
+     
+       !// Defining the lon/lat-variable
+       status = nf90_def_var(ncid,"lon",nf90_float,lon_dim_id,lon_id)
+       if (status/=nf90_noerr) call handle_error(status,'define lon variable')
+       status = nf90_def_var(ncid,"lat",nf90_float,lat_dim_id,lat_id)
+       if (status/=nf90_noerr) call handle_error(status,'define lat variable')
+       status = nf90_def_var(ncid,"time",nf90_float,time_dim_id,time_id)
+       if (status/=nf90_noerr) call handle_error(status,'define time variable')
+
+       !// Putting attributes to /lon/lat variables
+       status = nf90_put_att(ncid,lon_id,'units','degree_east')
+       if (status/=nf90_noerr) call handle_error(status,'attribute units lon')
+       status = nf90_put_att(ncid,lat_id,'units','degree_north')
+       if (status/=nf90_noerr) call handle_error(status,'attribute units lat')
+
+       !// Putting attributes to time variable
+       status = nf90_put_att(ncid,time_id,'units',time_label)
+       if (status/=nf90_noerr) call handle_error(status,&
+            f90file//':'//subr//':attribute units time')
+       
+       !// Define the tracer field variables
+       DO N = 1, NCOMP
+        
+          field_name = TCNAME_AVG(N)
+          
+          status = nf90_def_var(ncid,field_name,nf90_float, &
+               dim_lon_lat_time, TCINFO(N,2))      !Defining TCINFO(N,2)
+                                                   !As the variable_id for field
+          if (status/=nf90_noerr) call handle_error(status,'define tracer variable')
+          !// Deflate netcdf4
+          status = nf90_def_var_deflate(ncid,TCINFO(N,2),nc4shuffle,1,nc4deflate)
+
+          if (status/=nf90_noerr) call handle_error(status,'define tracer variable deflate')
+        
+          !// Add text descriptions and units
+          status = nf90_put_att(ncid,TCINFO(N,2),'units','g/m3')        
+          if (status/=nf90_noerr) call handle_error(status,'attribute units tracer')
+        
+          !// Put more attributes here if you want to . Ex: long_name
+        
+       END DO  !Loop on averageable variables
+     
+       !// End definition mode
+       status = nf90_enddef(ncid)
+       if (status/=nf90_noerr) call handle_error(status,'end defmode')
+     
+       !// Putting the lon/lat variables
+       !write(6,*)'Putting variables for lon/lat. They do not change'
+       status = nf90_put_var(ncid,lon_id,xdgrd_loc)
+       if (status/=nf90_noerr) call handle_error(status,'putting lon')
+       status = nf90_put_var(ncid,lat_id,ydgrd)
+       if (status/=nf90_noerr) call handle_error(status,'putting lat')
+       !write(6,*)'done writing lon/lat dimensions'
+     
+    else                      !// THE FILE HAS BEEN USED BEFORE
+
+       !// Open the existing file
+       status = nf90_open(filename, nf90_write, ncid)
+       if (status/=nf90_noerr) call handle_error(status,'open existing file')
+     
+       !// Inquire dimension ids
+       status = nf90_inq_dimid(ncid,"lat",lat_dim_id)
+       if (status/=nf90_noerr) call handle_error(status,'getting lat')
+       status = nf90_inq_dimid(ncid,"lon",lon_dim_id)
+       if (status/=nf90_noerr) call handle_error(status,'getting lon')
+       status = nf90_inq_dimid(ncid,"time",time_dim_id)
+       if (status/=nf90_noerr) call handle_error(status,'getting time')
+     
+       !// Inquire dimensions
+       status = nf90_Inquire_Dimension(ncid,lat_dim_id,len=nlats)
+       if (status/=nf90_noerr) call handle_error(status,'inq lat dim')
+       if (nlats/=JPAR) then
+          write(6,*)'Month avg file reports JM = ',nlats, JPAR
+          stop
+       end if
+       status = nf90_Inquire_Dimension(ncid,lon_dim_id,len=nlons)
+       if (status/=nf90_noerr) call handle_error(status,'inq lon dim')
+       if (nlons/=IPAR) then
+          write(6,*)'Month avg file reports IM = ',nlons,IPAR
+          stop
+       end if
+       status = nf90_Inquire_Dimension(ncid,time_dim_id,len=nsteps)
+       if (status/=nf90_noerr) call handle_error(status,'inq time dim')
+       if (nsteps.lt.0) then
+          write(6,*)'Month avg file reports already added nsteps = ',nsteps
+          stop
+       end if
+          
+       do N = 1, NCOMP           
+          !// Check variable id
+          field_name = TCNAME_AVG(N)
+          !// TCINFO(N,1) is MTC_IN(ICOMP_LIST(N))
+          !// TCINFO(N,2) is variable_id for N in nc-file
+          status = nf90_inq_varid(ncid,field_name,TCINFO(N,2))
+          if (status/=nf90_noerr) call handle_error(status,'inq tracer varid')
+       end do
+
+       !// Get variable id for time
+       status = nf90_inq_varid(ncid,"time",time_id) 
+       if (status/=nf90_noerr) call handle_error(status,'inq time varid')
+     
+    end if  !// if (nbr_steps .eq. 1) then
+  
+
+    !// PUT THE VARIABLES TO FILE
+    !// --------------------------------------------------------------------
+
+    !// For the tracer fields:
+    !// Defining how far to count for each time a data set is added
+    !write(6,*)'setting count vecor'
+    cnt_lon_lat_time = (/IPAR , JPAR , 1/)
+    !// Defining where to start adding the new time step
+    !write(6,*)'setting start vector'
+    srt_lon_lat_time = (/1, 1, nbr_steps/)
+
+    !// Start value for new time step
+    srt_time(1) = nbr_steps
+    !write(6,*)'srt_time is set',nbr_steps
+    !time = real(nbr_steps-1, r8)*24._r8 / real(NRMETD, r8) !3.0
+    !write(6,*)'time = ',time
+
+    status = nf90_put_var(ncid,time_id,time,start=srt_time)
+    if (status/=nf90_noerr) call handle_error(status,'putting time')
+
+    write(6,'(a)') '* Putting tracer data to nc-file'
+    DO N = 1, NCOMP
+    
+       !//Go through the input array and pick the right IDs, fields and names
+       !do L = 1, LPAR
+          do J = 1, JPAR
+             do I = 1, IPAR
+
+                !!// Field for component ICOMPLIST(N)
+                RTCDMP(I,J) = 1.e3_r8   &                         !kg-->g
+                     *STT_IN(I,J,N)  &                  !kg
+                     /(AREAXY(I,J) * (ZOFLE(2,I,J)-ZOFLE(1,I,J))) !m^3
+             end do
+          end do
+       !end do
+
+       !Convert to real 4 to not get very small numbers
+       !This is silly; let nf90 take care of it.
+       !!RTCDMP(:,:,:) = real(RTCDMP(:,:,:),4)
+
+       write(6,'(a,i3,1x,2(i4,1x),a8,a,es20.12)') '  Tracer/ID/trsp_idx ', &
+            N,ICOMP_LIST(N),TCINFO(N,1),TCNAME_AVG(N), &
+            ' total [kg]:',sum(STT_IN(:,:,N))
+
+       !// Put variable tracer field
+       status = nf90_put_var(ncid,  &           !File id
+            tcinfo(N,2), &                      !field_id for netCDF file (should match id set in def_var) 
+            RTCDMP,                          &  !Tracer field (REAL4)
+            start=srt_lon_lat_time,      &  !starting point for writing
+            count=cnt_lon_lat_time )        !Counts how many bytes written
+       if (status/=nf90_noerr) call handle_error(status,'putting tracer data')
+
+    END DO
+  
+    !// close netcdf file
+    status = nf90_close(ncid)
+    if (status/=nf90_noerr) call handle_error(status,'close file')
+
+    write(6,'(a71)') '--------------------------------------------'// &
+         '---------------------------'
+
+    !// --------------------------------------------------------------------
+  end subroutine dump1hr_nc
+  !// ----------------------------------------------------------------------
+
+!--OEH
 
 
 

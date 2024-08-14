@@ -40,10 +40,10 @@ module emissions_aircraft
   integer, parameter :: maxlevels = 66
 
   !// Number of species emitted (used to be only 1: NO)
-  integer, parameter :: EPAR_AC = 1 !RBS19
+  integer, parameter :: EPAR_AC = 2 !RBS24 !RBS19
   !// List of all these component species
   character(len=10), dimension(EPAR_AC), parameter :: &
-       ECOMP_NAMES = (/'NO'/)!(/'CO', 'C2H4', 'C2H6','C3H6', 'C6H14',&
+       ECOMP_NAMES = (/'NO','H2'/)!(/'CO', 'C2H4', 'C2H6','C3H6', 'C6H14',&
        !'C6HXR', 'C6HXR_SOA', &
        !'CH2O','CH3CHO','NO','C3H8','ACETONE','SO2',&
        !'Tolmatic','Benzene','omFF1fob','omFF1fil','bcFF1fob','bcFF1fil'/)
@@ -2272,6 +2272,9 @@ contains
     do NAC = 1, EPAR_AC
        if (trim(ECOMP_NAMES(NAC)) .eq. 'CO') then
           FILECOMP(NAC) = 'CO'
+          scalefac(NAC) = 1._r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'H2') then
+          FILECOMP(NAC) = 'H2'
           scalefac(NAC) = 1._r8
        else if (trim(ECOMP_NAMES(NAC)) .eq. 'C2H4') then
           FILECOMP(NAC) = 'NMVOC'
