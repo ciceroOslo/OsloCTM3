@@ -1635,6 +1635,12 @@ contains
         LOSS = k_oh_ch3oh * M_OH &! OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2
              + k_cl_ch3oh * M_Cl  ! Cl + CH3OH -> HCl + CH2OH -O2-> CH2O + HO2
 
+        CHEMPROD(1,52,L) = CHEMPROD(1,52,L) + PROD * DTS
+        
+        CHEMLOSS(1,52,L) = CHEMLOSS(1,52,L) * LOSS * M_CH3OH * DTS
+        CHEMLOSS(2,52,L) = CHEMLOSS(2,52,L) * k_oh_ch3oh * M_OH * M_CH3OH * DTS
+        CHEMLOSS(3,52,L) = CHEMLOSS(3,52,L) * k_cl_ch3oh * M_Cl * M_CH3OH * DTS
+        
         call QSSA(301,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_CH3OH)
 
 

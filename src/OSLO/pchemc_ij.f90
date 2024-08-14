@@ -2595,6 +2595,14 @@ contains
         !// May 2022 (masan)
         PROD = POLLX(52) +  k_ch3o2_ch3o2_b * M_CH3O2 * M_CH3O2
         LOSS = k_oh_ch3oh * M_OH
+
+        CHEMPROD(1,52,L) = CHEMPROD(1,52,L) + PROD * DTCH
+        CHEMPROD(2,52,L) = CHEMPROD(1,52,L) + k_ch3o2_ch3o2_b * M_CH3O2 * M_CH3O2 * DTCH
+
+        CHEMLOSS(1,52,L) = CHEMLOSS(1,52,L) * LOSS * M_CH3OH * DTCH
+        CHEMLOSS(2,52,L) = CHEMLOSS(2,52,L) * k_oh_ch3oh * M_OH * M_CH3OH * DTCH
+
+        
         call QSSA(27,'CH3OH',DTCH,QLIN,ST,PROD,LOSS,ZC(52,L))
         
 
