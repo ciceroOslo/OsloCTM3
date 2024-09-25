@@ -956,8 +956,8 @@ contains
 
         if (LHAL) & 
                LOSS = LOSS &
-               +k_br_no3 * M_BR &!Br + NO3 →	BrO + NO2
-               + k_i2_no3 * M_I2 !I2 + NO3 →	I + INO3
+               +k_br_no3 * M_BR * M_NO3 &!Br + NO3 →	BrO + NO2
+               + k_i2_no3 * M_I2 * M_NO3 !I2 + NO3 →	I + INO3
 
         !// Divide by NOZ to get correct units of LOSS
         LOSS = LOSS / (M_NO3 + M_N2O5)
@@ -965,6 +965,7 @@ contains
         call QSSA(1,'NOZ',DTCH,QLIN,ST,PROD,LOSS,M_NOZ)
 
         !//..NO3, N2O5--v
+        !// NO3 > N2O5, calculate NO3 #ZS
         if (k_n2o5_m .lt. (k_no2_no3_m*M_NO2)) then
            PROD = &
                 k_oh_hno3 * M_HNO3 * M_OH       &!HNO3 + OH -> NO3 + H2O
@@ -1018,7 +1019,7 @@ contains
               M_NO3   = M_NOZ - M_N2O5
            end if
 
-
+        !// N2O5 > NO3, calculate N2O5 #ZS
         else
            PROD = &
                 k_no2_no3_m * M_NO2 * M_NO3 &!NO3+NO2 -M-> N2O5
