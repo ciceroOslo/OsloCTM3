@@ -1097,9 +1097,9 @@ contains
            !// production rate times (NO+NO2) and also added to the
            !// NO2 loss.
            TMP_PL = &
-                k_o3_no * M_O3 &
-                + k_no_ho2 * M_HO2 &
-                + 2._r8 * k_no_no3 * M_NO3 &
+                k_o3_no * M_O3 & ! NO + O3 -> NO2 + O2
+                + k_no_ho2 * M_HO2 & ! NO + HO2 -> NO2 + OH
+                + 2._r8 * k_no_no3 * M_NO3 & ! NO + NO3 -> 2 NO2
                 + k_no_ch3xx * M_CH3XX &
                 + k_no_ch3x * M_CH3X &
                 + k_no_ar1 * M_AR1 &
@@ -1114,6 +1114,13 @@ contains
                 + k_no_c4h9o2 * M_C4H9O2 * fa_no_c4h9o2 &
                 + k_no_c6h13o2 * M_C6H13O2 * fa_no_c6h13o2
 
+           !//Halogen Reactions: prod of NO2 from NO
+           if (LHAL) &
+                TMP_PL = TMP_PL &
+                  + k_oio_no * M_OIO   &!OIO       + NO    → NO2  + IO
+                  + k_bro_no * M_BRO   &!BrO       + NO    → Br   + NO2
+                  + k_no_clo * M_CLO   &!ClO       + NO    → Cl   + NO2
+                  + k_io_no * M_IO      !IO        + NO    → I    + NO2
 
            !// Similarly, there are two other scalings
            TMP_PL2 = &
@@ -1122,13 +1129,13 @@ contains
                 + k_ho2no2_m + DHO2NO2 !To scale XHO2NO2 in PROD
 
            PROD = &
-                POLLX(44)              &!Emis NO2
-                + k_n2o5_m * M_N2O5        &
-                + DN2O5 * M_N2O5       &
-                + DNO3 * M_NO3         &!NO3 + hv -> NO2 + O3P
-                + k_oh_pan * M_OH * M_PAN &
-                + DHNO3 * M_HNO3       &
-                + k_op_no_m * M_O3P * M_NO &!O3P + NO + M -> NO2
+                POLLX(44)                  & ! Emis NO2
+                + k_n2o5_m * M_N2O5        & ! N2O5 + M -> NO2 + NO3 + M
+                + DN2O5 * M_N2O5           & ! N2O5 + hv -> NO2 + NO3
+                + DNO3 * M_NO3             & ! NO3 + hv -> NO2 + O3P
+                + k_oh_pan * M_OH * M_PAN  & ! PAN + OH -> HCHO + CO + NO2
+                + DHNO3 * M_HNO3           & ! HNO3 + hv -> OH + NO2
+                + k_op_no_m * M_O3P * M_NO & ! O3P + NO + M -> NO2
                 !// Add some terms for stability scaling
                 + TMP_PL * XNOX            &!Add as loss of NO2
                 + k_pan_m * (M_PAN + M_NO2)    &!Add as loss of NO2
@@ -1139,25 +1146,22 @@ contains
                 + TMP_PL  &!To scale XNOX in PROD
                 + TMP_PL2  !To scale PAN+NO2 and XHO2NO2 in PROD
 
-           !//Halogen Reactions... is this the right place??
+           !//Halogen Reactions: prod NO2 (not from NO)
            if (LHAL) &
                 PROD = PROD &
-                  + k_oio_no * M_OIO * M_NO &!OIO	+ NO	→ NO2 + IO
-                  + k_bro_no * M_BRO * M_NO &!BrO	+ NO	→ Br	+ NO2
-                  + k_br_no3 * M_BR * M_NO3 &!Br + NO3	→ BrO + NO2
-                  + k_no_clo * M_NO * M_CLO &!ClO	+ NO	→ Cl	+ NO2
-                  + k_cl_hno3 * M_CL * M_HNO3 &!Cl + HNO3 → HCl + NO2
+                  + k_br_no3 * M_BR * M_NO3     &!Br + NO3	→ BrO + NO2
+                  + k_cl_hno3 * M_CL * M_HNO3   &!Cl + HNO3 → HCl + NO2
                   + k_oh_clno2 * M_OH * M_CLNO2 &!OH +	ClNO2 → HOCl + NO2
-                  + k_io_no * M_IO  M_NO &!IO + NO → I	+ NO2
-                  + k_ino2 * M_INO2 &!INO2 → I + NO2
-                  + k_ino3 * M_INO3 &!INO3 → IO + NO2
-                  + DBRNO2 * M_BRNO2 &!// BrNO2 + hv -> Br + NO2
-                  + DBRONO2_A * M_BRONO2 &!// BrONO2 + hv -> Br + NO2 (0.85)
-                  + DBRONO2_B * M_BRONO2 &!// BrONO2 + hv -> BrO + NO2 (0.15)
-                  + DCLNO2 * M_CLNO2 &!// ClNO2 + hv -> Cl + NO2
-                  + DCLONO2_A * M_CLONO2 &!// ClONO2 + hv -> Cl + NO2
-                  + DCLONO2_B * M_CLONO2 &!// ClONO2 + hv -> ClO + NO2
-                  + DINO2 * M_INO2 !// INO2 + hv -> I + NO2
+                  + k_ino2 * M_INO2             &!INO2 → I + NO2
+                  + k_ino3 * M_INO3             &!INO3 → IO + NO2
+                  + DBRNO2 * M_BRNO2            &!BrNO2 + hv -> Br + NO2
+                  + DBRONO2_A * M_BRONO2        &!BrONO2 + hv -> Br + NO2 (0.85)
+                  + DBRONO2_B * M_BRONO2        &!BrONO2 + hv -> BrO + NO2 (0.15)
+                  + DCLNO2 * M_CLNO2            &!ClNO2 + hv -> Cl + NO2
+                  + DCLONO2_A * M_CLONO2        &!ClONO2 + hv -> Cl + NO2
+                  + DCLONO2_B * M_CLONO2        &!ClONO2 + hv -> ClO + NO2
+                  + DINO2 * M_INO2              &!INO2 + hv -> I + NO2
+                  + 2._r8 * k_ino2_ino2 * M_INO2 *M_INO2 !INO2 + INO2 → I2 + 2NO2 #ZS
        
            if (L .eq. 1) DDDIAG(44) = DDDIAG(44) + VDEP_L(44) * M_NO2 * DTCH
 
@@ -1178,6 +1182,12 @@ contains
                     + k_op_no2 * M_O3P &
                     + k_no2_no3_b * M_NO3 &
                   ) * XNOX
+
+           !// Halogen reactions: NO prod
+           if (LHAL) &
+                    PROD = PROD &
+                     + 2._r8 * k_ino_ino * M_INO &!INO + INO → I2 + 2NO
+                     + DINO * M_INO &!INO + hv → I + NO
 
            LOSS = &
                 LOSS_NO &
@@ -1223,6 +1233,7 @@ contains
                 + k_o3_oh * M_OH &
                 + VDEP_L(1)
            if (LSULPHUR) LOSS = LOSS + CAQ0172 * M_SO2
+           
            !// SOA Secondary organic aerosols
            if (LSOA) LOSS = LOSS &
                 + k_o3_soaC1 * (M_Apine + M_Bpine + M_Sabine &
@@ -1233,6 +1244,13 @@ contains
                 + k_o3_soaC5 * M_Sestrp &
                 + k_o3_soaC7 * M_C6HXR_SOA &
                 + k_o3_soaC8 * M_tolmatic
+
+           !//Halogen Reactions
+           if (LHAL) &
+                LOSS = LOSS &
+                  + k_br_o3 * M_BR &!Br + O3 → BrO + O2
+                  + k_cl_o3 * M_CL &!Cl + O3 → ClO + O2
+                  + k_i_o3  * M_I  &!I + O3 → IO + O2
 
            call QSSA(6,'O3',DTCH,QLIN,ST,PROD,LOSS,ZC(1,L))
 
