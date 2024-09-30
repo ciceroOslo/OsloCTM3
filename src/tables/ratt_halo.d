@@ -5,27 +5,27 @@
 # Centre for Atmospheric Science, Cambridge, U.K.  Release date:  11th May 1994                     
 # Halogen reactions added by Srinath Krishnan: September 2024
 # SCCS version information: @(#)trimol.d	1.6 5/12/94                                                
-    1 HO2        HO2        H2O2       O2            0.00 1.70E-33  0.00  -1000.0 0.00E+00  0.00 0.00E+00  D1,JPL         
-    2 HO2        NO2        HO2NO2     m             0.60 2.00E-31 -3.40      0.0 2.90E-12 -1.10 0.00E+00  JPL         
-    3 HO2NO2     m          HO2        NO2           0.60 2.00E-31 -3.40  10900.0 2.90E-12 -1.10 2.10E-27  JPL
-    4 N2O5       m          NO2        NO3           0.60 2.00E-30 -4.40  11000.0 1.40E-12 -0.70 2.70E-27  JPL
-    5 NO2        NO3        N2O5       m             0.60 2.00E-30 -4.40      0.0 1.40E-12 -0.70 0.00E+00  JPL         
-    6 OH         NO2        HONO2      m             0.60 1.80E-30 -3.00      0.0 2.80E-11  0.00 0.00E+00  JPL         
-    7 OH         OH         H2O2       m             0.60 6.90E-31 -1.00      0.0 2.60E-11  0.00 0.00E+00  JPL         
-    8 MeCO3      NO2        PAN        m             0.60 9.70E-29 -5.60      0.0 9.30E-12 -1.50 0.00E+00  JPL         
-    9 PAN        m          MeCO3      NO2           0.60 9.70E-29 -5.60  14000.0 9.30E-12 -1.50 9.00E-29  JPL
-   10 Alkene     OH         ROHOO      HO2           0.60 1.00E-28 -4.50      0.0 8.80E-12 -0.85 0.00E+00  JPL
-   11 Cl         O2         m          ClOO          0.60 2.20E-33 -3.10      0.0 1.80E-10 -3.10 0.00E+00  JPL
-   12 ClO        ClO        m          Cl2O2         0.60 1.60E-21 -2.00      0.0 3.00E-12 -4.50 0.00E+00  Sander21
-   13 ClO        NO2        m          ClNO3         0.60 1.80E-31 -3.40      0.0 1.50E-11 -1.90 0.00E+00  Sander21
-   13 ClOO       m          Cl         O2            0.60 3.30E-09 -0.00          2.73E+14 -3.10           Sander21
-   14 Cl2O2      m          Cl         O2            0.60 9.30E-06 -2.00          1.74E+15 -4.50           Sander21
-   15 Cl         C3H6       m          AlkanO2       0.60 4.00E-28  0.00      0.0 2.80E-10  0.00 0.00E+00  Atkinson07
-   16 Br         NO2        m          BrNO2         0.60 4.20E-31 -2.40      0.0 2.70E-11  0.00 0.00E+00  Sander21
-   17 Bro        NO2        m          BrNO3         0.60 5.20E-31 -3.20      0.0 6.90E-12  0.00 0.00E+00  Sander21 
-   18 I          NO         m          INO           0.60 1.80E-32 -1.00      0.0 1.70E-11  0.00 0.00E+00  Atkinson07
-   19 I          NO2        m          INO2          0.63 3.00E-31 -1.00      0.0 6.60E-11  0.00 0.00E+00  Atkinson07
-   20 IO         NO2        m          INO3          0.40 7.70E-31 -5.00      0.0 1.60E-11  0.00 0.00E+00  Atkinson07
+    1 HO2        HO2        H2O2       O2            0.00 2.10E-33  0.00   -920.0 0.00E+00  0.00 0.00E+00  JPL19       
+    2 HO2        NO2        HO2NO2     m             0.60 1.90E-31 -3.40      0.0 4.00E-12 -0.30 0.00E+00  JPL19        
+    3 HO2NO2     m          HO2        NO2           0.60 1.90E-31 -3.40  10900.0 4.00E-12 -0.30 2.10E-27  JPL19
+    4 N2O5       m          NO2        NO3           0.60 2.40E-30 -3.00  10840.0 1.30E-12 +0.10 5.80E-27  JPL19
+    5 NO2        NO3        N2O5       m             0.60 2.40E-30 -3.00      0.0 1.30E-12 +0.10 0.00E+00  JPL19        
+    6 OH         NO2        HONO2      m             0.60 1.80E-30 -3.00      0.0 2.80E-11  0.00 0.00E+00  JPL19         
+    7 OH         OH         H2O2       m             0.60 6.90E-31 -1.00      0.0 2.60E-11  0.00 0.00E+00  JPL19         
+    8 MeCO3      NO2        PAN        m             0.60 7.30E-29 -4.10      0.0 9.50E-12 -1.60 0.00E+00  JPL19         
+    9 PAN        m          MeCO3      NO2           0.60 7.30E-29 -4.10  14000.0 9.50E-12 -1.60 9.00E-29  JPL19
+   10 Alkene     OH         ROHOO      HO2           0.60 1.10E-28 -3.50      0.0 8.50E-12 -1.75 0.00E+00  JPL19(C2H4)
+   11 Cl         O2         m          ClOO          0.60 2.20E-33 -3.10      0.0 1.80E-10  0.00 0.00E+00  JPL19
+   12 ClO        ClO        m          Cl2O2         0.60 1.90E-32 -3.60      0.0 3.70E-12 -1.60 0.00E+00  JPL19
+   13 ClO        NO2        m          ClNO3         0.60 1.80E-31 -3.40      0.0 1.50E-11 -1.90 0.00E+00  JPL19
+   13 ClOO       m          Cl         O2            0.60 2.20E-33 -3.10   2370.0 1.80E-10  0.00 1.24E-24  JPL19
+   14 Cl2O2      m          ClO        ClO           0.60 1.90E-32 -3.60   8537.0 3.70E-12 -1.60 2.16E-27  JPL19 #ClO + ClO?
+   15 Cl         C3H6       m          AlkanO2       0.60 4.00E-28  0.00      0.0 2.80E-10  0.00 0.00E+00  Atkinson07 #unknown
+   16 Br         NO2        m          BrNO2         0.60 4.30E-31 -2.40      0.0 2.70E-11  0.00 0.00E+00  JPL19
+   17 Bro        NO2        m          BrNO3         0.60 5.50E-31 -3.10      0.0 6.60E-12 -2.90 0.00E+00  JPL19
+   18 I          NO         m          INO           0.60 1.80E-32 -1.00      0.0 1.70E-11  0.00 0.00E+00  JPL19,Atkinson07Fc
+   19 I          NO2        m          INO2          0.63 3.00E-31 -1.00      0.0 6.60E-11  0.00 0.00E+00  JPL19,Atkinson07Fc
+   20 IO         NO2        m          INO3          0.40 7.70E-31 -3.50      0.0 7.70E-12 -1.50 0.00E+00  JPL19,Atkinson07Fc
  9999                                                0.00 0.00E+00  0.00      0.0 0.00E-00  0.00    
                                                                                  
                                                                                  
@@ -75,6 +75,7 @@ The following removed - non-modelled and rapidly decomposing products
                                                                                  
  Changes since 11/05/94 release:
  (1) Added halogen reaction rates.
+ (2) Updated reaction rates to JPL19.
  
  Changes since 22/11/93 release:                                                 
  (1) Corrected virtually all rates. Previously they had been multiplied          
