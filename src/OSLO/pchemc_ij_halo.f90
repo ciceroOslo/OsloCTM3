@@ -1472,19 +1472,19 @@ contains
           !// Halogen reactions for HO2
           
           if (LHAL) &
-               PROD_HO2 = k_br_ch2o * M_BR * M_CH2O &!Br +	CH2O	→	HO2	+	CO	+	HBr
-                     + k_oh_clo * M_OH * M_CLO &!OH +	ClO	→	HO2	+	Cl		
+               PROD_HO2 = k_br_ch2o * M_BR * M_CH2O  &!Br +	CH2O	→	HO2	+	CO	+	HBr
+                     + k_oh_clo * M_OH * M_CLO       &!OH +	ClO	→	HO2	+	Cl		
                      + k_oh_ch2cl2 * M_OH * M_CH2CL2 &!OH +	CH2Cl2	→	2Cl	+	HO2	+	H2O
-                     + k_oh_chcl3 * M_OH * M_CHCL3 &!OH +	CHCl3	→	3Cl	+	HO2	+	H2O
-                     + k_bro_oh * M_BRO * M_OH &!BrO + OH	→	Br	+	HO2		
-                     + k_oh_ch3cl * M_OH * M_CH3CL &!OH +	CH3Cl	→	Cl	+	HO2	+	H2O
-                     + k_cl_c2h5o2 * M_CL * M_C2H5O2 &!Cl	+	C2H5O2	→	ClO	+	HO2	+	CH3CHO
-                     + k_clo_ch3o2 * M_CLO * M_CH3O2 &!ClO	+	CH3O2	→	ClOO	+	HO2	+	CH2O
-                     + k_cl_ch2o * M_CL * M_CH2O &!Cl	+	CH2O	→	HCl	+	HO2	+	CO
-                     + k_cl_h2o2 * M_CL * M_H2O2 &!Cl	+	H2O2	→	HCl	+	HO2		
-                     + k_cl_ch3cl * M_CL * M_CH3CL &!Cl	+	CH3Cl	→	CO	+	2HCl	+	HO2
-                     + k_cl_ch3o2 * M_CL * M_CH3O2 &!Cl	+	CH3O2	→	ClO	+	CH2O	+	HO2
-                     + k_cl_ch3oh * M_CL * M_CH3OH !Cl	+	CH3OH	→	HCl	+	CH2O	+	HO2
+                     + k_oh_chcl3 * M_OH * M_CHCL3   &!OH +	CHCl3	→	3Cl	+	HO2	+	H2O
+                     + k_bro_oh * M_BRO * M_OH       &!BrO +    OH	→	Br	+	HO2		
+                     + k_oh_ch3cl * M_OH * M_CH3CL   &!OH +	CH3Cl	→	Cl	+	HO2	+	H2O
+                     + k_cl_c2h5o2 * M_CL * M_C2H5O2 &!Cl +	C2H5O2	→	ClO	+	HO2	+	CH3CHO
+                     + k_clo_ch3o2 * M_CLO * M_CH3O2 &!ClO +	CH3O2	→	ClOO	+	HO2	+	CH2O
+                     + k_cl_ch2o * M_CL * M_CH2O     &!Cl +	CH2O	→	HCl	+	HO2	+	CO
+                     + k_cl_h2o2 * M_CL * M_H2O2     &!Cl +	H2O2	→	HCl	+	HO2		
+                     + k_cl_ch3cl * M_CL * M_CH3CL   &!Cl +	CH3Cl	→	CO	+	2HCl	+	HO2
+                     + k_cl_ch3o2 * M_CL * M_CH3O2   &!Cl +	CH3O2	→	ClO	+	CH2O	+	HO2
+                     + k_cl_ch3oh * M_CL * M_CH3OH    !Cl +	CH3OH	→	HCl	+	CH2O	+	HO2
 
           if (LHAL) &
                      LOSS_HO2 = &
@@ -2755,7 +2755,7 @@ contains
         !// Diagnose loss processes [molecules/cm3 in this time step]
         CHEMLOSS(1,46,L) = CHEMLOSS(1,46,L) + LOSS * M_CH4 * DTCH
         CHEMLOSS(2,46,L) = CHEMLOSS(2,46,L) + VDEP_L(46) * M_CH4 * DTCH
-        CHEMLOSS(3,46,L) = CHEMLOSS(3,46,L) + k_oh_ch4 * M_OH * M_CH4 * DTCH
+        CHEMLOSS(3,46,L) = CHEMLOSS(3,46,L) + k_oh_ch4 * M_OH * M_CH4 * DTCH !add Cl loss
         if (.not. LOLD_H2OTREATMENT) then
            CHEMLOSS(4,46,L) = CHEMLOSS(4,46,L) + k_od_ch4_a*M_O1D*M_CH4*DTCH
            CHEMLOSS(5,46,L) = CHEMLOSS(5,46,L) + k_od_ch4_b*M_O1D*M_CH4*DTCH
@@ -3607,6 +3607,7 @@ contains
              k_oh_hno3 * M_OH &
              + DHNO3 &
              + VDEP_L(4)
+        !ZS add LHALs
 
         if (L .eq. 1) DDDIAG(4) = DDDIAG(4) + VDEP_L(4) * M_HNO3 * DTCH
 
