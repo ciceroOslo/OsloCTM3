@@ -1391,10 +1391,9 @@ contains
                + k_oh_benzene * M_Benzene
           
           !// Halogen Reaction
-          !// OH Reactions     
+          !// OH Reactions (not including HO2->OH, in RLIM1)     
           if (LHAL) &
                PROD_OH = PROD_OH &
-                    + k_cl_ho2 * M_CL * M_HO2 &!Cl + HO2 → ClO + OH
                     + DHOBR * M_HOBR &!HOBr + hv → OH + Br
                     + DHOCL * M_HOCL &!HOCl + hv → OH + Cl
                     + DHOI * M_HOI !HOI + hv → OH + I
@@ -1473,11 +1472,6 @@ contains
           
           if (LHAL) &
                PROD_HO2 = k_br_ch2o * M_BR * M_CH2O  &!Br +	CH2O	→	HO2	+	CO	+	HBr
-                     + k_oh_clo * M_OH * M_CLO       &!OH +	ClO	→	HO2	+	Cl		
-                     + k_oh_ch2cl2 * M_OH * M_CH2CL2 &!OH +	CH2Cl2	→	2Cl	+	HO2	+	H2O
-                     + k_oh_chcl3 * M_OH * M_CHCL3   &!OH +	CHCl3	→	3Cl	+	HO2	+	H2O
-                     + k_bro_oh * M_BRO * M_OH       &!BrO +    OH	→	Br	+	HO2		
-                     + k_oh_ch3cl * M_OH * M_CH3CL   &!OH +	CH3Cl	→	Cl	+	HO2	+	H2O
                      + k_cl_c2h5o2 * M_CL * M_C2H5O2 &!Cl +	C2H5O2	→	ClO	+	HO2	+	CH3CHO
                      + k_clo_ch3o2 * M_CLO * M_CH3O2 &!ClO +	CH3O2	→	ClOO	+	HO2	+	CH2O
                      + k_cl_ch2o * M_CL * M_CH2O     &!Cl +	CH2O	→	HCl	+	HO2	+	CO
@@ -1515,6 +1509,21 @@ contains
                + k_oh_hcohco_m_c * M_HCOHCO &!OH + HCOHCO -O2-> 2CO + HO2
                + k_oh_ho2no2 * M_HO2NO2  &!HO2NO2 + OH -> NO2 + H2O + O2
                + k_oh_h2 * M_H2       !OH + H2 -> H2O + H    c121205
+          
+          !// Halogen Reactions
+          !// OH produced by HO2 and HO2 produced by OH     
+          if (LHAL) &
+               RLIM1 = RLIM1 &
+                    + k_cl_ho2 * M_CL * M_HO2 !Cl + HO2 → ClO + OH
+
+          if (LHAL) &
+               RLIM2 = RLIM2 &
+                     + k_oh_clo    * M_OH * M_CLO     &!OH +     ClO     →       HO2     +       Cl              
+                     + k_oh_ch2cl2 * M_OH * M_CH2CL2  &!OH +     CH2Cl2  →       2Cl     +       HO2     +       H2O
+                     + k_oh_chcl3  * M_OH * M_CHCL3   &!OH +     CHCl3   →       3Cl     +       HO2     +       H2O
+                     + k_bro_oh    * M_OH * M_BRO     &!OH +     BrO     →       Br      +       HO2             
+                     + k_oh_ch3cl  * M_OH * M_CH3CL   &!OH +     CH3Cl   →       Cl      +       HO2     +       H2O
+
 
           !// Set separate OH and HO2 for iteration
           OH_NEW = M_OH
@@ -1528,7 +1537,7 @@ contains
             PROD = &
                  PROD_OH                &!General production terms
                  + RLIM1 * HO2_OLD      &!Production due to HO2
-                 + k_no_ho2 * M_NO * OH_OLD !Added to LOSS_OH above (for stability)
+                 + k_no_ho2 * M_NO * OH_OLD !Added to LOSS_OH above (for stability) #ZS why is this OH_OLD and not HO2_OLD??
             LOSS = &
                  LOSS_OH           &!General loss terms
                  + k_oh_ho2 * HO2_OLD  !OH + HO2 -> H2O + O2
@@ -1583,9 +1592,10 @@ contains
                + k_op_no_m * M_NO   &!O3P + NO + M -> NO2
                + k_op_no2_m * M_NO2   !O3P + NO2 + M -> NO3
 
-          !//..Halogen Flag
-          PROD = PROD &
-                 + DOCLO * M_OCLO &!OClO + PHOTON → ClO	+ O
+          !// Halogen Reactions
+          if (LHAL) &
+               PROD = PROD &
+                    + DOCLO * M_OCLO &!OClO + PHOTON → ClO + O
      
           M_O3P = PROD / LOSS
 
