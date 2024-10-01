@@ -1889,9 +1889,14 @@ contains
                + (DACETON_A + 2._r8 * DACETON_B) * M_ACETON
           if (.not. LOLD_H2OTREATMENT) PROD = PROD &
                + k_od_ch4_a * M_O1D * M_CH4 !O(1D) + CH4 -> OH + CH3
+          
+          !// Halogen Reactions 
+          if (LHAL) &
+               PROD = PROD &
+                    + k_cl_ch4 * M_CL * M_CH4 !Cl + CH4 -> HCl + CH3 
 
           LOSS = k_ch3_o2_m * M_O2
-
+          
           M_CH3 = PROD / LOSS
 
 
@@ -1921,7 +1926,6 @@ contains
           if (LHAL) PROD = PROD &
                            + k_cl_ch3cooh * M_CL * M_CH3COOH &!Cl + CH3COOH -> HCl + CH3O2 + CO2
                            + k_cl_ch3ooh * M_CL * M_CH3OOH &!Cl + CH3OOH -> HCl + CH3O2
-                           + k_cl_ch4 * M_CL * M_CH4 !Cl + CH4 -> HCl + CH3O2
 
           if (LHAL) LOSS = LOSS &
                     + k_cl_ch3o2 * M_CL &!Cl + CH3O2 → ClO + CH2O + HO2
