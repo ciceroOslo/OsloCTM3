@@ -956,8 +956,8 @@ contains
 
         if (LHAL) & 
                LOSS = LOSS &
-               +k_br_no3 * M_BR &!Br + NO3 →	BrO + NO2
-               + k_i2_no3 * M_I2 !I2 + NO3 →	I + INO3
+               +k_br_no3 * M_BR * M_NO3 &!Br + NO3 →	BrO + NO2
+               + k_i2_no3 * M_I2 * M_NO3 !I2 + NO3 →	I + INO3
 
         !// Divide by NOZ to get correct units of LOSS
         LOSS = LOSS / (M_NO3 + M_N2O5)
@@ -965,6 +965,7 @@ contains
         call QSSA(1,'NOZ',DTCH,QLIN,ST,PROD,LOSS,M_NOZ)
 
         !//..NO3, N2O5--v
+        !// NO3 > N2O5, calculate NO3 #ZS
         if (k_n2o5_m .lt. (k_no2_no3_m*M_NO2)) then
            PROD = &
                 k_oh_hno3 * M_HNO3 * M_OH       &!HNO3 + OH -> NO3 + H2O
@@ -1018,7 +1019,7 @@ contains
               M_NO3   = M_NOZ - M_N2O5
            end if
 
-
+        !// N2O5 > NO3, calculate N2O5 #ZS
         else
            PROD = &
                 k_no2_no3_m * M_NO2 * M_NO3 &!NO3+NO2 -M-> N2O5
@@ -1096,9 +1097,9 @@ contains
            !// production rate times (NO+NO2) and also added to the
            !// NO2 loss.
            TMP_PL = &
-                k_o3_no * M_O3 &
-                + k_no_ho2 * M_HO2 &
-                + 2._r8 * k_no_no3 * M_NO3 &
+                k_o3_no * M_O3 & ! NO + O3 -> NO2 + O2
+                + k_no_ho2 * M_HO2 & ! NO + HO2 -> NO2 + OH
+                + 2._r8 * k_no_no3 * M_NO3 & ! NO + NO3 -> 2 NO2
                 + k_no_ch3xx * M_CH3XX &
                 + k_no_ch3x * M_CH3X &
                 + k_no_ar1 * M_AR1 &
@@ -1113,6 +1114,13 @@ contains
                 + k_no_c4h9o2 * M_C4H9O2 * fa_no_c4h9o2 &
                 + k_no_c6h13o2 * M_C6H13O2 * fa_no_c6h13o2
 
+           !//Halogen Reactions: prod of NO2 from NO
+           if (LHAL) &
+                TMP_PL = TMP_PL &
+                  + k_oio_no * M_OIO   &!OIO       + NO    → NO2  + IO
+                  + k_bro_no * M_BRO   &!BrO       + NO    → Br   + NO2
+                  + k_no_clo * M_CLO   &!ClO       + NO    → Cl   + NO2
+                  + k_io_no * M_IO      !IO        + NO    → I    + NO2
 
            !// Similarly, there are two other scalings
            TMP_PL2 = &
@@ -1121,13 +1129,13 @@ contains
                 + k_ho2no2_m + DHO2NO2 !To scale XHO2NO2 in PROD
 
            PROD = &
-                POLLX(44)              &!Emis NO2
-                + k_n2o5_m * M_N2O5        &
-                + DN2O5 * M_N2O5       &
-                + DNO3 * M_NO3         &!NO3 + hv -> NO2 + O3P
-                + k_oh_pan * M_OH * M_PAN &
-                + DHNO3 * M_HNO3       &
-                + k_op_no_m * M_O3P * M_NO &!O3P + NO + M -> NO2
+                POLLX(44)                  & ! Emis NO2
+                + k_n2o5_m * M_N2O5        & ! N2O5 + M -> NO2 + NO3 + M
+                + DN2O5 * M_N2O5           & ! N2O5 + hv -> NO2 + NO3
+                + DNO3 * M_NO3             & ! NO3 + hv -> NO2 + O3P
+                + k_oh_pan * M_OH * M_PAN  & ! PAN + OH -> HCHO + CO + NO2
+                + DHNO3 * M_HNO3           & ! HNO3 + hv -> OH + NO2
+                + k_op_no_m * M_O3P * M_NO & ! O3P + NO + M -> NO2
                 !// Add some terms for stability scaling
                 + TMP_PL * XNOX            &!Add as loss of NO2
                 + k_pan_m * (M_PAN + M_NO2)    &!Add as loss of NO2
@@ -1138,25 +1146,22 @@ contains
                 + TMP_PL  &!To scale XNOX in PROD
                 + TMP_PL2  !To scale PAN+NO2 and XHO2NO2 in PROD
 
-           !//Halogen Reactions... is this the right place??
+           !//Halogen Reactions: prod NO2 (not from NO)
            if (LHAL) &
                 PROD = PROD &
-                  + k_oio_no * M_OIO * M_NO &!OIO	+ NO	→ NO2 + IO
-                  + k_bro_no * M_BRO * M_NO &!BrO	+ NO	→ Br	+ NO2
-                  + k_br_no3 * M_BR * M_NO3 &!Br + NO3	→ BrO + NO2
-                  + k_no_clo * M_NO * M_CLO &!ClO	+ NO	→ Cl	+ NO2
-                  + k_cl_hno3 * M_CL * M_HNO3 &!Cl + HNO3 → HCl + NO2
+                  + k_br_no3 * M_BR * M_NO3     &!Br + NO3	→ BrO + NO2
+                  + k_cl_hno3 * M_CL * M_HNO3   &!Cl + HNO3 → HCl + NO2
                   + k_oh_clno2 * M_OH * M_CLNO2 &!OH +	ClNO2 → HOCl + NO2
-                  + k_io_no * M_IO  M_NO &!IO + NO → I	+ NO2
-                  + k_ino2 * M_INO2 &!INO2 → I + NO2
-                  + k_ino3 * M_INO3 &!INO3 → IO + NO2
-                  + DBRNO2 * M_BRNO2 &!// BrNO2 + hv -> Br + NO2
-                  + DBRONO2_A * M_BRONO2 &!// BrONO2 + hv -> Br + NO2 (0.85)
-                  + DBRONO2_B * M_BRONO2 &!// BrONO2 + hv -> BrO + NO2 (0.15)
-                  + DCLNO2 * M_CLNO2 &!// ClNO2 + hv -> Cl + NO2
-                  + DCLONO2_A * M_CLONO2 &!// ClONO2 + hv -> Cl + NO2
-                  + DCLONO2_B * M_CLONO2 &!// ClONO2 + hv -> ClO + NO2
-                  + DINO2 * M_INO2 !// INO2 + hv -> I + NO2
+                  + k_ino2 * M_INO2             &!INO2 → I + NO2
+                  + k_ino3 * M_INO3             &!INO3 → IO + NO2
+                  + DBRNO2 * M_BRNO2            &!BrNO2 + hv -> Br + NO2
+                  + DBRONO2_A * M_BRONO2        &!BrONO2 + hv -> Br + NO2 (0.85)
+                  + DBRONO2_B * M_BRONO2        &!BrONO2 + hv -> BrO + NO2 (0.15)
+                  + DCLNO2 * M_CLNO2            &!ClNO2 + hv -> Cl + NO2
+                  + DCLONO2_A * M_CLONO2        &!ClONO2 + hv -> Cl + NO2
+                  + DCLONO2_B * M_CLONO2        &!ClONO2 + hv -> ClO + NO2
+                  + DINO2 * M_INO2              &!INO2 + hv -> I + NO2
+                  + 2._r8 * k_ino2_ino2 * M_INO2 *M_INO2 !INO2 + INO2 → I2 + 2NO2 #ZS
        
            if (L .eq. 1) DDDIAG(44) = DDDIAG(44) + VDEP_L(44) * M_NO2 * DTCH
 
@@ -1177,6 +1182,12 @@ contains
                     + k_op_no2 * M_O3P &
                     + k_no2_no3_b * M_NO3 &
                   ) * XNOX
+
+           !// Halogen reactions: NO prod
+           if (LHAL) &
+                    PROD = PROD &
+                     + 2._r8 * k_ino_ino * M_INO &!INO + INO → I2 + 2NO
+                     + DINO * M_INO &!INO + hv → I + NO
 
            LOSS = &
                 LOSS_NO &
@@ -1222,6 +1233,7 @@ contains
                 + k_o3_oh * M_OH &
                 + VDEP_L(1)
            if (LSULPHUR) LOSS = LOSS + CAQ0172 * M_SO2
+           
            !// SOA Secondary organic aerosols
            if (LSOA) LOSS = LOSS &
                 + k_o3_soaC1 * (M_Apine + M_Bpine + M_Sabine &
@@ -1232,6 +1244,13 @@ contains
                 + k_o3_soaC5 * M_Sestrp &
                 + k_o3_soaC7 * M_C6HXR_SOA &
                 + k_o3_soaC8 * M_tolmatic
+
+           !//Halogen Reactions
+           if (LHAL) &
+                LOSS = LOSS &
+                  + k_br_o3 * M_BR &!Br + O3 → BrO + O2
+                  + k_cl_o3 * M_CL &!Cl + O3 → ClO + O2
+                  + k_i_o3  * M_I  &!I + O3 → IO + O2
 
            call QSSA(6,'O3',DTCH,QLIN,ST,PROD,LOSS,ZC(1,L))
 
@@ -1372,10 +1391,9 @@ contains
                + k_oh_benzene * M_Benzene
           
           !// Halogen Reaction
-          !// OH Reactions     
+          !// OH Reactions (not including HO2->OH, in RLIM1)     
           if (LHAL) &
                PROD_OH = PROD_OH &
-                    + k_cl_ho2 * M_CL * M_HO2 &!Cl + HO2 → ClO + OH
                     + DHOBR * M_HOBR &!HOBr + hv → OH + Br
                     + DHOCL * M_HOCL &!HOCl + hv → OH + Cl
                     + DHOI * M_HOI !HOI + hv → OH + I
@@ -1453,19 +1471,14 @@ contains
           !// Halogen reactions for HO2
           
           if (LHAL) &
-               PROD_HO2 = k_br_ch2o * M_BR * M_CH2O &!Br +	CH2O	→	HO2	+	CO	+	HBr
-                     + k_oh_clo * M_OH * M_CLO &!OH +	ClO	→	HO2	+	Cl		
-                     + k_oh_ch2cl2 * M_OH * M_CH2CL2 &!OH +	CH2Cl2	→	2Cl	+	HO2	+	H2O
-                     + k_oh_chcl3 * M_OH * M_CHCL3 &!OH +	CHCl3	→	3Cl	+	HO2	+	H2O
-                     + k_bro_oh * M_BRO * M_OH &!BrO + OH	→	Br	+	HO2		
-                     + k_oh_ch3cl * M_OH * M_CH3CL &!OH +	CH3Cl	→	Cl	+	HO2	+	H2O
-                     + k_cl_c2h5o2 * M_CL * M_C2H5O2 &!Cl	+	C2H5O2	→	ClO	+	HO2	+	CH3CHO
-                     + k_clo_ch3o2 * M_CLO * M_CH3O2 &!ClO	+	CH3O2	→	ClOO	+	HO2	+	CH2O
-                     + k_cl_ch2o * M_CL * M_CH2O &!Cl	+	CH2O	→	HCl	+	HO2	+	CO
-                     + k_cl_h2o2 * M_CL * M_H2O2 &!Cl	+	H2O2	→	HCl	+	HO2		
-                     + k_cl_ch3cl * M_CL * M_CH3CL &!Cl	+	CH3Cl	→	CO	+	2HCl	+	HO2
-                     + k_cl_ch3o2 * M_CL * M_CH3O2 &!Cl	+	CH3O2	→	ClO	+	CH2O	+	HO2
-                     + k_cl_ch3oh * M_CL * M_CH3OH !Cl	+	CH3OH	→	HCl	+	CH2O	+	HO2
+               PROD_HO2 = k_br_ch2o * M_BR * M_CH2O  &!Br +	CH2O	→	HO2	+	CO	+	HBr
+                     + k_cl_c2h5o2 * M_CL * M_C2H5O2 &!Cl +	C2H5O2	→	ClO	+	HO2	+	CH3CHO
+                     + k_clo_ch3o2 * M_CLO * M_CH3O2 &!ClO +	CH3O2	→	ClOO	+	HO2	+	CH2O
+                     + k_cl_ch2o * M_CL * M_CH2O     &!Cl +	CH2O	→	HCl	+	HO2	+	CO
+                     + k_cl_h2o2 * M_CL * M_H2O2     &!Cl +	H2O2	→	HCl	+	HO2		
+                     + k_cl_ch3cl * M_CL * M_CH3CL   &!Cl +	CH3Cl	→	CO	+	2HCl	+	HO2
+                     + k_cl_ch3o2 * M_CL * M_CH3O2   &!Cl +	CH3O2	→	ClO	+	CH2O	+	HO2
+                     + k_cl_ch3oh * M_CL * M_CH3OH    !Cl +	CH3OH	→	HCl	+	CH2O	+	HO2
 
           if (LHAL) &
                      LOSS_HO2 = &
@@ -1496,6 +1509,21 @@ contains
                + k_oh_hcohco_m_c * M_HCOHCO &!OH + HCOHCO -O2-> 2CO + HO2
                + k_oh_ho2no2 * M_HO2NO2  &!HO2NO2 + OH -> NO2 + H2O + O2
                + k_oh_h2 * M_H2       !OH + H2 -> H2O + H    c121205
+          
+          !// Halogen Reactions
+          !// OH produced by HO2 and HO2 produced by OH     
+          if (LHAL) &
+               RLIM1 = RLIM1 &
+                    + k_cl_ho2 * M_CL * M_HO2 !Cl + HO2 → ClO + OH
+
+          if (LHAL) &
+               RLIM2 = RLIM2 &
+                     + k_oh_clo    * M_OH * M_CLO     &!OH +     ClO     →       HO2     +       Cl              
+                     + k_oh_ch2cl2 * M_OH * M_CH2CL2  &!OH +     CH2Cl2  →       2Cl     +       HO2     +       H2O
+                     + k_oh_chcl3  * M_OH * M_CHCL3   &!OH +     CHCl3   →       3Cl     +       HO2     +       H2O
+                     + k_bro_oh    * M_OH * M_BRO     &!OH +     BrO     →       Br      +       HO2             
+                     + k_oh_ch3cl  * M_OH * M_CH3CL   &!OH +     CH3Cl   →       Cl      +       HO2     +       H2O
+
 
           !// Set separate OH and HO2 for iteration
           OH_NEW = M_OH
@@ -1509,7 +1537,7 @@ contains
             PROD = &
                  PROD_OH                &!General production terms
                  + RLIM1 * HO2_OLD      &!Production due to HO2
-                 + k_no_ho2 * M_NO * OH_OLD !Added to LOSS_OH above (for stability)
+                 + k_no_ho2 * M_NO * OH_OLD !Added to LOSS_OH above (for stability) #ZS why is this OH_OLD and not HO2_OLD??
             LOSS = &
                  LOSS_OH           &!General loss terms
                  + k_oh_ho2 * HO2_OLD  !OH + HO2 -> H2O + O2
@@ -1564,9 +1592,10 @@ contains
                + k_op_no_m * M_NO   &!O3P + NO + M -> NO2
                + k_op_no2_m * M_NO2   !O3P + NO2 + M -> NO3
 
-          !//..Halogen Flag
-          PROD = PROD &
-                 + DOCLO * M_OCLO &!OClO + PHOTON → ClO	+ O
+          !// Halogen Reactions
+          if (LHAL) &
+               PROD = PROD &
+                    + DOCLO * M_OCLO &!OClO + PHOTON → ClO + O
      
           M_O3P = PROD / LOSS
 
@@ -1860,9 +1889,14 @@ contains
                + (DACETON_A + 2._r8 * DACETON_B) * M_ACETON
           if (.not. LOLD_H2OTREATMENT) PROD = PROD &
                + k_od_ch4_a * M_O1D * M_CH4 !O(1D) + CH4 -> OH + CH3
+          
+          !// Halogen Reactions 
+          if (LHAL) &
+               PROD = PROD &
+                    + k_cl_ch4 * M_CL * M_CH4 !Cl + CH4 -> HCl + CH3 
 
           LOSS = k_ch3_o2_m * M_O2
-
+          
           M_CH3 = PROD / LOSS
 
 
@@ -1892,7 +1926,6 @@ contains
           if (LHAL) PROD = PROD &
                            + k_cl_ch3cooh * M_CL * M_CH3COOH &!Cl + CH3COOH -> HCl + CH3O2 + CO2
                            + k_cl_ch3ooh * M_CL * M_CH3OOH &!Cl + CH3OOH -> HCl + CH3O2
-                           + k_cl_ch4 * M_CL * M_CH4 !Cl + CH4 -> HCl + CH3O2
 
           if (LHAL) LOSS = LOSS &
                     + k_cl_ch3o2 * M_CL &!Cl + CH3O2 → ClO + CH2O + HO2
@@ -2736,7 +2769,7 @@ contains
         !// Diagnose loss processes [molecules/cm3 in this time step]
         CHEMLOSS(1,46,L) = CHEMLOSS(1,46,L) + LOSS * M_CH4 * DTCH
         CHEMLOSS(2,46,L) = CHEMLOSS(2,46,L) + VDEP_L(46) * M_CH4 * DTCH
-        CHEMLOSS(3,46,L) = CHEMLOSS(3,46,L) + k_oh_ch4 * M_OH * M_CH4 * DTCH
+        CHEMLOSS(3,46,L) = CHEMLOSS(3,46,L) + k_oh_ch4 * M_OH * M_CH4 * DTCH !add Cl loss
         if (.not. LOLD_H2OTREATMENT) then
            CHEMLOSS(4,46,L) = CHEMLOSS(4,46,L) + k_od_ch4_a*M_O1D*M_CH4*DTCH
            CHEMLOSS(5,46,L) = CHEMLOSS(5,46,L) + k_od_ch4_b*M_O1D*M_CH4*DTCH
@@ -3588,6 +3621,7 @@ contains
              k_oh_hno3 * M_OH &
              + DHNO3 &
              + VDEP_L(4)
+        !ZS add LHALs
 
         if (L .eq. 1) DDDIAG(4) = DDDIAG(4) + VDEP_L(4) * M_HNO3 * DTCH
 
