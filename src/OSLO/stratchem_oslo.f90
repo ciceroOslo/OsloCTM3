@@ -1011,6 +1011,9 @@ contains
 
         end do
 
+        !// For methanol
+        BTT(LPAR,52,II,JJ) = 1.e-18_r8 
+        
         !// Second group: Components included in stratospheric chemistry
         !// --------------------------------------------------------------
         !// Apply lower boundary condition:
