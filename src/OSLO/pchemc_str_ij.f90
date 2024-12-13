@@ -115,6 +115,7 @@ contains
          r_no2_no3_b, &
          r_oh_ch3o2h_a, r_oh_ch3o2h_b, &
          r_ho2_ch3o2, &
+         r_ch3o2_ch3o2_b, & !TEST ADDED
          r_ho2_cl_a, r_ho2_cl_b, r_ho2_clo, &
          r_cl_h2, r_cl_h2o2, r_cl_ch4, r_cl_ch2o, r_cl_clono2, r_cl_ch3oh, &
          r_br_o3, r_br_h2o2, r_br_ch2o, r_br_ho2, &
@@ -208,6 +209,7 @@ contains
          k_no2_no3_b, k_oh_oh, k_oh_ho2, &
          k_oh_ch3ccl3, k_oh_chclf2, &
          k_ho2_ch3o2, &
+         k_ch3o2_ch3o2_b, &
          k_ho2_cl_a, k_ho2_cl_b, k_ho2_clo, &
          k_cl_h2, k_cl_h2o2, k_cl_ch4, k_cl_ch2o, k_cl_clono2, &
          k_br_o3, k_br_h2o2, k_br_ch2o, k_br_ho2, &
@@ -423,6 +425,7 @@ contains
       k_oh_ch2o = r_oh_ch2o(JTEMP)
       k_oh_ch3oh = r_oh_ch3oh(JTEMP)
       k_oh_ch4 = r_oh_ch4(JTEMP)
+      k_ch3o2_ch3o2_b = r_ch3o2_ch3o2_b(JTEMP) !TEST
       k_oh_ho2no2 = r_oh_ho2no2(JTEMP)
       k_oh_ch3o2h_a = r_oh_ch3o2h_a(JTEMP)
       k_oh_ch3o2h_b = r_oh_ch3o2h_b(JTEMP)
@@ -1580,10 +1583,11 @@ contains
         !// Integrate CH3O2
         PROD = ( k_oh_ch4 * M_OH              &! OH + CH4    -> CH3 + H2O
                  + k_od_ch4_a * M_O1D           &! O(1D) + CH4 -> OH + CH3
-                 + k_cl_ch4 * M_Cl ) * M_CH4  &! Cl + CH4    -> HCl + CH3
-               + k_oh_ch3o2h_a * M_CH3O2H * M_OH ! OH + CH3OOH -> CH3O2 + H2O (70%)
+                 + k_cl_ch4 * M_Cl ) * M_CH4  &! Cl + CH4    -> HCl + CH3  
+                 + k_oh_ch3o2h_a * M_CH3O2H * M_OH ! OH + CH3OOH -> CH3O2 + H2O (70%)
         LOSS = k_no_ch3o2 * M_NO                &! NO + CH3O2  -> CH3O + NO2
-               + k_ho2_ch3o2 * M_HO2             ! HO2 + CH3O2 -> CH3O2H + O2
+                 + 2._r8 * k_ch3o2_ch3o2_b * M_CH3O2 &! Test this-
+                 + k_ho2_ch3o2 * M_HO2             ! HO2 + CH3O2 -> CH3O2H + O2
 
         call QSSA(231,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_CH3O2)
 
@@ -1597,6 +1601,7 @@ contains
 
         !// Integrate CH2O
         PROD = k_no_ch3o2 * M_CH3O2 * M_NO      &! NO + CH3O2  -> CH3O + NO2
+               + k_ch3o2_ch3o2_b * M_CH3O2 * M_CH3O2 &    !Reaction split update 2022 ADDED IN STRAT!
                + J_CH3O2H * M_CH3O2H          &! CH3O2H + hv -> CH2O + OH + H (->HO2)
                + ( k_od_ch4_b  &! O(1D) + CH4 -> (CH3O/CH2OH + H)  -O2-> CH2O + HO2 + H
                  + k_od_ch4_c ) * M_O1D * M_CH4 &! O(1D) + CH4 -> H2 + CH2O
@@ -1631,7 +1636,9 @@ contains
         call QSSA(233,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_CH2O)
 
         !// Integrate CH3OH
-        PROD = EMISX(52,L)
+        !// Removed EMIS and added CH3O2 + CH3O2 --> CH3OH + HCHO + O2
+        PROD = k_ch3o2_ch3o2_b * M_CH3O2 * M_CH3O2
+        !PROD = EMISX(52,L)
         LOSS = k_oh_ch3oh * M_OH &! OH + CH3OH -> CH3O/CH2OH + H2O -> CH2O + HO2
              + k_cl_ch3oh * M_Cl  ! Cl + CH3OH -> HCl + CH2OH -O2-> CH2O + HO2
 
@@ -3057,6 +3064,7 @@ contains
         ZC_LOCAL(43,L) = M_NO
         ZC_LOCAL(44,L) = M_NO2
         ZC_LOCAL(46,L) = M_CH4
+        ZC_LOCAL(52,L) = M_CH3OH
         ZC_LOCAL(101,L) = M_MCF
         ZC_LOCAL(102,L) = M_HCFC22
         ZC_LOCAL(103,L) = M_CFC11
