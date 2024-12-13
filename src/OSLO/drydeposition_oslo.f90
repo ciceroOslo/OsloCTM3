@@ -45,7 +45,7 @@ module drydeposition_oslo
   !// CTM2 dry deposition (for old scheme)
   real(r8), dimension(5,6) :: &
        VO3DDEP, VHNO3DDEP, VPANDDEP, VCODDEP, VH2O2DDEP, &
-       VNOXDDEP, VSO2DDEP, VSO4DDEP, VMSADDEP, VNH3DDEP
+       VNOXDDEP, VSO2DDEP, VSO4DDEP, VMSADDEP, VNH3DDEP,VCH3OHDDEP
   !// Stomatal conductance and mean photolytic active radiation
   real(r8), dimension(IPAR,JPAR,12) :: STC, PARMEAN
   
@@ -98,14 +98,17 @@ contains
     VDEP(:,:,:) = 0._r8
     !// Initialize output variables
     write(6,'(a)') f90file//':'//subr//': initializing VGSTO3, VGNSO3, ' // &
-         'VRAO3, VRBO3, VRCO3' 
+         'VRAO3, VRBO3, VRCO3 VRCH3OH' 
     VGSTO3(:,:,:) = 0._r8
     VGNSO3(:,:,:) = 0._r8
     VRAO3(:,:,:) = 0._r8
     VRBO3(:,:,:) = 0._r8
     VRCO3(:,:,:) = 0._r8
+ 
+
+   
     !// read in Deposition velocities
-    FILE_NAME='./Indata_CTM3/drydep.ctm'
+    FILE_NAME='./Indata_CTM3/drydep_rbs.ctm'
     open(1,file=FILE_NAME,Status='OLD',Form='FORMATTED',IOSTAT=IOS)
     if (IOS .eq. 0) then
        write(6,'(a)') '** Reading dry deposition data from '//trim(FILE_NAME)
@@ -160,7 +163,12 @@ contains
     do I = 1,5
        read(1,1200) (VNH3DDEP(I,J),J=1,6)
     end do
-       
+
+    !// Read in dry deposition values for methanol
+    read(1,*)
+    do I = 1,5
+       read(1,1200) (VCH3OHDDEP(I,J),J=1,6)
+    end do
     close (1)
 
 1200 Format(6(1x,f5.2))
@@ -283,7 +291,7 @@ contains
     real(r8),dimension(IDBLK,JDBLK) :: DZ, &
          VNO2, VO3, VHNO3, VPAN, VCO, VH2O2, &
          VSO2, VSO4, VMSA, VNH3, &
-         VNO,  VHCHO, VCH3CHO
+         VNO,  VHCHO, VCH3CHO, VCH3OH
     !// Local variable to output GSTO3/GNSO3, and Ra, Rb, Rc
     real(r8),dimension(IDBLK,JDBLK,NLCAT) :: VSto, VNSto, VRa, VRb, VRc
 
@@ -502,7 +510,7 @@ contains
 
        !// Old CTM2 velocities [m/s]
        call get_ctm2dep(MDAY,MSEASON,RFR, MP, &
-            VO3,VHNO3,VPAN,VCO,VH2O2,VNO2, VSO2,VSO4,VMSA, VNH3)
+            VO3,VHNO3,VPAN,VCO,VH2O2,VNO2, VSO2,VSO4,VMSA, VNH3,VCH3OH)
 
        if (LDDEPmOSaic .or. LDEPEMEP2012) then
           if (LDDEPmOSaic) then 
@@ -543,6 +551,8 @@ contains
                 SCALESTABILITY(N) = 0
              else if (chem_idx(N) .eq. 44) then
                 SCALESTABILITY(N) = 0
+             else if (chem_idx(N) .eq. 52) then
+                SCALESTABILITY(N) = 0
              else if (chem_idx(N) .eq. 61) then
                 SCALESTABILITY(N) = 0
              else if (chem_idx(N) .eq. 72) then
@@ -578,6 +588,7 @@ contains
        VNH3(:,:)    = 0._r8
        VNO(:,:)     = 0._r8
        VHCHO(:,:)   = 0._r8
+       VCH3OH(:,:) = 0._r8
        VCH3CHO(:,:) = 0._r8
        VSto(:,:,:)  = 0._r8
        VNSto(:,:,:)  = 0._r8
@@ -623,6 +634,8 @@ contains
              VDEP(N,I,J) = VNO(II,JJ)
           else if (chem_idx(N) .eq. 44) then
              VDEP(N,I,J) = VNO2(II,JJ)
+          else if (chem_idx(N) .eq. 52) then
+             VDEP(N,I,J) = VCH3OH(II,JJ)
           else if (chem_idx(N) .eq. 72) then         !// Sulphate ---v
              VDEP(N,I,J) = VSO2(II,JJ)
           else if (chem_idx(N) .eq. 73) then
@@ -711,7 +724,7 @@ contains
 
   !// ----------------------------------------------------------------------
   subroutine get_ctm2dep(MDAY,MSEASON,RFR, MP, &
-         VO3,VHNO3,VPAN,VCO,VH2O2,VNO2, VSO2,VSO4,VMSA, VNH3)
+         VO3,VHNO3,VPAN,VCO,VH2O2,VNO2, VSO2,VSO4,VMSA, VNH3, VCH3OH)
     !// --------------------------------------------------------------------
     !// Calculate drydep velocities as in CTM2.
     !//
@@ -729,11 +742,11 @@ contains
     real(r8),dimension(5,IDBLK,JDBLK),intent(in) :: RFR !// Fract. of land types
     !// Output
     real(r8),dimension(IDBLK,JDBLK), intent(out) :: &
-         VO3,VHNO3,VPAN,VCO,VH2O2,VNO2, VSO2,VSO4,VMSA, VNH3
+         VO3,VHNO3,VPAN,VCO,VH2O2,VNO2, VSO2,VSO4,VMSA, VNH3, VCH3OH
 
     !// Locals
     integer :: I,J,II,JJ, JIND
-    real(r8) :: RO3,RHNO3,RPAN,RCO,RH2O2,RNO2, RSO2,RSO4,RMSA, RNH3
+    real(r8) :: RO3,RHNO3,RPAN,RCO,RH2O2,RNO2, RSO2,RSO4,RMSA, RNH3,RCH3OH
     !// --------------------------------------------------------------------
  
     !// Loop over latitude (J is global, JJ is block)
@@ -780,6 +793,11 @@ contains
              + VNOXDDEP(3,JIND)*RFR(3,II,JJ) + VNOXDDEP(4,JIND)*RFR(4,II,JJ) &
              + VNOXDDEP(5,JIND)*RFR(5,II,JJ)
 
+        !// For CH3OH
+        RCH3OH = VCH3OHDDEP(1,JIND)*RFR(1,II,JJ) + VCH3OHDDEP(2,JIND)*RFR(2,II,JJ) &
+             + VCH3OHDDEP(3,JIND)*RFR(3,II,JJ) + VCH3OHDDEP(4,JIND)*RFR(4,II,JJ) &
+             + VCH3OHDDEP(5,JIND)*RFR(5,II,JJ)
+
         !// The dry deposition velocity is in [cm/s]; will be modified due to
         !// stability in the calling routine.
         !// Convert from [cm/s] to [m/s]
@@ -789,7 +807,7 @@ contains
         VCO(II,JJ)   = RCO * 1.e-2_r8
         VH2O2(II,JJ) = RH2O2 * 1.e-2_r8
         VNO2(II,JJ)  = RNO2 * 1.e-2_r8
-
+        VCH3OH(II,JJ) = RCH3OH * 1.e-2_r8
 
         if (LSULPHUR) then
            !// Dry deposition rates for SO2, sulphate and MSA
