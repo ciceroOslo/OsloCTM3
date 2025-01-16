@@ -642,13 +642,16 @@ contains
             EUNIT, EDIURN, EDATASET !, ESCENYEAR
 
        if (ETAG .eq. 567 .or. ETAG .eq. 569 .or. ETAG .eq. 570 .or. &
-            ETAG .eq. 571 .or. ETAG .eq. 572 .or. ETAG .eq. 573) then
+            ETAG .eq. 571 .or. ETAG .eq. 572 .or. ETAG .eq. 573 .or. ETAG .eq. 574) then
           !// GFEDv4
           if (ETAG .eq. 567) then
              FF_TYPE = 4 !// Old version of vertical distribution
           else if (ETAG .eq. 573) then
              FF_TYPE = 3 !// Old version of vertical distribution,
                          !// and use daily fractions.
+          else if (ETAG .eq. 574) then
+             FF_TYPE = 10 !// GFED5Beta Old version of vertical distribution,
+             !// and use daily fractions.
           else if (ETAG .eq. 569) then
              FF_TYPE = 6 !// Distribute according to air mass in BLH
           else if (ETAG .eq. 570) then
@@ -790,7 +793,7 @@ contains
     use cmn_precision, only: r8
     use cmn_size, only: LBCOC
     use cmn_ctm, only: JDAY, JMON, JDATE, JYEAR
-    use emisutils_oslo, only: gfed4_rd, gfed4_rd_daily, ceds_biomass_burning, &
+    use emisutils_oslo, only: gfed4_rd, gfed4_rd_daily, gfed5_rd_daily, ceds_biomass_burning, &
          gfed4_rd_novert, gfed4_rd_novert_daily, &
          emis_setscaling_2dfields, ceds_biomass_burning_novert
     use cmn_oslo, only: FF_TYPE
@@ -817,6 +820,10 @@ contains
        !// GFEDv4 daily, old vertical
        if (NOPS .eq. 1 .and. NMET .eq. 1) &
             call gfed4_rd_daily(JDATE,JMON,JYEAR)
+    else if (FF_TYPE .eq. 10) then
+       !// GFEDv5 daily, old vertical
+       if (NOPS .eq. 1 .and. NMET .eq. 1) &
+            call gfed5_rd_daily(JDATE,JMON,JYEAR)
     else if (FF_TYPE .eq. 4) then
        !// GFEDv4 monthly, old vertical - see also FF_TYPE 6
        if (LNEWM) call gfed4_rd(JMON,JYEAR)

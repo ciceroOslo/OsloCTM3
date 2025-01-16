@@ -241,7 +241,6 @@ contains
        call read_ceds_cicero(INFILE, INVAR, INYEAR, R8XY, &
             IRES, JRES, MRES, NSETS, ESCENYEAR)
 
-
     else if (INFMT.eq.501) then
        !// POET 2D emissions, unit: molecule/cm2/s
        !// Contains annual data, 1 data set
@@ -5151,6 +5150,378 @@ contains
   !// ------------------------------------------------------------------
 
 
+
+!Add GFED5 beta
+  !// ------------------------------------------------------------------
+  subroutine gfed5_rd_daily(JDATE,JMONTH,JYEAR)
+    !// ------------------------------------------------------------------
+    !// This reads monthly emissions of dry matter (DM) from GFEDv4,
+    !// for the six partitions:
+    !// SAVA: Savanna
+    !// BORF: Boreal forrest
+    !// TEMF: Temperature forest
+    !// DEFO: Deforestation
+    !// PEAT: Peat
+    !// AGRI: Agricultural wastet burning
+    !//
+    !// Input resolution is 0.25x0.25 degrees, which is first interpolated
+    !// to 0.5x0.5 degrees, then distributed according
+    !// to RETRO vertical distribution (also 0.5x0.5 degrees), before
+    !// interpolated to CTM3 resolution.
+    !//
+    !// Interpolation is PARALLELLIZED!
+    !//
+    !// Not yet configured for daily fraction of monthly emissions.
+    !// 
+    !// The routine is hardcoded to read separate emission array (EMIS_FIR).
+    !// This is necessary due to all scalings for NMVHCs, and because the
+    !// emission fields need to be independent of emission arrays
+    !// E2DS and E3DS to allow for more frequent updating.
+    !//
+    !// Variables/parameters defined in oc_globalvariables.f:
+    !//   EPAR_FIR:    Max number of components in EMIS_FIR
+    !//   NEFIR:       The number of components in EMIS_FIR
+    !//   EPAR_FIR_LM: Number of layers in emission set, starting from surface.
+    !//   ECOMP_FIR:   Transport numbers of the components in EMIS_FIR
+    !//   EMIS_FIR:    Size (LPAR,EPAR_FIR,IDBLK,JDBLK,MPBLK)
+    !//
+    !// Amund Sovde Haslerud, December 2017
+    !//   Added daily fractions.
+    !// Ole Amund Sovde, February 2012, updated June 2013
+    !// ------------------------------------------------------------------
+    use cmn_size, only: IPAR, JPAR, LPAR, LPARW, NPAR, MPBLK
+    use cmn_ctm, only: LMMAP, XDEDG, YDEDG, MPBLKJB, MPBLKJE, MPBLKIB, MPBLKIE
+    use cmn_chem, only: TNAME
+    use cmn_met, only: MYEAR
+    use cmn_parameters, only: A0, CPI180
+    use regridding, only: E_GRID
+    use cmn_oslo, only: EPAR_FIR, NEFIR, EPAR_FIR_LM, ECOMP_FIR, EMIS_FIR, &
+         FF_PATH, FF_YEAR, METHANEMIS, &
+         FF_CNAMES, FF_BNAMES, FF_SCALE, FF_PARTITIONS, &
+         GFED4_NC, GFED4_NP, GFED4_EF, GFED4_NM, DINM
+    use ncutils, only: get_netcdf_var_1d, get_netcdf_var_2d
+    !// ------------------------------------------------------------------
+    implicit none
+    !// ------------------------------------------------------------------
+    !// Input
+    integer, intent(in) :: JDATE, JMONTH, JYEAR
+
+    !// Locals
+    integer :: I,J,L,M,N,N_EMIS,II,JJ,MP, io_err
+
+    !// Dimensions
+    integer, parameter :: IRES=360 ,JRES=180, IHLF=720, JHLF=360, LHLF=13
+    integer, parameter :: IQRT=1440, JQRT=720
+    !// XY grid
+    real(r8)   :: HXBEDGE(IHLF+1), HYBEDGE(JHLF+1),HXYBOX(JHLF)
+    real(r8)   :: QXYBOX(JQRT)
+
+    real(r8) :: BBH_FIR(IHLF,JHLF,EPAR_FIR_LM)
+    real(r8), dimension(IQRT,JQRT) :: R8Q, QDUM, DFRAC
+    real(r8), dimension(IHLF,JHLF) :: HDUM
+
+    character(len=20) :: COMP
+    character(len=2) :: CDATE, CMONTH
+    character(len=4) :: CYEAR
+    !// Partitions: Agriculture, deforestation, forest, peat, savanna, woodland
+    integer :: partitions(GFED4_NP)
+    real(r8)  :: DM_PARTS(IHLF,JHLF,GFED4_NP)
+    character(len=4) :: CPARTS(GFED4_NP)
+
+    !// Interpolated array
+    real(r8)  :: RXY8(IPAR,JPAR,EPAR_FIR_LM)
+
+    !// File variables
+    logical :: file_status
+    integer :: efnr, nLon, nLat
+    character(len=120) :: INFILE
+    real(r8) :: EDATA(IHLF,JHLF),tscale, scalefac
+
+    integer :: GFED4_N
+
+    real(r8), allocatable, dimension(:) :: QXBEDGE, QYBEDGE
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'gfed5_rd_daily'
+    !// ------------------------------------------------------------------
+
+    write(6,'(a)') f90file//':'//subr//': Biomass burning (GFEDv4)'
+
+    !// Initialize emissions
+    EMIS_FIR(:,:,:,:,:) = 0._r8
+
+    !// DM emissions from each partition, to be read from file
+    DM_PARTS(:,:,:) = 0._r8
+
+    !// ------------------------------------------------------------------
+
+    !// Select partitions to use (default is all)
+    CPARTS = (/'SAVA', 'BORF', 'TEMF', 'DEFO', 'PEAT', 'AGRI'/)
+
+
+    !// Read DM from partitions
+    !// ------------------------------------------------------------------
+    !// Date and month to read
+    write(CDATE(1:2),'(i2.2)') JDATE
+    write(CMONTH(1:2),'(i2.2)') JMONTH
+    !// Year to read
+    if (FF_YEAR .ne. 9999) then
+       write(CYEAR,'(i4.4)') FF_YEAR
+    else
+       write(CYEAR,'(i4.4)') MYEAR !// Use meteorological year
+    end if
+
+
+    !// Include daily fraction of monthly totals
+    !// ------------------------------------------------------------------
+    infile = trim(FF_PATH)//'daily/'//CYEAR// &
+         '/fraction_emissions_'//CYEAR//CMONTH//CDATE//'.nc'
+    write(6,'(a)') f90file//':'//subr//': Reading '//trim(INFILE)
+    !// Emission variable, expected units: kg/m2/s for each month
+    call get_netcdf_var_2d(infile, 'Fraction_of_Emissions', QDUM, IQRT,JQRT)
+
+    !// IMPORTANT: Must scale by days in month, since emissions
+    !//            are given in units kg/s.
+    !// Skip possible negatives.
+    QDUM(:,:) = max(0._r8, QDUM(:,:)) * real(DINM(JMONTH),r8)
+    !// Switch from -180:180 to 0:360, as GFED4 monthly fields
+    do J = 1, JQRT
+       DFRAC(1:IQRT/2,J) = QDUM(IQRT/2+1:IQRT,J)
+       DFRAC(IQRT/2+1:IQRT,J) = QDUM(1:IQRT/2,J)
+    end do
+
+    write(6,'(a,2es16.6)') f90file//':'//subr//': DFRAC min/max',minval(DFRAC),maxval(DFRAC)
+
+    !// Filename
+    infile = trim(FF_PATH)//'GFED5_Beta_'//CYEAR//CMONTH//'.nc'
+
+    !// Inquire file
+    inquire(file=infile,exist=file_status)
+
+    if (.not. file_status) then
+       write(6,'(a)') f90file//':'//subr//': file does not exist: '// &
+            trim(infile)
+       !// Fall-back to 2003/2016
+       if (MYEAR .gt. 2016) then
+          infile = trim(FF_PATH)//'GFED4.1s_2016_'//CMONTH//'.nc'  !NBNBNB
+       else if (MYEAR .lt. 2003) then
+          infile = trim(FF_PATH)//'GFED4.1s_2003_'//CMONTH//'.nc'  !NBNBNB
+       else
+          stop
+       end if
+       !// In case of fall-back
+       write(6,'(a)') 'Will try to use file: '//trim(infile)
+       inquire(file=infile,exist=file_status)
+       if (.not. file_status) then
+          write(6,'(a)') f90file//':'//subr//': file does not exist: '// &
+               trim(infile)
+          stop
+       end if
+    end if
+
+    write(6,'(a)') f90file//':'//subr//': Reading '//trim(INFILE)
+    
+    !// Check resolution (latitude/longitude/time)
+    !// This routine allocates inLon/inLat/inTime
+    call get_netcdf_var_1d( infile, 'lone', QXBEDGE )
+    call get_netcdf_var_1d( infile, 'late', QYBEDGE )
+
+    nLon  = SIZE( QXBEDGE ) - 1
+    nLat  = SIZE( QYBEDGE ) - 1
+
+    if (nLon .ne. IQRT .or. nLat.ne.JQRT) then
+       write(6,'(a,2i5)') f90file//':'//subr//': Wrong lon/lat size',nLon,nLat
+       write(6,'(a,2i5)') '  Should be:',IQRT,JQRT
+       stop
+    end if
+
+    !// QRT Grid box areas
+    do J = 1, JQRT
+       QXYBOX(J) =  A0*A0 * CPI180 * (QXBEDGE(2) - QXBEDGE(1)) &
+            * (sin(CPI180*QYBEDGE(J+1)) - sin(CPI180*QYBEDGE(J)))
+    end do
+
+
+    !// Set up halfdegrees (Grid type is 1, start at 0E, 90S)
+    !// (Actually, GFED starts at 180W, 90N, but it is swicthed after read-in.)
+    call get_xyedges(IHLF,JHLF,HXBEDGE,HYBEDGE,1)
+
+    !// HLF Grid box areas
+    do J = 1, JHLF
+       HXYBOX(J) =  A0*A0 * CPI180*(HXBEDGE(2) - HXBEDGE(1)) &
+            * (sin(CPI180*HYBEDGE(J+1)) - sin(CPI180*HYBEDGE(J)))
+    end do
+
+
+
+
+    !// Read DM for six categories; save data on 0.5x0.5 degree
+    !// For each species, add all partitions together in 0.5x0.5.
+    !// Finally convert to model resolution.
+    do N = 1, GFED4_NP
+
+       !// Emission variable, expected units: kg/m2/s for each month
+       !// GFED4 on netcdf has been converted to start at 0E,90S
+       call get_netcdf_var_2d( infile, 'DM_'//CPARTS(N),R8Q(:,:), nlon,nlat )
+
+       !// Multiply by daily fraction of month
+       R8Q(:,:) = R8Q(:,:) * DFRAC(:,:)
+       !// multiply by area for interpolation
+       do J = 1, JQRT
+          R8Q(:,J) = R8Q(:,J) * QXYBOX(J)
+       end do
+
+       !// From 0.25 to 0.5 degree
+       call E_GRID(R8Q,QXBEDGE,QYBEDGE,IQRT,JQRT, HDUM, &
+                 HXBEDGE,HYBEDGE,IHLF,JHLF,1)
+
+       !// divide by area after interpolation
+       do J = 1, JHLF
+          HDUM(:,J) = HDUM(:,J) / HXYBOX(J)
+       end do
+
+       !// Save DM for each partition
+       DM_PARTS(:,:,N) = HDUM(:,:)
+
+    end do !// do N = 1, GFED4_NP
+
+    !// Deallocate allocated variables
+    if ( allocated(QXBEDGE) ) deallocate(QXBEDGE)
+    if ( allocated(QYBEDGE) ) deallocate(QYBEDGE)
+
+
+    !// Get vertical distribution
+    !// ------------------------------------------------------------------
+    INFILE = trim(FF_PATH)//'bb_altitudes_aggregated.0.5x0.5.nc'
+    write(6,'(a)') ' * Reading BBH '//trim(INFILE)
+
+    !// Read the BBH data
+    call read_retrobbh(INFILE,IHLF,JHLF,EPAR_FIR_LM,BBH_FIR,LPARW,LMMAP)
+
+    !// Originally, there was a check whether BBH(I,J,1) was 0 but non-zero
+    !// above. This never happened, so I removed the test.
+
+
+    !// Collect emissions of specified partitionings, for each of
+    !// the emitted components.
+    !// ------------------------------------------------------------------
+
+    !// Loop through componens and interpolate
+    EDATA(:,:) = 0._r8
+
+    do N_EMIS = 1, NEFIR
+
+       !// Skip component if not included
+       if (ECOMP_FIR(N_EMIS) .le. 0) cycle
+
+       !// Find corresponding GFED4 name. Some use same as CTM3, others
+       !// are different and must be overrided below.
+       COMP = trim(FF_BNAMES(N_EMIS))
+       !// Additional scaling factor
+       scalefac = FF_SCALE(N_EMIS)
+
+       !// Select partitions to use (default is all)
+       !// 'SAVA', 'BORF', 'TEMF', 'DEFO', 'PEAT', 'AGRI'
+       partitions(:) = FF_PARTITIONS(:,N_EMIS)
+
+
+       !// Find the GFED4 component number, if available.
+       GFED4_N = -1
+       do I = 1, GFED4_NC
+          if (trim(GFED4_NM(I)) .eq. trim(COMP)) then
+             GFED4_N = I
+             exit
+          end if
+       end do
+
+       !// If not available, skip component
+       if (GFED4_N .le. 0) cycle
+
+       !// Sum up partitions for this species
+       HDUM(:,:) = 0._r8
+       do N = 1, GFED4_NP
+
+          if (partitions(N) .eq. 0._r8) cycle
+          !// Emission factors are g/kgDM, so we convert to kg, and also
+          !// apply the scalefac.
+          tscale =  GFED4_EF(N,GFED4_N) * 1.e-3_r8 * scalefac
+
+          HDUM(:,:) = HDUM(:,:) + DM_PARTS(:,:,N) * tscale
+
+       end do
+
+       !// Convert to kg/s
+       do J = 1, JHLF
+          EDATA(:,J) = HDUM(:,J) * HXYBOX(J)
+       end do
+
+
+
+       !// Distribute with height
+       do L = 1, EPAR_FIR_LM
+          HDUM(:,:) = EDATA(:,:) * BBH_FIR(:,:,LMMAP(L))
+          if (maxval(HDUM) .gt. 0._r8) then
+             if (L.eq.1) then
+                !// Check problems with BBH on half degree vs emissions on
+                !// one degree
+                do J = 1, JHLF
+                  do I = 1, IHLF
+                     !// Put everyting in layer 1
+                     if (BBH_FIR(I,J,1) .eq. 0._r8 .and. &
+                          HDUM(I,J) .gt. 0._r8) then
+                        HDUM(I,J) = EDATA(I,J)
+                     end if
+                  end do
+               end do
+            end if
+
+            !// Interpolate
+            call E_GRID(HDUM,HXBEDGE,HYBEDGE,IHLF,JHLF, RXY8(:,:,L), &
+                 XDEDG,YDEDG,IPAR,JPAR,1)
+         else
+            RXY8(:,:,L) = 0._r8
+         end if
+      end do !// do L = 1, EPAR_FIR_LM
+
+      do MP = 1, MPBLK
+        !// Loop over latitude (J is global, JJ is block)
+        do J = MPBLKJB(MP), MPBLKJE(MP)
+          JJ    = J - MPBLKJB(MP) + 1
+
+          !// Loop over longitude (I is global, II is block)
+          do I = MPBLKIB(MP), MPBLKIE(MP)
+            II    = I - MPBLKIB(MP) + 1
+
+            do L = 1, EPAR_FIR_LM
+               EMIS_FIR(L,N_EMIS,II,JJ,MP) = RXY8(I,J,L)
+            end do
+          end do
+        end do
+      end do
+
+      tscale = 0._r8
+      do MP = 1, MPBLK
+        do J = MPBLKJB(MP), MPBLKJE(MP)
+          JJ    = J - MPBLKJB(MP) + 1
+          do I = MPBLKIB(MP), MPBLKIE(MP)
+            II    = I - MPBLKIB(MP) + 1
+            do L = 1, EPAR_FIR_LM
+               tscale = tscale + EMIS_FIR(L,N_EMIS,II,JJ,MP)
+            end do
+          end do
+        end do
+      end do
+      write(6,'(a,a10,1x,i3,es12.5,a)') ' * Total FF ',FF_CNAMES(N_emis),ECOMP_FIR(N_EMIS),&
+           tscale*86400.e-9_r8,' Tg/day'
+
+    end do !// do do N_EMIS = 1, NEFIR
+
+    write(6,'(a)') f90file//':'//subr//': Forest fires emissions are updated'
+
+    !// ------------------------------------------------------------------
+  end subroutine gfed5_rd_daily
+  !// ------------------------------------------------------------------
+
+ 
 
   !// ----------------------------------------------------------------------
   subroutine getmeganmonthly(INFILE,INVAR,R8XY,IRES,JRES,MRES,NSETS,&
