@@ -44,7 +44,7 @@ module CMN_CHEM
   !//-----------------------------------------------------------------------
   !// 2D stored as pattern with scale factor for each species
   !// Note that different patterns, including monthly stored as new table
-  integer, parameter :: ETPAR=2000         !// dim. no. of 2-D tables
+  integer, parameter :: ETPAR=2910         !// dim. no. of 2-D tables
   integer :: NE2TBL                        !// actual no. of 2-D tables
   integer :: NM2TBL(ETPAR)   !// Table of months the emissions apply for
   integer :: NY2TBL(ETPAR)   !// Table of years emissions apply for
