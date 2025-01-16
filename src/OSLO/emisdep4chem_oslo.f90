@@ -464,7 +464,11 @@ contains
            !// Velocity based on Nightingale et al., Global Biogeochemical
            !// Cycles vol.14, no.1, p 373-387, 2000
            !// Change from cm/hr to m/s
-           rk600 = (0.222_r8*vv + 0.333_r8*vv**0.5_r8) * 1.e-2_r8 / 3600._r8
+           !rk600 = (0.222_r8*vv + 0.333_r8*vv**0.5_r8) * 1.e-2_r8 / 3600._r8
+           !RBD test:
+           !// Based on Fig.5 in Blomquist et al 2017
+           rk600 = 0.7432_r8*(vv**0.5_r8)**1.325_r8 * 1.e-2_r8 / 3600._r8
+           
            !// Scale DMSseaconc from kg/m to kg/s and add to tracer array.
            !// Then scale to molec/cm3/s
            ADDTC = rk600 * DMSseaconc(I,J,JMON)  !// kg/s
