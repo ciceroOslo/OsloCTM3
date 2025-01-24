@@ -108,7 +108,8 @@ contains
 
    
     !// read in Deposition velocities
-    FILE_NAME='./Indata_CTM3/drydep_rbs.ctm'
+    !FILE_NAME='./Indata_CTM3/drydep_rbs.ctm'
+    FILE_NAME='./Indata_CTM3/drydep_vocs.ctm'
     open(1,file=FILE_NAME,Status='OLD',Form='FORMATTED',IOSTAT=IOS)
     if (IOS .eq. 0) then
        write(6,'(a)') '** Reading dry deposition data from '//trim(FILE_NAME)
