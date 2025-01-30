@@ -2651,8 +2651,11 @@ contains
         LOSS = &
              k_oh_aceton * M_OH &
              + DACETON_A &
-             + DACETON_B
+             + DACETON_B &
+             + VDEP_L(50)
 
+        if (L .eq. 1) DDDIAG(50) = DDDIAG(50) + VDEP_L(50) * M_ACETON * DTCH
+        
         call QSSA(29,'ACETON',DTCH,QLIN,ST,PROD,LOSS,ZC(50,L))
 
 
