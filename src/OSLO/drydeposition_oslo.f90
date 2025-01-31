@@ -3137,7 +3137,7 @@ contains
     call TRUNG8(W2D, R8XY, ZDEGI, ZDEGJ, IMAP, JMAP, IDGRD, &
          JDGRD, IPARW, JPARW, IPAR, JPAR, 1, 1)
     PPFD(:,:) = max(0._r8, R8XY(:,:))  !// Limit to positive values (* ZDT)
-    if (verbose) call gotData('2da','Photosyn. Photon flux dens. (PPFD)')
+    !RBSif (verbose) call gotData('2da','Photosyn. Photon flux dens. (PPFD)')
     !// --------------------------------------------------------------------
   end subroutine get_PPFD
   !// ----------------------------------------------------------------------

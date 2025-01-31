@@ -2849,13 +2849,13 @@ contains
     call TRUNG8(W2D, R8XY, ZDEGI, ZDEGJ, IMAP, JMAP, IDGRD, &
          JDGRD, IPARW, JPARW, IPAR, JPAR, 1, 1)
     GLEN_MAP(:,:) = max(0._r8, R8XY(:,:))  !// Limit to positive values
-    if (verbose) call gotData('2da','GLEN')
+    !RBSif (verbose) call gotData('2da','GLEN')
     
     call get_netcdf_var_3d(fileGSMAP, 'GDAY',W3D, IPARW, JPARW, totdays)
     call TRUNG8(W3D, R8XYZ, ZDEGI, ZDEGJ, IMAP, JMAP, IDGRD, &
          JDGRD, IPARW, JPARW, IPAR, JPAR, totdays, 1)
     GDAY_MAP(:,:,:) = max(0._r8, R8XYZ(:,:,:))  !// Limit to positive values
-    if (verbose) call gotData('3da','GDAY')
+    !RBSif (verbose) call gotData('3da','GDAY')
        
     !// --------------------------------------------------------------------
   end subroutine read_growing_season
