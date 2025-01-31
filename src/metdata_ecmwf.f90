@@ -1666,7 +1666,7 @@ contains
     character(len=3), intent(in) :: TYP
     character(len=*), intent(in) :: LABEL
     !//---------------------------------------------------------------------
-    write(6,'(a,i5,1x,a)') ' update_metdata: Skipped '//TYP//':', &
+    write(6,'(a,1x,a)') ' update_metdata: Skipped '//TYP//':', &
          trim(LABEL)
     !//---------------------------------------------------------------------
   end subroutine skipData
