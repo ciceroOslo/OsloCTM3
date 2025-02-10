@@ -2115,6 +2115,11 @@ contains
                   + 1.e-5_r8
              call QSSA(43,'ISOPREN',DTCH,QLIN,ST,PROD,LOSS,ZC(20,L))
 
+             
+             CHEMPROD(1,20,L) = CHEMPROD(1,20,L) + PROD * DTCH
+             CHEMLOSS(1,20,L) = CHEMLOSS(1,20,L) + LOSS * M_ISOPREN * DTCH
+             CHEMLOSS(3,20,L) = CHEMLOSS(3,20,L) +  k_oh_isoprene * M_OH* M_ISOPREN * DTCH
+             
              if (ZC(20,L) .lt. 0._r8) then
                 print*, 'OSLO_CHEM: negative ISOPREN in chemistry', &
                      ICOL,JCOL,L,ZC(20,L)

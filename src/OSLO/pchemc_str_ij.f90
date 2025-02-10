@@ -1999,7 +1999,7 @@ contains
            
            !End of old treatment, now do integration:
            call QSSA(271,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_H2O)
-
+           
            !// Integrate H2Os
            PROD = LC_spsECPAR * M_HOCl   &! HOCL + HCl(psc)   -> Cl2 + H2Os
                   + LC_spsGCPAR * M_HOBr  ! HOBr + HCl(psc)   -> BrCl + H2Os
