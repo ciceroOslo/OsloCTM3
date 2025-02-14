@@ -850,6 +850,7 @@ contains
     real(r8) ::  XBEDGE(IRES+1), YBEDGE(JRES+1), XYBOX(JRES)
     real(r8) ::  SUM1x1, SUMCTM
     real(r8) ::  R8XY(IRES,JRES,MRES)
+    real(r8) ::  RDUM2(IRES,JRES,MRES)
     integer ::  I, J, L, M, N, NN, ML, io_err, NLEVS
     character(len=70) :: TITLE
     integer :: efnr,ii,jj,k, grid_type, NSETS
@@ -928,7 +929,8 @@ contains
        call scale_area(R8XY,NSETS,XYBOX,IRES,JRES,MRES,INTYP)
 
        !// Change from nmol m2/L to kg/m: *1.d-9*Mw(DMS)*1.d3/(1.d3L/m3)
-       R8XY(:,:,:) = R8XY(:,:,:) * 62.e-9_r8
+       R8XY(:,:,:) = R8XY(:,:,:) * 62.e-9_r8*INFACT
+       !// RBS added INFACT
        !// This value will be multiplied with a velocity to create a flux.
        !// Taken care of in the source treatment each operator time step.
  
@@ -970,15 +972,24 @@ contains
        !// Initialize
        NSETS = 12
        R8XY(:,:,:) = 0._r8
-
+       RDUM2(:,:,:) = 0._r8
        !// Read data [nM], return 3D fields (IRES,JRES,MRES)
-       call nc_getdata_sfc(INFILE,INVAR,R8XY,IRES,JRES,MRES,NSETS)
+       call nc_getdata_sfc(INFILE,INVAR,RDUM2,IRES,JRES,MRES,NSETS)
 
+
+       !// Flip so field starts at (0E,90S)
+       do I = 1, IRES/2
+          R8XY(I,:,:) = RDUM2(IRES/2+I,:,:)
+       end do
+       do I = (IRES/2)+1, IRES
+          R8XY(I,:,:) = RDUM2(I-IRES/2,:,:)  
+       end do
+       
        !// Scale with area: yes, input is per volume
        call scale_area(R8XY,NSETS,XYBOX,IRES,JRES,MRES,INTYP)
 
        !// Change from nmol/L*m2 to kg/m: *1.d-9*Mw(DMS)*1.d3/(1.d3L/m3)
-       R8XY(:,:,:) = R8XY(:,:,:) * 62.e-9_r8
+       R8XY(:,:,:) = R8XY(:,:,:) * 62.e-9_r8*INFACT
        !// This value will be multiplied with a velocity to create a flux.
        !// Taken care of in the source treatment each operator time step.
  
@@ -4127,7 +4138,7 @@ contains
     !// inTime is given as days since 1750, and starts at mid-month
     !// (15 Jan for each year).
     sTime = -1
-    if (getY .le. 2014) then 
+    if (getY .le. 2019) then 
        do M = 1, nTime
           if (inTime(M) .ge. (getY - 1750)*365 + 15) then
              sTime = M

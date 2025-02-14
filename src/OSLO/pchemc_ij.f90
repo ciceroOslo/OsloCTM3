@@ -2115,6 +2115,11 @@ contains
                   + 1.e-5_r8
              call QSSA(43,'ISOPREN',DTCH,QLIN,ST,PROD,LOSS,ZC(20,L))
 
+             
+             CHEMPROD(1,20,L) = CHEMPROD(1,20,L) + PROD * DTCH
+             CHEMLOSS(1,20,L) = CHEMLOSS(1,20,L) + LOSS * M_ISOPREN * DTCH
+             CHEMLOSS(3,20,L) = CHEMLOSS(3,20,L) +  k_oh_isoprene * M_OH* M_ISOPREN * DTCH
+             
              if (ZC(20,L) .lt. 0._r8) then
                 print*, 'OSLO_CHEM: negative ISOPREN in chemistry', &
                      ICOL,JCOL,L,ZC(20,L)
@@ -2546,7 +2551,7 @@ contains
         if (L .eq. 1) DDDIAG(13) = DDDIAG(13) + VDEP_L(13) * M_CH2O * DTCH
 
         CHEMLOSS(1,13,L) = CHEMLOSS(1,13,L) + LOSS*M_CH2O*DTCH
-        CHEMLOSS(2,13,L) = CHEMLOSS(2,13,L) + VDEP_L(13)*DTCH
+        CHEMLOSS(2,13,L) = CHEMLOSS(2,13,L) + VDEP_L(13)*M_CH2O*DTCH
         CHEMLOSS(3,13,L) = CHEMLOSS(3,13,L) + DACH2O*M_CH2O*DTCH
         CHEMLOSS(4,13,L) = CHEMLOSS(4,13,L) + DBCH2O*M_CH2O*DTCH
         CHEMLOSS(5,13,L) = CHEMLOSS(5,13,L) + k_oh_ch2o*M_OH*M_CH2O*DTCH
@@ -2651,8 +2656,11 @@ contains
         LOSS = &
              k_oh_aceton * M_OH &
              + DACETON_A &
-             + DACETON_B
+             + DACETON_B &
+             + VDEP_L(50)
 
+        if (L .eq. 1) DDDIAG(50) = DDDIAG(50) + VDEP_L(50) * M_ACETON * DTCH
+        
         call QSSA(29,'ACETON',DTCH,QLIN,ST,PROD,LOSS,ZC(50,L))
 
 

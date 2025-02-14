@@ -152,7 +152,7 @@ module cmn_oslo
   !// fields based on monthly means
   logical, parameter ::  METHANEMIS = .false.
   !// Same as for methane, but for H2
-  logical, parameter ::  H2EMIS = .true.
+  logical, parameter ::  H2EMIS = .false.
 
   !// --- Additions for 2D emissions ---------------------------------------
   !// Number of categories, given in E2D_CATNAMES
