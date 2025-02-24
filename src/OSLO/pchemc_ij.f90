@@ -1345,6 +1345,14 @@ contains
 
           if (L .eq. 1) DDDIAG(5) = DDDIAG(5) + VDEP_L(5) * M_PAN * DTCH
 
+          
+          CHEMPROD(1,5,L) = CHEMPROD(1,5,L) + PROD * DTCH
+          CHEMPROD(2,5,L) = CHEMPROD(2,5,L) +  k_ch3co_o2 * M_O2 * M_CH3CO *DTCH 
+
+          CHEMLOSS(1,5,L) = CHEMLOSS(1,5,L) + LOSS * M_PAN * DTCH
+          CHEMLOSS(2,5,L) = CHEMLOSS(2,5,L) + VDEP_L(5) * M_PAN * DTCH
+          CHEMLOSS(3,5,L) = CHEMLOSS(3,5,L) +  k_oh_pan * M_OH * M_PAN* DTCH
+
           call QSSA(9,'PAN',DTCH,QLIN,ST,PROD,LOSS,ZC(5,L))
 
           M_PANX = ZC(5,L)
@@ -2113,12 +2121,14 @@ contains
              LOSS = &
                   k_oh_isoprene * M_OH &
                   + 1.e-5_r8
-             call QSSA(43,'ISOPREN',DTCH,QLIN,ST,PROD,LOSS,ZC(20,L))
 
-             
+
              CHEMPROD(1,20,L) = CHEMPROD(1,20,L) + PROD * DTCH
              CHEMLOSS(1,20,L) = CHEMLOSS(1,20,L) + LOSS * M_ISOPREN * DTCH
              CHEMLOSS(3,20,L) = CHEMLOSS(3,20,L) +  k_oh_isoprene * M_OH* M_ISOPREN * DTCH
+
+             call QSSA(43,'ISOPREN',DTCH,QLIN,ST,PROD,LOSS,ZC(20,L))
+
              
              if (ZC(20,L) .lt. 0._r8) then
                 print*, 'OSLO_CHEM: negative ISOPREN in chemistry', &
@@ -2402,7 +2412,8 @@ contains
                 + k_ch3x_ch3x * M_CH3X) * M_CH3X
         LOSS = &
              (k_oh_ch3o2h_a + k_oh_ch3o2h_b) * M_OH &
-             + 0.5_r8 * DCH3O2H
+             + 0.5_r8 * DCH3O2H &
+             + VDEP_L(16)     !Soil uptake / dry deposition
 
         LOSS = ( 0.5_r8 * (LOSS_2 * M_OH &
                           + LOSS_3 * M_CH3O2) &
@@ -2410,13 +2421,17 @@ contains
 
         PROD = PROD + 0.5_r8 * PROD_2
 
+
+        if (L .eq. 1) DDDIAG(16) = DDDIAG(16) + VDEP_L(16) * M_CH3O2H * DTCH
+        
+        
         !RBS ADDED
         CHEMLOSS(1,16,L) = CHEMLOSS(1,16,L) + LOSS * ZC(16,L) * DTCH
-        CHEMLOSS(2,16,L) = CHEMLOSS(2,16,L) + k_oh_ch3o2h_a * M_OH * M_CH3O2H*DTCH
-        CHEMLOSS(3,16,L) = CHEMLOSS(3,16,L) + k_oh_ch3o2h_b * M_OH * M_CH3O2H*DTCH
-        CHEMLOSS(4,16,L) = CHEMLOSS(4,16,L) + 0.5_r8 * DCH3O2H* M_CH3O2H*DTCH
-        CHEMLOSS(5,16,L) = CHEMLOSS(5,16,L) + 0.5_r8 * (LOSS_2 * M_OH)*DTCH 
-        CHEMLOSS(6,16,L) = CHEMLOSS(6,16,L) + 0.5_r8 * (LOSS_3 * M_CH3O2)*DTCH 
+        CHEMLOSS(2,16,L) = CHEMLOSS(2,16,L) + VDEP_L(16) * ZC(16,L) * DTCH
+        !CHEMLOSS(3,16,L) = CHEMLOSS(3,16,L) + k_oh_ch3o2h_b * M_OH * M_CH3O2H*DTCH
+        !CHEMLOSS(4,16,L) = CHEMLOSS(4,16,L) + 0.5_r8 * DCH3O2H* M_CH3O2H*DTCH
+        !CHEMLOSS(5,16,L) = CHEMLOSS(5,16,L) + 0.5_r8 * (LOSS_2 * M_OH)*DTCH 
+        !CHEMLOSS(6,16,L) = CHEMLOSS(6,16,L) + 0.5_r8 * (LOSS_3 * M_CH3O2)*DTCH 
 
         CHEMPROD(1,16,L) = CHEMPROD(1,16,L) + PROD * DTCH
         CHEMPROD(2,16,L) = CHEMPROD(2,16,L) + 0.5_r8 * PROD_2*DTCH
@@ -2660,6 +2675,19 @@ contains
              + VDEP_L(50)
 
         if (L .eq. 1) DDDIAG(50) = DDDIAG(50) + VDEP_L(50) * M_ACETON * DTCH
+
+        CHEMLOSS(1,50,L) = CHEMLOSS(1,50,L) + LOSS * M_ACETON * DTCH
+        CHEMLOSS(2,50,L) = CHEMLOSS(2,50,L) + VDEP_L(50) * M_ACETON * DTCH
+        CHEMLOSS(3,50,L) = CHEMLOSS(3,50,L) + k_oh_aceton * M_ACETON * M_OH * DTCH
+        CHEMLOSS(4,50,L) = CHEMLOSS(4,50,L) + DACETON_A  * M_ACETON *  DTCH
+        CHEMLOSS(5,50,L) = CHEMLOSS(5,50,L) + DACETON_B  * M_ACETON *  DTCH
+
+
+        
+        CHEMPROD(1,50,L) = CHEMPROD(1,50,L) + PROD * DTCH
+        
+ 
+
         
         call QSSA(29,'ACETON',DTCH,QLIN,ST,PROD,LOSS,ZC(50,L))
 
@@ -2672,6 +2700,14 @@ contains
              DHCOHCO &
              + (k_oh_hcohco_m_a + k_oh_hcohco_m_b + k_oh_hcohco_m_c) * M_OH
 
+        CHEMLOSS(1,35,L) = CHEMLOSS(1,35,L) + LOSS * M_HCOHCO * DTCH
+        
+        CHEMLOSS(3,35,L) = CHEMLOSS(3,35,L) + DHCOHCO * M_HCOHCO * DTCH
+        CHEMLOSS(4,35,L) = CHEMLOSS(4,35,L) + (k_oh_hcohco_m_a + k_oh_hcohco_m_b + k_oh_hcohco_m_c) * M_OH * M_HCOHCO * DTCH
+
+        CHEMPROD(1,35,L) = CHEMPROD(1,35,L) + PROD * DTCH
+
+        
         call QSSA(30,'HCOHCO',DTCH,QLIN,ST,PROD,LOSS,ZC(35,L))
 
 
@@ -2741,6 +2777,10 @@ contains
         PROD = POLLX(8)
         LOSS = k_oh_c2h6 * M_OH 
 
+        CHEMLOSS(1,8,L) = CHEMLOSS(1,8,L) + LOSS * M_C2H6 * DTCH
+        
+        CHEMPROD(1,8,L) = CHEMPROD(1,8,L) + PROD * DTCH
+        
         call QSSA(35,'C2H6',DTCH,QLIN,ST,PROD,LOSS,ZC(8,L))
 
 
@@ -2750,6 +2790,11 @@ contains
              k_o3_c2h4 * M_O3 &
              + k_oh_c2h4_m * M_OH
 
+
+        CHEMLOSS(1,7,L) = CHEMLOSS(1,7,L) + LOSS * M_C2H4 * DTCH
+        
+        CHEMPROD(1,7,L) = CHEMPROD(1,7,L) + PROD * DTCH
+        
         call QSSA(36,'C2H4',DTCH,QLIN,ST,PROD,LOSS,ZC(7,L))
 
 
