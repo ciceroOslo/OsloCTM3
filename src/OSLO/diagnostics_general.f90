@@ -101,8 +101,9 @@ module diagnostics_general
   real(r8), dimension(LPAR,IPAR,JPAR) :: OxCHEMLOSSMASS
   real(r8), dimension(LPAR,IPAR,JPAR) :: OxCHEMPRODMASS
   !// Only save prod and loss for selected components
-  integer,parameter :: ncPL = 7 !RBS 4-5 -> 6
-  integer,dimension(ncPL), parameter :: compsPL = (/13,46,113,114,6,16,52/) !Add CO, MHP
+  integer,parameter :: ncPL = 13 !RBS 4-5 -> 6
+  !//integer,dimension(ncPL), parameter :: compsPL = (/13,20,46,113,114,6,16,52/) !Add CO, MHP
+  integer,dimension(ncPL), parameter :: compsPL = (/5,6,7,8,13,16,20,35,46,50,52,113,114/) !Add for VOCMIP
 
   !// ----------------------------------------------------------------------
   character(len=*), parameter, private :: f90file='diagnostics_general.f90'
@@ -3797,8 +3798,8 @@ contains
        !// Only put out if included
        if (trsp_idx(compsPL(N)) .le. 0) cycle
 
-       varname = trim(TNAME(N))//'_LOSS'
-
+       !//varname = trim(TNAME(N))//'_LOSS'
+       varname = trim(TNAME(trsp_idx(compsPL(N))))//'_LOSS'
        !// Lost mass in chemistry
        do L = 1, LPAR
           do J = 1, JPAR
@@ -3814,6 +3815,7 @@ contains
        if (status .ne. nf90_noerr) call handle_error(status, &
             f90file//':'//subr//': putting '//trim(varname))
 
+       varname = trim(TNAME(trsp_idx(compsPL(N))))//'_PROD'
        !// Produced mass in chemistry
        do L = 1, LPAR
           do J = 1, JPAR

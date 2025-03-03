@@ -138,6 +138,7 @@ based on (rev Prather & Neu, 1/2008)
 123 SOAAER72     0.80   3  1.0d+08     0         0      1  2.0d-01 4 123 SOAAER72
 124 SOAAER81     0.80   3  1.0d+08     0         0      1  2.0d-01 4 124 SOAAER81
 125 SOAAER82     0.80   3  1.0d+08     0         0      1  2.0d-01 4 125 SOAAER82
+126 ACETONE      1.00   1  2.7d+01   5300        0      0  0.0d-00 0 126 ACETONE
 -99 end_table    0.00   0  0.0d-00     0         0      0  0.0d-00 0 -99 end_table
  #  tracer       SOLU  CHN TCHENA  TCHENB   TCKAQA TCKAQB  ISCVFR  IT #  tracers
 
@@ -221,3 +222,6 @@ SOA Gas phase:
         HENRYSOAGAS_ARO_xylP1=1d4*EXP(12.0*TEMPFAC)
 
 SOA Aerosols: CTM2 assumes 80%
+
+
+RBS added ACETON Benkelberg et al. 1995

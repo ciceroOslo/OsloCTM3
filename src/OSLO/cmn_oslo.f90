@@ -250,7 +250,7 @@ module cmn_oslo
   !// Forest fires - only some layers
   integer :: FF_TYPE, FF_YEAR, NEFIR ! Type, year, # of components emitted
   character(len=120) :: FF_PATH
-  integer, parameter :: EPAR_FIR = 25    !// Number of components
+  integer, parameter :: EPAR_FIR = 41    !// Number of components
   integer, parameter :: EPAR_FIR_LM = 33 !// Number of layers
   integer,dimension(EPAR_FIR) :: ECOMP_FIR
   !// Emission array used in model
