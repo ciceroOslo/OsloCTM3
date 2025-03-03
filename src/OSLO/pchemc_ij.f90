@@ -1349,9 +1349,9 @@ contains
           CHEMPROD(1,5,L) = CHEMPROD(1,5,L) + PROD * DTCH
           CHEMPROD(2,5,L) = CHEMPROD(2,5,L) +  k_ch3co_o2 * M_O2 * M_CH3CO *DTCH 
 
-          CHEMLOSS(1,5,L) = CHEMLOSS(1,5,L) + LOSS * M_PAN * DTCH
+          CHEMLOSS(1,5,L) = CHEMLOSS(1,5,L) + LOSS * ZC(5,L) * DTCH
           CHEMLOSS(2,5,L) = CHEMLOSS(2,5,L) + VDEP_L(5) * M_PAN * DTCH
-          CHEMLOSS(3,5,L) = CHEMLOSS(3,5,L) +  k_oh_pan * M_OH * M_PAN* DTCH
+         
 
           call QSSA(9,'PAN',DTCH,QLIN,ST,PROD,LOSS,ZC(5,L))
 
