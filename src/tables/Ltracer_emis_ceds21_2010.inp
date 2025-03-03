@@ -206,6 +206,45 @@ filename / description  (See detailed description below)
     NH3 1.d0
     xxx 0 To close this data set
 
+'$CICERO/EMIS/CEDS0521/CEDS_CICERO/VOC01-alcohols-em-speciated-VOC-anthro_input4MIPs_emissions_CMIP_CEDS-2021-04-21-supplemental-data_gn_200001-201912_CICERO.nc'
+  460    1.d0  HLF   99  9999  AGR   2    0    0    0   'VOC01_alcohols_em_speciated_VOC_anthro_AGR'  2010
+    CH3OH 1.0000d0
+    xxx 0 To close this data set
+
+'$CICERO/EMIS/CEDS0521/CEDS_CICERO/VOC01-alcohols-em-speciated-VOC-anthro_input4MIPs_emissions_CMIP_CEDS-2021-04-21-supplemental-data_gn_200001-201912_CICERO.nc'
+  460    1.d0  HLF   99  9999  ENE   2    0    0    0   'VOC01_alcohols_em_speciated_VOC_anthro_ENE'  2010
+    CH3OH 1.0000d0
+    xxx 0 To close this data set
+
+'$CICERO/EMIS/CEDS0521/CEDS_CICERO/VOC01-alcohols-em-speciated-VOC-anthro_input4MIPs_emissions_CMIP_CEDS-2021-04-21-supplemental-data_gn_200001-201912_CICERO.nc'
+  460    1.d0  HLF   99  9999  IND   2    0    0    0   'VOC01_alcohols_em_speciated_VOC_anthro_IND'  2010
+    CH3OH 1.0000d0
+    xxx 0 To close this data set
+
+'$CICERO/EMIS/CEDS0521/CEDS_CICERO/VOC01-alcohols-em-speciated-VOC-anthro_input4MIPs_emissions_CMIP_CEDS-2021-04-21-supplemental-data_gn_200001-201912_CICERO.nc'
+  460    1.d0  HLF   99  9999  TRA   2    0    0    0   'VOC01_alcohols_em_speciated_VOC_anthro_TRA'  2010
+    CH3OH 1.0000d0
+    xxx 0 To close this data set
+
+'$CICERO/EMIS/CEDS0521/CEDS_CICERO/VOC01-alcohols-em-speciated-VOC-anthro_input4MIPs_emissions_CMIP_CEDS-2021-04-21-supplemental-data_gn_200001-201912_CICERO.nc'
+  460    1.d0  HLF   99  9999  RCO   2    0    0    0   'VOC01_alcohols_em_speciated_VOC_anthro_RCO'  2010
+    CH3OH 1.0000d0
+    xxx 0 To close this data set
+
+'$CICERO/EMIS/CEDS0521/CEDS_CICERO/VOC01-alcohols-em-speciated-VOC-anthro_input4MIPs_emissions_CMIP_CEDS-2021-04-21-supplemental-data_gn_200001-201912_CICERO.nc'
+  460    1.d0  HLF   99  9999  SLV   2    0    0    0   'VOC01_alcohols_em_speciated_VOC_anthro_SOL'  2010
+    CH3OH 1.0000d0
+    xxx 0 To close this data set
+
+'$CICERO/EMIS/CEDS0521/CEDS_CICERO/VOC01-alcohols-em-speciated-VOC-anthro_input4MIPs_emissions_CMIP_CEDS-2021-04-21-supplemental-data_gn_200001-201912_CICERO.nc'
+  460    1.d0  HLF   99  9999  WAS   2    0    0    0   'VOC01_alcohols_em_speciated_VOC_anthro_WAS'  2010
+    CH3OH 1.0000d0
+    xxx 0 To close this data set
+
+'$CICERO/EMIS/CEDS0521/CEDS_CICERO/VOC01-alcohols-em-speciated-VOC-anthro_input4MIPs_emissions_CMIP_CEDS-2021-04-21-supplemental-data_gn_200001-201912_CICERO.nc'
+  460    1.d0  HLF   99  9999  SHI   2    0    0    0   'VOC01_alcohols_em_speciated_VOC_anthro_SHI'  2010
+    CH3OH 1.0000d0
+    xxx 0 To close this data set
 
 
 
