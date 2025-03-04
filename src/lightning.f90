@@ -240,7 +240,7 @@ contains
                   'defined for current horizontal resolution'
              stop 'STOP in '//subr
           end if
-       else if (metCYCLE .eq. 40 .and. metREVNR .eq. 1) then
+       else if (metCYCLE .eq. 43 .and. metREVNR .eq. 3) then   !MTL changed from 40 and 1 to 43 and 3
           !// Cycle 40r1 - assume same as cy38 for now
           if (IPARW .eq. 320) then
              if (IDGRD .eq. 1) then
