@@ -118,7 +118,7 @@ module emissions_megan
   integer, dimension(N_SMAP_SPC) :: MGN_SPC2CTM_MAP
 
   !// Flag for calculating MEGAN (initialise as false)
-  logical :: LMEGAN = .false.
+  logical :: LMEGAN = .true.
 
   !// Should consider writing T24,P24,T240,P240 to restart file:
   !// Average leaf temperature and PAR over 24 hours

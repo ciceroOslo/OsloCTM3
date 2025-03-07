@@ -71,6 +71,7 @@ export RESTARTDIR=$RESULTDIR/restart_$PID
 
 # Set input file name
 export INPUTFILE=L60CTM_test.inp
+export EMISFILE=Ltracer_emis_ceds17_2014_megan_gfed4blhdaily.inp
 
 # Name of main program
 export PROGFILE=osloctm3
@@ -97,14 +98,40 @@ cp $MODELDIR/$PROGFILE                  $SCRATCH/osloctm3
 sed 's^$CTM3_USR_INPUT^'$CTM3_USR_INPUT'^g; s^$CICERO^'$CICERO'^g; s^$CTM3_INPUT^'$CTM3_INPUT'^g' $MODELDIR/$SCENDIR/$INPUTFILE > $SCRATCH/$INPUTFILE
 # Copy the necessary tables and files  
 mkdir $SCRATCH/tables
-for each in `grep -rh "'tables/*" $MODELDIR/$SCENDIR/$INPUTFILE`; do 
-    if [[ $each =~ "'tables" ]]; then 
-        FILE=`echo $each | tr -d "'"`
-        echo "Copying $FILE"
-        # Replace env variables while moving the files
-        sed 's^$CTM3_USR_INPUT^'$CTM3_USR_INPUT'^g; s^$CICERO^'$CICERO'^g; s^$CTM3_INPUT^'$CTM3_INPUT'^g' $MODELDIR/$FILE > $SCRATCH/$FILE
-    fi 
-done
+##++MTL this doesn't work, replaced
+##for each in `grep -rh "'tables/*" $MODELDIR/$SCENDIR/$INPUTFILE`; do 
+##    if [[ $each =~ "'tables" ]]; then 
+##        FILE=`echo $each | tr -d "'"`
+##        echo "Copying $FILE"
+##        # Replace env variables while moving the files
+##        sed 's^$CTM3_USR_INPUT^'$CTM3_USR_INPUT'^g; s^$CICERO^'$CICERO'^g; s^$CTM3_INPUT^'$CTM3_INPUT'^g' $MODELDIR/$FILE > $SCRATCH/$FILE
+##    fi 
+##done
+##---MTL
+
+cp  $MODELDIR/tables $SCRATCH/
+
+cp  $MODELDIR/tables/r42het_T159.dat $SCRATCH/tables/
+cp  $MODELDIR/tables/P_meanT319_IFScy36r1_2005.nc $SCRATCH/tables/
+cp  $MODELDIR/tables/tracer_list_all_soa.d $SCRATCH/tables/
+cp  $MODELDIR/tables/tracer_list_all_soa.d $SCRATCH/tables/
+cp  $MODELDIR/tables/scavenging_wet.inp $SCRATCH/tables/
+cp  $MODELDIR/tables/scavenging_dry.inp $SCRATCH/tables/
+cp  $MODELDIR/tables/atmos_std.dat $SCRATCH/tables/
+cp  $MODELDIR/tables/scavenging_wet.inp $SCRATCH/tables/
+cp  $MODELDIR/tables/scavenging_dry.inp $SCRATCH/tables/
+cp  $MODELDIR/tables/light_dist.ott2010.dat $SCRATCH/tables/
+cp  $MODELDIR/tables/FJX_spec.dat $SCRATCH/tables/
+cp  $MODELDIR/tables/FJX_scat.dat $SCRATCH/tables/
+cp  $MODELDIR/tables/FJX_UMaer.dat $SCRATCH/tables/
+cp  $MODELDIR/tables/ratj_oc.d $SCRATCH/tables/
+cp  $MODELDIR/tables/ratO1D.d $SCRATCH/tables/
+cp  $MODELDIR/tables/polar_o3loss.dat $SCRATCH/tables/
+cp  $MODELDIR/tables/mOSaic*.par $SCRATCH/tables/
+cp  $MODELDIR/tables/megan_tables.dat $SCRATCH/tables/
+sed 's^$CTM3_USR_INPUT^'$CTM3_USR_INPUT'^g; s^$CICERO^'$CICERO'^g; s^$CTM3_INPUT^'$CTM3_INPUT'^g' $MODELDIR/tables/$EMISFILE > $SCRATCH/tables/$EMISFILE
+
+
 # Link the input data
 ln -fs $INPUT_DATA                      $SCRATCH/
 cp $MODELDIR/$DUSTFILE                  $SCRATCH/
