@@ -571,9 +571,13 @@ contains
                 SCALESTABILITY(N) = 0
              else if (chem_idx(N) .eq. 15) then
                 SCALESTABILITY(N) = 0
+             else if (chem_idx(N) .eq. 16) then
+                SCALESTABILITY(N) = 0
              else if (chem_idx(N) .eq. 43) then
                 SCALESTABILITY(N) = 0
              else if (chem_idx(N) .eq. 44) then
+                SCALESTABILITY(N) = 0
+             else if (chem_idx(N) .eq. 50) then
                 SCALESTABILITY(N) = 0
              else if (chem_idx(N) .eq. 52) then
                 SCALESTABILITY(N) = 0
@@ -656,6 +660,8 @@ contains
              VDEP(N,I,J) = VCH3CHO(II,JJ)
           else if (chem_idx(N) .eq. 15) then
              VDEP(N,I,J) = VH2O2(II,JJ)
+          else if (chem_idx(N) .eq. 16) then
+             VDEP(N,I,J) = VCH3O2H(II,JJ)
           else if (chem_idx(N) .eq. 43) then
              VDEP(N,I,J) = VNO(II,JJ)
           else if (chem_idx(N) .eq. 44) then
