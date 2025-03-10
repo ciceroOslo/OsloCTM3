@@ -48,8 +48,8 @@ program pmain
   use steflux, only: CHEMFLUX, CHEMFLUX_E90, dumpuvflux, DUMPTRMASS, &
        DUMPTRMASS_E90, SAVETRMASS, STEBGT_CLR, STEBGT_WRITE, &
        ctm3_pml, ctm3_o3scav
-  use stt_save_load, only: oslo_con_sav, save_restart_file
-  use utilities, only: write_log, ctmExitC, LCM, CALENDR, CALENDL, &
+  use stt_save_load, only: oslo_con_sav
+  use utilities, only: write_log, ctmExitC, LCM, CALENDL, &
        get_dinm, check_btt, calendar, get_soldecdis
   !//-----------------------------------------------------------------------
   use cmn_oslo, only: METHANEMIS, JVAL_IJ
@@ -59,18 +59,18 @@ program pmain
   use diagnostics_general, only: &
        init_daily_diag, daily_diag_output, nops_diag, &
        mp_diag, TBGT_2FILE, reports_chemistry, &
-       tnd_emis2file, chembud_output
+       tnd_emis2file
   use diagnostics_scavenging, only: &
        scav_diag_ls, scav_diag_cn, scav_diag_brd, scav_diag_2fileA
   use drydeposition_oslo, only: setdrydep
-  use dust_oslo, only: dustbdg2dfile, dustInstBdg
+  use dust_oslo, only: dustbdg2file, dustInstBdg 
   use emissions_ocean, only: emissions_ocean_total
   use emissions_oslo, only: update_emis, update_emis_ij
   use gmdump3hrs, only: dump3hrs
   use input_oslo, only: init_oslo
   use main_oslo, only: master_oslo, update_chemistry
   use physics_oslo, only: update_physics, set_blh_ij
-  use seasalt, only: saltbdg2file, emissions_seasalt_total
+  use seasalt, only: seasaltbdg2d, emissions_seasalt_total
   use utilities_oslo, only: get_chmcycles, &
        source_e90, decay_e90, &
        tpauseb_e90, tpauseb_o3
@@ -132,8 +132,9 @@ program pmain
 
   !//---for timing the run
   character(len=10) :: BIG_BEN(3)
-  integer :: END_TIME(8), START_TIME(8)
-  real(r8) :: tot_dt, nops_dt, nday_dt
+  integer :: END_TIME(8), START_TIME(8), DATE_TIME(8)
+  integer(kind=8) :: stime
+  real(r8) :: tot_dt, nops_dt, nday_dt,nmp_dt, nuv_dt, rtime
   !//-----------------------------------------------------------------------
 
   !// Start time and system clock for timings
@@ -142,7 +143,7 @@ program pmain
   tot_dt = - real(stime, r8) / rtime
   
   !// Write start info
-  call write_log(0, start_time, start_time)
+  call write_log(0, start_time, start_time,0._r8)
 
   !// Input (std in) and initialization, also calls calendar
   call INPUT(NDAYI, NDAYE)
@@ -308,7 +309,7 @@ program pmain
         !//---CNVDBL:  Boundary layer mixing
         !//---DRYDEP:  Dry deposition at the surface
         !//---CHEM:    Full chemistry package
-'
+
 
 
 
@@ -351,7 +352,7 @@ program pmain
         !// Remember that for asynchronous chemistry/transport
         !// steps, the previous process MAY NOT BE transport.
         !call nops_diag(JYEAR,JMON,JDATE,NDAY,NMET,NOPS,NDAYI,LNEWM)
-'        
+        
         nmp_dt = 0._r8
         nuv_dt = 0._r8
 
@@ -524,7 +525,7 @@ program pmain
     !//---write/reset average tracer
     call CALENDL (JYEAR,JDAY,LYEAR,  JDO_A, LAVGS,L2)
 !    if (LAVGS .or. LEND) then
-!      call AVG_WRT_NC4    !// Write averages
+!      call AVG_WRT2    !// Write averages
 !
 !      if (L2) then
 !        call AVG_P1
@@ -536,7 +537,7 @@ program pmain
     !//---restart file save (at least at end of run)
     call CALENDL (JYEAR,JDAY,LYEAR,  JDO_C, LCONT,L2)
 !    if (LCONT .or. LEND)  then
-!      call save_restart_file(NDAY+1,NDAYI)
+!      call OSLO_CON_SAV(NDAY+1)
 !      if (LBCOC) call bcsnow_save_restart(NDAY+1)
 !    end if
 
