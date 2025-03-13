@@ -277,11 +277,11 @@ contains
 
     end if !// if (MODE .eq. 0) then
 
+   
 
     !// STT
     !//---------------------------------------------------------------------
     do N = 1, NPAR
-
        if (ZEROINIT(N) .eq. 0) then
           write(6,'(a)') f90file//':'//subr// &
                ': already initialised: '//trim(TNAME(N))
@@ -383,7 +383,7 @@ contains
 
     end do !// do N = 1, NPAR
 
-
+    
     !// XSTT
     do N = 1, NOTRPAR
 
@@ -450,6 +450,7 @@ contains
        end if
 
     end do !// do N = 1, NOTRPAR
+
 
 
     !//---------------------------------------------------------------------
