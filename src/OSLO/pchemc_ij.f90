@@ -2973,6 +2973,9 @@ module pchemc_ij
 
             LOSS = &
                  k_hcooh_oh * M_OH !HCOOH + OH -> HO2 + CO2 + H2O
+
+            CHEMPROD(1,85,L) = CHEMPROD(1,85,L) + PROD * DTCH
+            CHEMLOSS(1,85,L) = CHEMLOSS(1,85,L) + LOSS * M_HCOOH * DTCH
            call QSSA(85,'HCOOH',DTCH,QLIN,ST,PROD,LOSS,ZC(85,L))
    
            !//..CH3COOH (acetic acid)------------------------------------------------
@@ -2986,6 +2989,9 @@ module pchemc_ij
                  + POLLX(86)
            LOSS = &
                   k_ch3cooh_oh * M_OH 
+           CHEMPROD(1,86,L) = CHEMPROD(1,86,L) + PROD * DTCH
+           CHEMLOSS(1,86,L) = CHEMLOSS(1,86,L) + LOSS * M_CH3COOH * DTCH
+                  
            call QSSA(86,'CH3COOH',DTCH,QLIN,ST,PROD,LOSS,ZC(86,L))        
            
            !//..HCOHCO (glyoxal)------------------------------------------------
