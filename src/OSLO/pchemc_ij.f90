@@ -3024,7 +3024,7 @@ module pchemc_ij
                 + ( k_no_ch3cod * M_NO &
                     + k_ch3o2_ch3cod * M_CH3O2) * M_CH3COD &
                 + k_ch3o2_isor2 * M_ISOR2 * M_CH3O2
-   
+
            LOSS = &
                 DRCOHCO &
                 + k_oh_rcohco * M_OH

@@ -1597,6 +1597,12 @@ contains
                + (k_oh_ch3o2h_a &
                   + k_oh_ch3o2h_b) * M_OH   ! OH + CH3OOH -> CH3O2/CH2OOH + H2O
 
+        CHEMLOSS(1,16,L) = CHEMLOSS(1,16,L) + LOSS * M_CH3O2H*DTS
+        CHEMLOSS(2,16,L) = 0._r8 !// No drydep
+
+        CHEMPROD(1,16,L) = CHEMPROD(1,16,L) + PROD*DTS
+
+        
         call QSSA(232,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_CH3O2H)
 
         !// Integrate CH2O
@@ -1999,7 +2005,7 @@ contains
            
            !End of old treatment, now do integration:
            call QSSA(271,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_H2O)
-
+           
            !// Integrate H2Os
            PROD = LC_spsECPAR * M_HOCl   &! HOCL + HCl(psc)   -> Cl2 + H2Os
                   + LC_spsGCPAR * M_HOBr  ! HOBr + HCl(psc)   -> BrCl + H2Os

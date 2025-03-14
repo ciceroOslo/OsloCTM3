@@ -909,15 +909,15 @@ contains
 
 
 
-    !//---------------------------------------------------------------------
-    !// Cloud cover routines - Only needed for J-values, i.e. chemistry.
-!    if (LOSLOCHEM) &
-    if (LOSLOCTROP) &
-         !// New cloud treatment (qcode_60a)
-         call CLOUD(CLDFRW,CLDIWCW,CLDLWCW,PW,TW,ETAA,ETAB,AREAXYW, &
-                    ZOFLEW,ZDEGI,ZDEGJ,IMAP,JMAP, &
-                    SWSTORE,CLDSTORE,TYPSTORE,RAN4,IRAN0, &
-                    LCLDAVG,LCLDQMD,LCLDQMN,LCLDRANA,LCLDRANQ)
+    !//!//---------------------------------------------------------------------
+    !//!// Cloud cover routines - Only needed for J-values, i.e. chemistry.
+    !//!    if (LOSLOCHEM) &
+    !//if (LOSLOCTROP) &
+    !//     !// New cloud treatment (qcode_60a)
+    !//     call CLOUD(CLDFRW,CLDIWCW,CLDLWCW,PW,TW,ETAA,ETAB,AREAXYW, &
+    !//                ZOFLEW,ZDEGI,ZDEGJ,IMAP,JMAP, &
+    !//                SWSTORE,CLDSTORE,TYPSTORE,RAN4,IRAN0, &
+    !//                LCLDAVG,LCLDQMD,LCLDQMN,LCLDRANA,LCLDRANQ)
     !//---------------------------------------------------------------------
 
 
@@ -1453,6 +1453,46 @@ contains
       end do
     end do
 
+    !Do the same for the native resolution
+    !// Put low level limits to CLDFR, CLDLWC, and CLDIWC, and set junk
+    !// values to zero.
+    do L = 1, LWEPAR
+      do J = 1, JPARW
+        do I = 1, IPARW
+          if (CLDFRW(I,J,L) .gt. EPS) then
+            CLDLWCW(I,J,L) = CLDLWCW(I,J,L) / CLDFRW(I,J,L)
+            CLDIWCW(I,J,L) = CLDIWCW(I,J,L) / CLDFRW(I,J,L)
+
+            call CIWMIN(TW(I,J,L), CLDLWCW(I,J,L), CLDIWCW(I,J,L))
+
+            CLDLWCW(I,J,L) = CLDLWCW(I,J,L) * CLDFRW(I,J,L)
+            CLDIWCW(I,J,L) = CLDIWCW(I,J,L) * CLDFRW(I,J,L)
+          else
+            CLDFRW(I,J,L) = 0._r8
+            call CFRMIN(TW(I,J,L), CLDFRW(I,J,L), CLDLWCW(I,J,L), &
+                        CLDIWCW(I,J,L), EPS)
+          end if
+        end do
+      end do
+    end do
+
+    !// Call cloud routine after fix:
+    !//---------------------------------------------------------------------
+    !// Cloud cover routines - Only needed for J-values, i.e. chemistry.
+!    if (LOSLOCHEM) &
+    if (LOSLOCTROP) &
+         !// New cloud treatment (qcode_60a)
+         call CLOUD(CLDFRW,CLDIWCW,CLDLWCW,PW,TW,ETAA,ETAB,AREAXYW, &
+                    ZOFLEW,ZDEGI,ZDEGJ,IMAP,JMAP, &
+                    SWSTORE,CLDSTORE,TYPSTORE,RAN4,IRAN0, &
+                    LCLDAVG,LCLDQMD,LCLDQMN,LCLDRANA,LCLDRANQ)
+    !//---------------------------------------------------------------------
+
+
+
+
+
+    
     !// Done reading all meteorological data
     deallocate( VTMP, UTMP, W3Da, W3Db, ZOFLEW, QW, TW, R8XYZ, &
          CLDFRW, CLDIWCW, CLDLWCW, &
@@ -1666,7 +1706,7 @@ contains
     character(len=3), intent(in) :: TYP
     character(len=*), intent(in) :: LABEL
     !//---------------------------------------------------------------------
-    write(6,'(a,i5,1x,a)') ' update_metdata: Skipped '//TYP//':', &
+    write(6,'(a,1x,a)') ' update_metdata: Skipped '//TYP//':', &
          trim(LABEL)
     !//---------------------------------------------------------------------
   end subroutine skipData

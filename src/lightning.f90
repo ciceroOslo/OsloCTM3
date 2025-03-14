@@ -125,6 +125,12 @@ contains
     !// Using CLM PFTs to calculate PLAND (1995-2005)
     real(r8), parameter :: Oecmwf_oifs_c38r1_T159_CLMPFT = 4.328769e-14_r8
     real(r8), parameter :: Lecmwf_oifs_c38r1_T159_CLMPFT = 7.910481e-17_r8
+
+    !// ECMWF oIFS cy43r3 (HTWO MODIS land surface)
+    real(r8), parameter :: Oecmwf_oifs_c43r3 =  7.714013030773e-14_r8
+    real(r8), parameter :: Lecmwf_oifs_c43r3 =  1.300245337294e-16_r8
+    
+    
     !// --------------------------------------------------------------------
     character(len=*), parameter :: subr = 'getScaleFactors'
     !// --------------------------------------------------------------------
@@ -241,7 +247,60 @@ contains
              stop 'STOP in '//subr
           end if
        else if (metCYCLE .eq. 43 .and. metREVNR .eq. 3) then
-          !// Cycle 40r1 - assume same as cy38 for now
+          !// Cycle 43r3 - assume same as cy38 for now
+          !// But for IDGRD use factors for cy43r3 (MODIS land cover).
+          if (LANDUSE_IDX .eq. 2) then
+             Oecmwf_oifs_c38r1_T159 = Oecmwf_oifs_c38r1_T159_MODPFT
+             Lecmwf_oifs_c38r1_T159 = Lecmwf_oifs_c38r1_T159_MODPFT
+          else if(LANDUSE_IDX .eq. 3) then
+             Oecmwf_oifs_c38r1_T159 = Oecmwf_oifs_c38r1_T159_CLMPFT
+             Lecmwf_oifs_c38r1_T159 = Lecmwf_oifs_c38r1_T159_CLMPFT
+          else
+             write(6,'(a,2i7)') f90file//':'//subr// &
+                  ': LANDUSE_IDS is unknown: ',LANDUSE_IDX
+             stop 'STOP in '//subr
+          end if
+          
+          if (IPARW .eq. 320) then
+             if (IDGRD .eq. 1) then
+                scaleOcean = Oecmwf_oifs_c38r1_T159
+                scaleLand  = Lecmwf_oifs_c38r1_T159
+             else if (IDGRD .eq. 2) then
+                !// Scaling factors based on cy43r3 2000 to 2019 meteorology
+                scaleOcean = Oecmwf_oifs_c43r3
+                scaleLand  = Lecmwf_oifs_c43r3
+             else if (IDGRD .eq. 4) then
+                !// Scaling factors based on cy38r1 2005 meteorology
+                scaleOcean = Oecmwf_oifs_c38r1_T159 * 5.221729_r8
+                scaleLand  = Lecmwf_oifs_c38r1_T159 * 4.143434_r8
+             else
+                write(6,'(a,2i7)') f90file//':'//subr// &
+                     ': IPARW/IDGRD is unknown: ',iparw,idgrd
+                write(6,'(a)')    '  metTYPE: '//trim(metTYPE)
+                write(6,'(a,i5)') '  metCYCLE:',metCYCLE
+                write(6,'(a,i5)') '  metREVNR:',metREVNR
+                stop 'STOP in '//subr
+             end if
+          else
+             write(6,'(a,2i7)') f90file//':'//subr// &
+                  ': scaleOcean and scaleLand not '// &
+                  'defined for current horizontal resolution'
+             stop 'STOP in '//subr
+          end if
+       else if (metCYCLE .eq. 48 .and. metREVNR .eq. 1) then
+          !// Cycle 48r1 - assume same as cy38 for now
+          if (LANDUSE_IDX .eq. 2) then
+             Oecmwf_oifs_c38r1_T159 = Oecmwf_oifs_c38r1_T159_MODPFT
+             Lecmwf_oifs_c38r1_T159 = Lecmwf_oifs_c38r1_T159_MODPFT
+          else if(LANDUSE_IDX .eq. 3) then
+             Oecmwf_oifs_c38r1_T159 = Oecmwf_oifs_c38r1_T159_CLMPFT
+             Lecmwf_oifs_c38r1_T159 = Lecmwf_oifs_c38r1_T159_CLMPFT
+          else
+             write(6,'(a,2i7)') f90file//':'//subr// &
+                  ': LANDUSE_IDS is unknown: ',LANDUSE_IDX
+             stop 'STOP in '//subr
+          end if
+          
           if (IPARW .eq. 320) then
              if (IDGRD .eq. 1) then
                 scaleOcean = Oecmwf_oifs_c38r1_T159

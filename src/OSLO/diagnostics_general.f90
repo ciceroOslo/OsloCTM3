@@ -3797,8 +3797,8 @@ contains
        !// Only put out if included
        if (trsp_idx(compsPL(N)) .le. 0) cycle
 
-       varname = trim(TNAME(N))//'_LOSS'
-
+       !//varname = trim(TNAME(N))//'_LOSS'
+       varname = trim(TNAME(trsp_idx(compsPL(N))))//'_LOSS'
        !// Lost mass in chemistry
        do L = 1, LPAR
           do J = 1, JPAR
@@ -3814,6 +3814,7 @@ contains
        if (status .ne. nf90_noerr) call handle_error(status, &
             f90file//':'//subr//': putting '//trim(varname))
 
+       varname = trim(TNAME(trsp_idx(compsPL(N))))//'_PROD'
        !// Produced mass in chemistry
        do L = 1, LPAR
           do J = 1, JPAR

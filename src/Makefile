@@ -1002,6 +1002,7 @@ $(filter %ch4routines.o, $(ALL_OBJ)): \
 	$(filter %regridding.o, $(ALL_OBJ)) \
 	$(filter %utilities.o, $(ALL_OBJ)) \
 	$(filter %cmn_oslo.o, $(ALL_OBJ)) \
+	$(filter %strat_h2o.o, $(ALL_OBJ))\
 	$(filter %emisutils_oslo.o, $(ALL_OBJ)) \
 	$(filter %ncutils.o, $(ALL_OBJ))
 # sanderson.o dependencies

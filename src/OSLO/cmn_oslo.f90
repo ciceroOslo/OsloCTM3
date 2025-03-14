@@ -152,7 +152,7 @@ module cmn_oslo
   !// fields based on monthly means
   logical, parameter ::  METHANEMIS = .false.
   !// Same as for methane, but for H2
-  logical, parameter ::  H2EMIS = .true.
+  logical, parameter ::  H2EMIS = .false.
 
   !// --- Additions for 2D emissions ---------------------------------------
   !// Number of categories, given in E2D_CATNAMES
@@ -250,7 +250,7 @@ module cmn_oslo
   !// Forest fires - only some layers
   integer :: FF_TYPE, FF_YEAR, NEFIR ! Type, year, # of components emitted
   character(len=120) :: FF_PATH
-  integer, parameter :: EPAR_FIR = 25    !// Number of components
+  integer, parameter :: EPAR_FIR = 41    !// Number of components
   integer, parameter :: EPAR_FIR_LM = 33 !// Number of layers
   integer,dimension(EPAR_FIR) :: ECOMP_FIR
   !// Emission array used in model
