@@ -78,15 +78,24 @@ export RESULTDIR=$WORK/$SCEN.$PID
 export RESTARTDIR=$RESULTDIR/restart_$PID
 
 # Set input file name
-export INPUTFILE=L60CTM_saga_met_${CYY}_hyway_1yr.inp
-export EMISFILE=Ltracer_emis_ceds21_${EMYR}.inp
-export EMISFILE_OUT=Ltracer_emis.inp 
+
+#export INPUTFILE=L60CTM_saga_met_${CYY}_hyway_1yr.inp
+export INPUTFILE=L60CTM_saga_met_2010_H2emis_1yr.inp
+#export EMISFILE=Ltracer_emis_ceds21_${EMYR}.inp
+#export EMISFILE=Ltracer_emis_ceds21_2010.inp
+export EMISFILE=Ltracer_emis_extraVOCs_ceds21_2010.inp
+#export EMISFILE=Ltracer_emis_noemis.inp
+#export EMISFILE_OUT=Ltracer_emis.inp 
+#export EMISFILE_OUT=Ltracer_emis_ceds21_2010.inp
+export EMISFILE_OUT=Ltracer_emis_extraVOCs_ceds21_2010.inp
+
 
 export H2SURF=/cluster/projects/nn9188k/ragnhibs/H2_INPUT/hydrogen_concentrations_lowess_201001-201912_${EMYR}.nc
 export CH4SURF=/cluster/projects/nn9188k/ragnhibs/H2_INPUT/methane_concentrations_1by1_${EMYR}.nc
 
 # Name of main program
-export PROGFILE=osloctm3_hyway
+export PROGFILE=osloctm3
+
 
 # Job file (this file)
 export JOBFILENAME=c3_hyway.job
@@ -99,8 +108,9 @@ export DUSTFILE=OSLO/DEAD_COLUMN/dustinput/dst_T159.nc
 
 
 #export RESTARTFILE=$CTM3_USR_INPUT/H2/SPIN_v3_EMIS/YR6/ctm3_restart_20110101.nc
-export RESTARTFILE=$CTM3_USR_INPUT/Methanol/SPIN/ctm3_restart_20100101.nc
 
+#export RESTARTFILE=$CTM3_USR_INPUT/Methanol/SPIN/ctm3_restart_20100101.nc
+export RESTARTFILE=$CTM3_USR_INPUT/ctm3_restart_20110101.nc
 
 # --------------------------------------------------------------------------
 # Initialize the model run
@@ -121,7 +131,8 @@ cp  $MODELDIR/tables $SCRATCH/
 
 cp  $MODELDIR/tables/r42het_T159.dat $SCRATCH/tables/
 cp  $MODELDIR/tables/P_meanT319_IFScy36r1_2005.nc $SCRATCH/tables/
-cp  $MODELDIR/tables/tracer_list_all_h2.d $SCRATCH/tables/
+
+cp  $MODELDIR/tables/tracer_list_all_h2_withVOC.d $SCRATCH/tables/
 cp  $MODELDIR/tables/scavenging_wet.inp $SCRATCH/tables/
 cp  $MODELDIR/tables/scavenging_dry.inp $SCRATCH/tables/
 cp  $MODELDIR/tables/atmos_std.dat $SCRATCH/tables/
@@ -235,4 +246,5 @@ echo "Done."
 #----------------------------------------------------------------------------
 # Done
 #----------------------------------------------------------------------------
+
 

@@ -128,7 +128,7 @@ contains
          MODEL, MODEL_VERSION, &
          LOSLOCHEM, LOSLOCTROP, LOSLOCSTRAT, LSULPHUR, LBCOC, LSALT, &
          LDUST, LNITRATE, LSOA, LEMISDEP_INCHEM, LE90, LLINOZ, &
-         NPAR, NPAR_TROP, NPAR_STRAT, NPAR_SUL, NPAR_NITRATE, &
+         NPAR, NPAR_TROP, NPAR_STRAT, NPAR_SUL, NPAR_NITRATE,  &
          NPAR_SALT, NPAR_DUST, NPAR_BC, NPAR_OM, NPAR_E90, NPAR_LINOZ, &
          NPAR_SOA
     !//---------------------------------------------------------------------

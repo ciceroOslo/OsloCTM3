@@ -53,7 +53,10 @@ module chem_oslo_rates
        r_od_cfc11_a, r_od_cfc11_b, &
        r_od_hcfc123, r_od_hcfc141, r_od_hcfc142, r_od_hcl, &
        r_h2o_clono2, r_hcl_clono2, &
-       r_oh_bro_a
+       r_oh_bro_a, &
+       r_no_alko2_a, r_no3_bigene, r_oh_bigalk, r_oh_bigene, &
+       r_hcooh_oh, r_oh_alknit, r_oh_honitr, r_c2h5o2_c2h5o2, &
+       r_ch3o2_c2h5o2_b, r_ch3cooh_oh
 
 
 
@@ -111,6 +114,12 @@ module chem_oslo_rates
        r_ho2_ch3o2, &
        r_ho2_ch3x, &
        r_ho2_radical, &
+       !//SK Added new rates for VOC Updates Feb 2025
+       r_hoch2oo_no, r_no_eneo2_a, r_no_eneo2_b, r_no_alko2_b, &
+       r_oh_c2h5oh, r_oh_alkooh, r_c3h6_o3, &
+       r_ch3co3_ch3o2, r_hoch2oo_ho2, r_ch3co3_ho2, &
+       r_ho2_alko2,  r_c2h4_o3, r_o3_isoprene, r_ch2o_ho2, & 
+
        !// Previously: just r_ch3o2_ch3o2,  May 2022 split by masan&
        !// Into: CH3O2 + CH3O2 -> 2*CH2O + 2*HO2 and
        !// CH3O2 + CH3O2 -> CH2O + CH3OH 
@@ -319,6 +328,27 @@ contains
     r_ch3o2_isor1 = 1.00e-13_r8
     r_ch3o2_isor2 = 1.00e-13_r8
 
+    !//SK Added new rates for VOC Updates Feb 2025
+    !//ALKO2 + NO -> 0.4CH3CHO + 0.1CH2O + 0.25CH3COCH3 + HO2 + 0.8MEK + NO2
+    r_no_alko2_a = 6.700e-12_r8
+    !//BIGENE + NO3 -> NO2 + CH3CHO + 0.5CH2O + 0.5CH3COCH3
+    r_no3_bigene = 3.500e-13_r8
+    !//BIGALK + OH -> ALKO2
+    r_oh_bigalk = 3.500e-12_r8
+    !//BIGENE + OH -> ENEO2
+    r_oh_bigene = 5.400e-11_r8
+    !//HCOOH + OH -> HO2 + CO2 + H2O
+    r_hcooh_oh = 4.000e-13_r8
+    !//ALKNIT + OH -> 0.4*CH2O + 0.8*CH3CHO + 0.8*CH3COCH3 + NO2
+    r_oh_alknit = 1.600e-12_r8
+    !//HONITR + OH -> ONITR + HO2
+    r_oh_honitr = 2.000e-12_r8
+    !//C2H5O2 + C2H5O2 -> 1.6*CH3CHO + 1.2*HO2 + 0.4*C2H5OH
+    r_c2h5o2_c2h5o2 = 6.800e-14_r8
+    !//CH3O2 + C2H5O2 -> 0.7*CH2O + 0.8*CH3CHO + HO2 + 0.3*CH3OH + 0.2*C2H5OH
+    r_ch3o2_c2h5o2_b = 2.000e-13_r8
+    !//CH3COOH + OH -> CH3O2 + CO2 + H2O
+    r_ch3cooh_oh = 7.0e-13_r8
     !//---------------------------------------------
     !// Reaction rates dependent on temperature only
     !//---------------------------------------------
@@ -608,7 +638,35 @@ contains
        !// CH3O + O2 --> HO2 + HCHO
        r_ch3o_o2(I) = 3.9e-14_r8 * exp(-900._r8 * ZTEM) !JPL06, 20080612
 
+       !//SK Added reactions with VOC Updates
+       !//HOCH2OO + NO -> HCOOH + NO2 + HO2
+       r_hoch2oo_no(I) = 2.60e-12_r8 * exp(265._r8 * ZTEM)
+       !//ENEO2 + NO -> CH3CHO + 0.5*CH2O + 0.5*CH3COCH3 + HO2 +NO2
+       r_no_eneo2_a(I) = 4.80e-12_r8 * exp(120._r8 * ZTEM)
+       !//ENEO2 + NO -> HONITR
+       r_no_eneo2_b(I) = 5.10e-14_r8 * exp(693._r8 * ZTEM)
+       write(6, '(a,i3,a,es3.3)') 'r_no_eneo2_b(',10,') = ', r_no_eneo2_b(10)
 
+       !//ALKO2 + NO -> ALKNIT
+       r_no_alko2_b(I) = 5.40e-14_r8 * exp(870._r8 * ZTEM)
+       !//C2H5OH + OH -> HO2 + CH3CHO
+       r_oh_c2h5oh(I) = 6.90e-12_r8 * exp(-230._r8 * ZTEM)
+       !//ALKOOH + OH -> ALKO2
+       r_oh_alkooh(I) = 3.80e-12_r8 * exp(200._r8 * ZTEM)
+       !//C3H6 + O3 -> 0.5*CH2O + 0.12*HCOOH + 0.12*CH3COOH + 0.5*CH3CHO + 0.56*CO + 0.28*CH3O2 + 0.1*CH4 + 0.2*CO2 + 0.28*HO2 + 0.36*OH
+       r_c3h6_o3(I) = 6.50e-15_r8 * exp(-1900._r8 * ZTEM)
+       !//CH3CO3 + CH3O2 -> 0.9*CH3O2 + CH2O + 0.9*HO2 + O.9*CO2 + 0.1*CH3COOH 
+       r_ch3co3_ch3o2(I) = 2.00e-12_r8 * exp(500._r8 * ZTEM)
+       !//HOCH2OO + HO2 -> HCOOH
+       r_hoch2oo_ho2(I) = 7.50e-13_r8 * exp(700._r8 * ZTEM)
+       !//CH3CO3 + HO2 -> 0.4*CH3COOOH + 0.15*CH3COOH + 0.15*O3 + 0.45*OH + 0.45*CH3O2 
+       r_ch3co3_ho2(I) = 4.30e-13_r8 * exp(1040._r8 * ZTEM)
+       !//ALKO2 + HO2 -> ALKOOH
+       r_ho2_alko2(I) = 7.50e-13_r8 * exp(700._r8 * ZTEM)
+       !//ISOP + O3 -> 0.3*MACR + 0.2*MVK + 0.11*HCOOH + 0.62*CO + 0.32*OH + 0.37*HO2 + 0.91*CH2O + 0.08*CH3CO3 + 0.13*C3H6 + 0.05*CH3O2 
+       r_o3_isoprene(I) = 1.05e-14_r8 * exp(-2000._r8 * ZTEM)
+       !//CH2O + HO2 -> HOCH2OO
+       r_ch2o_ho2 = 9.70e-15_r8 * exp(625._r8 * ZTEM)
 
        !// SOA
        !// Reaction rates for precursor hydrocarbon oxidation:
@@ -1264,7 +1322,7 @@ contains
        r_n2o5_m, r_ho2_no2_m, r_ho2no2_m, r_oh_hno3, r_oh_co_a, r_oh_co_b, &
        r_oh_c2h4_m, r_oh_c3h6_m, r_ch3_o2_m, &
        r_oh_hcohco_m_a, r_oh_hcohco_m_b, r_no2_ch3x_m, r_pan_m, &
-       r_no_ho2_b, r_op_no_m, r_op_no2_m)
+       r_no_ho2_b, r_op_no_m, r_op_no2_m, r_c2h2_oh)
     !// --------------------------------------------------------------------
     !// Find reaction rates, dependent upon pressure and temperature.
     !// Slightly modified TCRATE_TP, where J,L has been removed and
@@ -1289,7 +1347,8 @@ contains
          r_oh_co_a(LM), r_oh_co_b(LM), r_oh_c2h4_m(LM), r_ch3_o2_m(LM), &
          r_oh_hcohco_m_a(LM), r_oh_hcohco_m_b(LM), &
          r_no2_ch3x_m(LM), r_pan_m(LM), r_n2o5_m(LM), r_oh_c3h6_m(LM), &
-         r_no_ho2_b(LM), r_op_no_m(LM), r_op_no2_m(LM)
+         r_no_ho2_b(LM), r_op_no_m(LM), r_op_no2_m(LM), &
+         r_c2h2_oh(LM) !ADDED BY SK during VOC Updates
 
     !// Locals
     real(r8) :: &
@@ -1318,6 +1377,7 @@ contains
        r_pan_m(:)     = 0._r8
        r_op_no_m(:)   = 0._r8
        r_op_no2_m(:)  = 0._r8
+       r_c2h2_oh(:)   = 0._r8
 
        r_ho2_ho2_tot(:)   = 0._r8
        r_oh_hcohco_m_a(:) = 0._r8
@@ -1495,6 +1555,10 @@ contains
        r_pan_m(L) = rate3B(116, TZ300, AIR_MOLEC(L), &
             KZERO, 0._r8, KINF, 0._r8, 0.3_r8, 0)
 
+       !// C2H2 + OH + M -> 0.65*GLYOXAL + 0.65*OH + 0.35*HCOOH + 0.35*HO2 + 0.35*CO + M
+       !//SK Added with VOC Updates
+       r_c2h2_oh(L) = rate3B(117, TZ300, AIR_MOLEC(L), &
+            6.9e-31_r8, 1.0_r8, 2.6e-11_r8, 0._r8, 0.6_r8, 0)
 
     end do !// do L = 1, LMTROP
 
@@ -1688,6 +1752,7 @@ contains
     r_o2_h_m(:)    = 0._r8
     r_no2_bro_m(:) = 0._r8
     r_no_ho2_b(:)  = 0._r8
+    
 
 
     !// 3-body (T,p-dependent) calculations

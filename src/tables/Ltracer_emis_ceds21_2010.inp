@@ -6,8 +6,8 @@ emission arrays E2DS and E3DS, and may be updated more often.
 --- IMPORTANT!!! ------------------------------------------------------------
 Nothing special yet.
 --- Aircraft emission data --------------------------------------------------
-  AirScen CEDS2021fix 2010     #NONE/REACT4C_5a/Quantify_MA8/TradeOff_1e
-  AirEmisPath '$CICERO/EMIS/CEDS0521_AircraftFix/'
+  AirScen CEDS2017 2010     #NONE/REACT4C_5a/Quantify_MA8/TradeOff_1e
+  AirEmisPath '$CICERO/EMIS/CEDS0517/'
 --- Historical year --------------------------------------------------
   HISTYEAR 2010
 --- Lightning emission data -------------------------------------------------
@@ -1440,3 +1440,4 @@ SCALING: Separate scaling factor for the listed species.
 
 EDGAR category definitios:
 http://edgar.jrc.ec.europa.eu/methodology.php
+

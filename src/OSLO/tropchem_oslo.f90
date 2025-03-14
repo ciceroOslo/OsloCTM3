@@ -134,8 +134,8 @@ contains
           r_pan_m, &       !PAN (i.e. CH3C(O)O2NO2) + M --> CH3X + NO2 + M
           r_no_ho2_b, &    !NO + HO2 --> HNO3
           r_op_no_m, &     !OP + NO + M --> NO2
-          r_op_no2_m       !OP + NO2 + M --> NO3
-
+          r_op_no2_m, &       !OP + NO2 + M --> NO3
+          r_c2h2_oh        !C2H2 + OH + M -> 0.65*GLYOXAL + 0.65*OH + 0.35*HCOOH + 0.35*HO2 + 0.35*CO + M
     !// Sulfur T,p reaction rates
     real(r8), dimension(LPAR) :: &
          R4071b, &
@@ -312,7 +312,7 @@ contains
              r_n2o5_m, r_ho2_no2_m, r_ho2no2_m, r_oh_hno3, &
              r_oh_co_a, r_oh_co_b, r_oh_c2h4_m, r_oh_c3h6_m, r_ch3_o2_m, &
              r_oh_hcohco_m_a, r_oh_hcohco_m_b, r_no2_ch3x_m, r_pan_m, &
-             r_no_ho2_b, r_op_no_m, r_op_no2_m)
+             r_no_ho2_b, r_op_no_m, r_op_no2_m, r_c2h2_oh)
 
         !// Initialize/set sulphur reaction rates dependent on T & p
         !// and on dissolved fractions.
@@ -337,7 +337,7 @@ contains
              r_n2o5_m, r_ho2_no2_m, r_ho2no2_m, r_oh_hno3, &
              r_oh_co_a, r_oh_co_b, r_oh_c2h4_m, r_oh_c3h6_m, r_ch3_o2_m, &
              r_oh_hcohco_m_a, r_oh_hcohco_m_b, r_no2_ch3x_m, r_pan_m, &
-             r_no_ho2_b, r_op_no_m, r_op_no2_m, &
+             r_no_ho2_b, r_op_no_m, r_op_no2_m, r_c2h2_oh, &
              RAQ0172, RAQ1572,  RAQ1772, &
              R4071b,  RTOT4072, RCATSO2, &
              !// Constants etc

@@ -193,7 +193,7 @@ ISCVFR: Fraction of grid box available for ice scavenging. If zero, no uptake.
 IT:     Defines ice treatment for T<258K
         0: No removal for T<258K.
            Otherwise, use standard retention coefficient for 258K<T<273K.
-        1: Kärcher & Voigt 2006 for T<258K, retention coefficient for 258K<T<273K.
+        1: Kï¿½rcher & Voigt 2006 for T<258K, retention coefficient for 258K<T<273K.
         2: Assume same treatment below 258K as for 258K<T<273K, i.e. using
            retention coefficient.
         3: No removal for T<258K, but apply retention coefficient 1
