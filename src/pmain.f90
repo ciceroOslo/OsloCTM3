@@ -78,7 +78,7 @@ program pmain
   !//-----------------------------------------------------------------------
   use stratchem_oslo, only: update_strat_boundaries
   use strat_h2o, only: set_h2_eurohydros
-  use soa_oslo, only: soa_diag2file, soa_nopsdiag
+  use soa_oslo, only: soa_diag2file_nc4, soa_nopsdiag
   use fallingaerosols, only: aerosolsettling
   !//-----------------------------------------------------------------------
   implicit none
@@ -755,7 +755,7 @@ program pmain
       !// Print 2D budgets to file
       call TBGT_2FILE(1)
 
-      if (LSOA) call soa_diag2file(NDAY,NDAYI)
+      if (LSOA) call soa_diag2file_nc4(NDAY,NDAYI)
 
       !// Chemistry budgets
       !call chembud_output(JYEAR,JMON,JDATE,NDAY)
