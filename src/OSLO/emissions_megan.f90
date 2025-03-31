@@ -153,7 +153,10 @@ module emissions_megan
   !// Global scaling - set to give 572Tg isoprene for year 2000, using
   !// LAI climatology. Should be 0.466
   real(r8), parameter :: &
-       Cce = 0.466_r8 !wrong first test 0.483_r8
+       !Cce = 0.466_r8 !wrong first test 0.483_r8
+       !Cce = 7.5_r8 !wrong first test 0.483_r8 !From the svn code. v2
+       !Cce = 5.1_r8
+       Cce = 4.051_r8 !From MTL run. Giving 572 Tg for year 2000
 
   !// ----------------------------------------------------------------------
   character(len=*), parameter, private :: f90file = 'emissions_megan.f90'
