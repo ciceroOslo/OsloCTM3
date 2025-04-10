@@ -87,7 +87,7 @@ module pchemc_ij
             r_ch3o2_c2h5o2, r_ch3o2_c3h7o2, r_ch3o2_c4h9o2, &
             r_ch3o2_c6h13o2, r_ch3o2_ch3cob, r_ch3o2_ch3cod, r_ch3o2_ch3xx, &
             r_ch3o2_isor1, r_ch3o2_isor2, r_oh_ar2, &
-            r_no_c3h7o2, &
+            r_no_c3h7o2, r_no_c3h7o2_a, r_ch3o2_c3h7o2_a, &
             r_no_alko2_a, r_no3_bigene, r_oh_bigalk, r_oh_bigene, &
             r_hcooh_oh, r_oh_alknit, r_oh_honitr, r_c2h5o2_c2h5o2, &
             r_ch3o2_c2h5o2_b, r_ch3cooh_oh, &
@@ -107,7 +107,7 @@ module pchemc_ij
             !//SK Added new rates for VOC Updates Feb 2025
             r_hoch2oo_no, r_no_eneo2_a, r_no_eneo2_b, r_no_alko2_b, &
             r_oh_c2h5oh, r_oh_alkooh, r_c3h6_o3, &
-            r_ch3co3_ch3o2, r_hoch2oo_ho2, r_ch3co3_ho2, &
+            r_ch3co3_ch3o2, r_hoch2oo_ho2, r_ch3co3_ho2, r_hoch2oo, &
             r_ho2_alko2,  r_o3_isoprene, r_ch2o_ho2, & 
             !// Split previous rate in two May 2022 for ch3o2 + ch3o2
             r_ch3o2_ch3o2_a, r_ch3o2_ch3o2_b, & 
@@ -234,7 +234,7 @@ module pchemc_ij
             k_ch3o2_ch3cob, k_ch3o2_ch3cod, k_ch3o2_isor1,  k_ch3o2_isor2, &
             k_ch3o2_ch3xx, &
             k_oh_ar2, &
-            k_no_c3h7o2, &
+            k_no_c3h7o2, k_no_c3h7o2_a, k_ch3o2_c3h7o2_a, &
             k_no_alko2_a, k_no3_bigene, k_oh_bigalk, k_oh_bigene, k_hcooh_oh, &
             k_oh_alknit, k_oh_honitr, k_c2h5o2_c2h5o2, k_ch3o2_c2h5o2_b, k_ch3cooh_oh
 
@@ -258,7 +258,7 @@ module pchemc_ij
             k_ch3o_o2, &
             k_hoch2oo_no, k_no_eneo2_a, k_no_eneo2_b, k_no_alko2_b, & !Added by SK during VOC updates
             k_oh_c2h5oh, k_oh_alkooh, k_c3h6_o3, &
-            k_ch3co3_ch3o2, k_hoch2oo_ho2, k_ch3co3_ho2, &
+            k_ch3co3_ch3o2, k_hoch2oo_ho2, k_ch3co3_ho2, k_hoch2oo, &
             k_ho2_alko2,  k_o3_isoprene, k_ch2o_ho2 
    
        real(r8) :: &
@@ -454,6 +454,7 @@ module pchemc_ij
          k_c3h6_o3 = r_c3h6_o3(JTEMP)
          k_ch3co3_ch3o2 = r_ch3co3_ch3o2(JTEMP)
          k_hoch2oo_ho2 = r_hoch2oo_ho2(JTEMP)
+         k_hoch2oo = r_hoch2oo(JTEMP)
          k_ch3co3_ho2 = r_ch3co3_ho2(JTEMP)
          k_ho2_alko2 = r_ho2_alko2(JTEMP)
          k_o3_isoprene = r_o3_isoprene(JTEMP)
@@ -532,6 +533,7 @@ module pchemc_ij
          k_cho_o2   = r_cho_o2
          k_ch3o2_c2h5o2  = r_ch3o2_c2h5o2
          k_ch3o2_c3h7o2  = r_ch3o2_c3h7o2
+         k_ch3o2_c3h7o2_a = r_ch3o2_c3h7o2_a
          k_ch3o2_c4h9o2  = r_ch3o2_c4h9o2
          k_ch3o2_c6h13o2 = r_ch3o2_c6h13o2
          k_ch3o2_ch3cob  = r_ch3o2_ch3cob
@@ -541,6 +543,7 @@ module pchemc_ij
          k_ch3o2_isor2   = r_ch3o2_isor2
          k_oh_ar2    = r_oh_ar2
          k_no_c3h7o2 = r_no_c3h7o2
+         k_no_c3h7o2_a = r_no_c3h7o2_a
          !// Added by SK during VOC updates
          k_no_alko2_a = r_no_alko2_a
          k_no3_bigene = r_no3_bigene
@@ -572,7 +575,10 @@ module pchemc_ij
             !// Array of all dry deps: Set from input values
             VDEP_L(:) = VDEP_OC(:)
          end if
-   
+         !//Trial dry deposition values for HCOOH and CH3COOH equal to HNO3 (SK and RBS)
+         VDEP_L(85) = VDEP_L(4)
+         VDEP_L(86) = VDEP_L(4)
+
          !// Assign photolysis rates
          !// These do not change during internal DTCH time step,
          !// so it is set before the NCHEM_ITER loop.
@@ -707,7 +713,7 @@ module pchemc_ij
            M_HCOOH = ZC(85,L)
            M_CH3COOH = ZC(86,L)
            M_C2H2 = ZC(87,L)
-           M_CH3CO3 = ZC(140,L)
+           M_CH3CO3 = ZC(88,L)
    
            !// Nitrate chemistry
            NH3gas   = ZC(61,L)
@@ -940,8 +946,8 @@ module pchemc_ij
                    + k_op_no_m * M_O3P &!O3P + NO + M -> NO2
                    + k_hoch2oo_no * M_HOCH2OO &!HOCH2OO + NO -> HCOOH + NO2 + HO2 (added SK VOC updates)
                    + k_no_alko2_a * M_ALKO2 &!ALKO2 + NO -> 0.4CH3CHO + 0.1CH2O + 0.25CH3COCH3 + HO2 + 0.8MEK + NO2 (added SK VOC updates)
-                   + k_no_eneo2_a * M_NO * M_ENEO2 &!ENEO2 + NO -> CH3CHO + 0.5CH2O + 0.5CH3COCH3 + HO2 + NO2
-                   + k_no_eneo2_b * M_NO * M_ENEO2 &!ENEO2 + NO -> HONITR
+                   !+ k_no_eneo2_a * M_NO * M_ENEO2 &!ENEO2 + NO -> CH3CHO + 0.5CH2O + 0.5CH3COCH3 + HO2 + NO2
+                   !+ 0.5_r8 * k_no_eneo2_b * M_NO * M_ENEO2 &!ENEO2 + NO -> HONITR
                    + k_no_alko2_b * M_ALKO2 !ALKO2 + NO -> ALKNIT
    
               !//..NO2---------------------------------------------------------
@@ -1000,8 +1006,8 @@ module pchemc_ij
                    + k_no3_bigene * M_NO3 * M_BIGENE &!BIGENE + NO3 -> NO2 + CH3CHO + 0.5CH2O + 0.5CH3COCH3 (added SK VOC updates)
                    + k_hoch2oo_no * M_HOCH2OO * M_NO &!HOCH2OO + NO -> HCOOH + NO2 + HO2 (added SK VOC updates)
                    + k_no_alko2_a * M_ALKO2 * M_NO &!ALKO2 + NO -> 0.4CH3CHO + 0.1CH2O + 0.25CH3COCH3 + HO2 + 0.8MEK + NO2 (added SK VOC updates)
-                   + k_no_eneo2_a * M_NO * M_ENEO2 &!ENEO2 + NO -> CH3CHO + 0.5CH2O + 0.5CH3COCH3 + HO2 + NO2 (added SK VOC updates)
-                   + DHONITR * M_HONITR &!HONITR + hv -> NO2 + 0.67HO2 + 0.33CH3CHO + 0.33CH2O + 0.33CO + 0.33GLYALD + 0.33CH3CO3 + 0.17HYAC + 0.17CH3COCH3 (added SK VOC updates)
+                   !+ k_no_eneo2_a * M_NO * M_ENEO2 &!ENEO2 + NO -> CH3CHO + 0.5CH2O + 0.5CH3COCH3 + HO2 + NO2 (added SK VOC updates)
+                   !+ DHONITR * M_HONITR &!HONITR + hv -> NO2 + 0.67HO2 + 0.33CH3CHO + 0.33CH2O + 0.33CO + 0.33GLYALD + 0.33CH3CO3 + 0.17HYAC + 0.17CH3COCH3 (added SK VOC updates)
                    + DALKNIT * M_ALKNIT !ALKNIT + hv -> NO2 + 0.4CH3CHO + 0.1CH (added SK VOC updates)
    
               LOSS = &
@@ -1208,7 +1214,7 @@ module pchemc_ij
                   + k_hcooh_oh * M_HCOOH &!HCOOH + OH -> HO2 + CO2 + H2O (Added with SK VOC Updates)
                   + k_oh_alkooh * M_ALKOOH &!ALKOOH + OH -> ALKO2 (Added with SK VOC Updates)
                   + k_oh_alknit * M_ALKNIT &!ALKNIT + OH -> 0.4CH2O + 0.8CH3CHO + 0.8*CH3COCH3 + NO2 (Added with SK VOC Updates)
-                  + k_oh_honitr * M_HONITR &!HONITR + OH -> ONITR + HO2 (Added with SK VOC Updates)
+                  !+ k_oh_honitr * M_HONITR &!HONITR + OH -> ONITR + HO2 (Added with SK VOC Updates)
 
 
                   !// Extra terms for stability: Must be added to production below
@@ -1270,9 +1276,9 @@ module pchemc_ij
                   + k_hcooh_oh * M_HCOOH * M_OH &!HCOOH + OH -> HO2 + CO2 + H2O (added with SK VOC updates)
                   + 0.9_r8 * k_ch3co3_ch3o2 * M_CH3CO3 * M_CH3O2 &!CH3CO3 + CH3O2 -> 0.9CH3O2 + CH2O + 0.9HO2 + 0.9CO2 + 0.1CH3COOH (added with SK VOC updates)
                   + k_no_alko2_a * M_NO * M_ALKO2 &!ALKO2 + NO -> 0.4CH3CHO + 0.1CH2O + 0.25CH3COCH3 + HO2 + 0.8MEK + NO2 (added with SK VOC updates)
-                  + 0.9_r8 * DALKOOH * M_ALKOOH &!ALKOOH + hv -> 0.4CH3CHO + 0.1CH2O + 0.25CH3COCH3 + 0.9HO2 + 0.8*MEK + OH (added with SK VOC updates)
-                  + 0.67_r8 * DHONITR * M_HONITR &!HONITR + hv -> NO2 + 0.67HO2 + 0.33CH3CHO + 0.33CH2O + 0.33CO + 0.33GLYALD + 0.33CH3CO3 + 0.17HYAC + 0.17CH3COCH3 (added with SK VOC updates)
-                  + k_oh_honitr * M_HONITR * M_OH !HONITR + OH -> ONITR + HO2 (added with SK VOC updates)
+                  + 0.9_r8 * DALKOOH * M_ALKOOH !ALKOOH + hv -> 0.4CH3CHO + 0.1CH2O + 0.25CH3COCH3 + 0.9HO2 + 0.8*MEK + OH (added with SK VOC updates)
+                  !+ 0.67_r8 * DHONITR * M_HONITR &!HONITR + hv -> NO2 + 0.67HO2 + 0.33CH3CHO + 0.33CH2O + 0.33CO + 0.33GLYALD + 0.33CH3CO3 + 0.17HYAC + 0.17CH3COCH3 (added with SK VOC updates)
+                  !+ k_oh_honitr * M_HONITR * M_OH !HONITR + OH -> ONITR + HO2 (added with SK VOC updates)
    
              LOSS_HO2 = &
                   k_no_ho2 * M_NO &
@@ -2672,8 +2678,8 @@ module pchemc_ij
                 + 0.1_r8 * DALKOOH * M_ALKOOH &!ALKOOH + hv -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + 0.9*HO2 + 0.8*MEK + OH (added SK VOC updates)
                 + 0.1_r8 * DALKNIT * M_ALKNIT &!ALKNIT + hv -> NO2 + 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK (added SK VOC updates)
                 + 0.4_r8 * k_oh_alknit * M_OH * M_ALKNIT &!ALKNIT + OH -> 0.4*CH2O + 0.8*CH3CHO + 0.8*CH3COCH3 + NO2 (added SK VOC updates)
-                + 0.5_r8 * k_no_eneo2_a * M_NO * M_ENEO2 &!ENEO2 + NO -> CH3CHO + 0.5*CH2O + 0.5*CH3COCH3 + HO2 +NO2 (added SK VOC updates)
-                + 0.33_r8 * DHONITR * M_HONITR &!HONITR + hv -> NO2 + 0.67*HO2 + 0.33*CH3CHO + 0.33*CH2O +  0.33*CO + 0.33*GLYALD + 0.33*CH3CO3 + 0.17*HYAC + 0.17*CH3COCH3 (added SK VOC updates)
+                !+ 0.5_r8 * k_no_eneo2_a * M_NO * M_ENEO2 &!ENEO2 + NO -> CH3CHO + 0.5*CH2O + 0.5*CH3COCH3 + HO2 +NO2 (added SK VOC updates)
+                !+ 0.33_r8 * DHONITR * M_HONITR &!HONITR + hv -> NO2 + 0.67*HO2 + 0.33*CH3CHO + 0.33*CH2O +  0.33*CO + 0.33*GLYALD + 0.33*CH3CO3 + 0.17*HYAC + 0.17*CH3COCH3 (added SK VOC updates)
 
 
 
@@ -2781,9 +2787,9 @@ module pchemc_ij
                 + k_no_alko2_a * M_NO * M_ALKO2 &!NO + ALKO2 -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK + NO2
                 + DALKOOH * M_ALKOOH &!ALKOOH + hv -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + 0.9*HO2 + 0.8*MEK + OH
                 + DALKNIT * M_ALKNIT &!ALKNIT + hv -> NO2 + 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK
-                + k_oh_alknit * M_OH * M_ALKNIT &!ALKNIT + OH -> 0.4*CH2O + 0.8*CH3CHO + 0.8*CH3COCH3 + NO2
-                + k_no_eneo2_a * M_ENEO2 * M_NO &!ENEO2 + NO -> CH3CHO + 0.5*CH2O + 0.5*CH3COCH3 + HO2 + NO2
-                + DHONITR * M_HONITR !HONITR + hv -> NO2 + 0.67*HO2 + 0.33*CH3CHO + 0.33*CH2O + 0.33*CO + 0.33*GLYALD + 0.33*CH3CO3 + 0.17*HYAC + 0.17*CH3COCH3
+                + k_oh_alknit * M_OH * M_ALKNIT !ALKNIT + OH -> 0.4*CH2O + 0.8*CH3CHO + 0.8*CH3COCH3 + NO2
+                !+ k_no_eneo2_a * M_ENEO2 * M_NO &!ENEO2 + NO -> CH3CHO + 0.5*CH2O + 0.5*CH3COCH3 + HO2 + NO2
+                !+ DHONITR * M_HONITR !HONITR + hv -> NO2 + 0.67*HO2 + 0.33*CH3CHO + 0.33*CH2O + 0.33*CO + 0.33*GLYALD + 0.33*CH3CO3 + 0.17*HYAC + 0.17*CH3COCH3
 
                  
 
@@ -2809,6 +2815,26 @@ module pchemc_ij
            LOSS = k_oh_c2h5oh * M_OH !C2H5OH + OH -> HO2 + CH3CHO 
            call QSSA(76,'C2H5OH',DTCH,QLIN,ST,PROD,LOSS,ZC(76,L))
 
+
+           !//..CH3CO3 ------------------------------------------
+           !//..Modified by SK in Feb 2025 to match WACCM-------------------------
+           !// Without adding the Acetone-hv reaction and other reactions where the species in OsloCTM3 is not treated explictly
+           Prod = &!DHONITR * M_HONITR &!
+                  0.06_r8 * k_o3_soaC1 * M_Apine * M_O3 &!APIN + O3 -> 0.33*TERPROD1 + 0.3*TERPROD2 + 0.63*OH + 0.57*HO2 + 0.23*CO + 0.27*CO2 + 0.52*CH3COCH3 + 0.34*CH2O + 0.1*BIGALD + 0.05*HCOOH + 0.05*BIGALK + 0.06*CH3CO3 + 0.06*RO2
+                 + 0.06_r8 * k_o3_soaC1 * M_Bpine * M_O3 &!BPIN + O3 -> 0.33*TERPROD1 + 0.3*TERPROD2 + 0.63*OH + 0.57*HO2 + 0.23*CO + 0.27*CO2 + 0.52*CH3COCH3 + 0.34*CH2O + 0.1*BIGALD + 0.05*HCOOH + 0.05*BIGALK + 0.06*CH3CO3 + 0.06*RO2
+                 + 0.06_r8 * k_o3_soaC2 * M_Limon * M_O3 &!LIMON + O3 -> 0.33*TERPROD1 + 0.3*TERPROD2 + 0.63*OH + 0.57*HO2 + 0.23*CO + 0.27*CO2 + 0.52*CH3COCH3 + 0.34*CH2O + 0.1*BIGALD + 0.05*HCOOH + 0.05*BIGALK + 0.06*CH3CO3 + 0.06*RO2
+                 + 0.06_r8 * k_o3_soaC4 * M_Myrcene * M_O3 &!MYRC + O3 -> 0.33*TERPROD1 + 0.3*TERPROD2 + 0.63*OH + 0.57*HO2 + 0.23*CO + 0.27*CO2 + 0.52*CH3COCH3 + 0.34*CH2O + 0.1*BIGALD + 0.05*HCOOH + 0.05*BIGALK + 0.06*CH3CO3 + 0.06*RO2
+                 + 0.06_r8 * k_o3_soaC5 * M_Sestrp * M_O3 &!BCARY + O3 -> 0.33*TERPROD1 + 0.3*TERPROD2 + 0.63*OH + 0.57*HO2 + 0.23*CO + 0.27*CO2 + 0.52*CH3COCH3 + 0.34*CH2O + 0.1*BIGALD + 0.05*HCOOH + 0.05*BIGALK + 0.06*CH3CO3 + 0.06*RO2
+                 + k_oh_ch3cho * M_OH * M_CH3CHO &!
+                 + k_no3_ch3cho * M_NO3 * M_CH3CHO &!
+                 + DPAN * M_PAN !PAN + hv -> 0.6*CH3CO3 + 0.6*NO2 + 0.4*CH3O2 + 0.4*NO3 + 0.4*CO2
+                 
+           Loss = k_ch3co3_ch3o2 * M_CH3O2 &
+                  + k_ch3co3_ho2 * M_HO2
+           
+           call QSSA(88,'CH3CO3',DTCH,QLIN,ST,PROD,LOSS,ZC(88,L))
+
+
            !//..BIGALK (alkanes with C>3------------------------------------------
            !//..Modified by SK in Feb 2025 to match WACCM-------------------------
            !//SHOULD THIS SIMPLY BE TREATED AS SUM OF BUTANE AND HEXANE
@@ -2822,8 +2848,13 @@ module pchemc_ij
                   + 0.05_r8 * k_o3_soaC5 * M_Sestrp * M_O3
    
            LOSS = k_oh_bigalk * M_OH 
-   
-           call QSSA(40,'BIGALK',DTCH,QLIN,ST,PROD,LOSS,ZC(77,L))
+           
+           CHEMPROD(1,77,L) = CHEMPROD(1,77,L) + PROD * DTCH
+           CHEMPROD(2,77,L) = CHEMPROD(2,77,L) + 0.05_r8 * (k_o3_soaC1 * M_Apine + k_o3_soaC1 * M_Bpine + k_o3_soaC2 * M_Limon + k_o3_soaC4 * M_Myrcene + k_o3_soaC5 * M_Sestrp) * M_O3 * DTCH
+
+           CHEMLOSS(1,77,L) = CHEMLOSS(1,77,L) + LOSS * M_BIGALK * DTCH
+           CHEMLOSS(3,77,L) = CHEMLOSS(3,77,L) + k_oh_bigalk * M_OH * M_BIGALK * DTCH    
+           call QSSA(77,'BIGALK',DTCH,QLIN,ST,PROD,LOSS,ZC(77,L))
    
            !//..BIGENE (alkenes with C>3------------------------------------------
            !//..Modified by SK in Feb 2025 to match WACCM-------------------------
@@ -2832,7 +2863,14 @@ module pchemc_ij
    
            LOSS = k_oh_bigene * M_OH &
                   + k_no3_bigene * M_NO3 
-   
+           
+           CHEMPROD(1,78,L) = CHEMPROD(1,78,L) + PROD * DTCH
+
+           CHEMLOSS(1,78,L) = CHEMLOSS(1,78,L) + LOSS * M_BIGENE * DTCH
+           CHEMLOSS(3,78,L) = CHEMLOSS(3,78,L) + k_oh_bigene * M_OH * M_BIGENE * DTCH
+           CHEMLOSS(4,78,L) = CHEMLOSS(4,78,L) + k_no3_bigene * M_NO3 * M_BIGENE * DTCH
+           
+           
            call QSSA(40,'BIGENE',DTCH,QLIN,ST,PROD,LOSS,ZC(78,L))        
 
            !//..HOCH2OO----------------------------------------------------------
@@ -2841,7 +2879,7 @@ module pchemc_ij
            PROD = k_ch2o_ho2 * M_CH2O * M_HO2 !CH2O + HO2 -> HOCH2OO   
    
            LOSS = k_hoch2oo_ho2 * M_HO2 &!HOCH2OO + HO2 -> HCOOH
-                  !+ k_hoch2oo * M_HOCH2OO &!HOCH2OO -> CH2O + HO2 NOT SURE HOW TO REPRESENT THIS REACTION. Should be checked
+                  + k_hoch2oo &!HOCH2OO -> CH2O + HO2; Copying the style of term comparable to heat reaction in the strat. chemistry
                   + k_hoch2oo_no * M_NO !HOCH2OO + NO -> HCOOH + NO2 + HO2
    
            call QSSA(40,'HOCH2OO',DTCH,QLIN,ST,PROD,LOSS,ZC(79,L))   
@@ -2849,75 +2887,102 @@ module pchemc_ij
            !//..ALKO2------------------------------------------
            !//..Modified by SK in Feb 2025 to match WACCM-------------------------
            
-           PROD = &
-                 + k_oh_bigalk * M_BIGALK * M_OH &
+           PROD = k_oh_bigalk * M_BIGALK * M_OH &
                  + k_oh_alkooh * M_ALKOOH * M_OH  
    
            LOSS = k_ho2_alko2 * M_HO2 &!ALKO2 + HO2 -> ALKOOH
-                  + k_no_alko2_a * M_NO &!ALKO2 + NO -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK + NO2  
-                  + k_no_alko2_b * M_NO !ALKO2 + NO -> ALKNIT
-   
-           call QSSA(40,'ALKO2',DTCH,QLIN,ST,PROD,LOSS,ZC(80,L))
+                  + 0.5_r8 * k_no_alko2_a * M_NO &!ALKO2 + NO -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK + NO2 (Trying out a 50% split)
+                  + 0.5_r8 * k_no_alko2_b * M_NO !ALKO2 + NO -> ALKNIT (Trying out a 50% split)
+           
+           CHEMPROD(1,80,L) = CHEMPROD(1,80,L) + PROD * DTCH
+           CHEMPROD(2,80,L) = CHEMPROD(2,80,L) + k_oh_bigalk * M_BIGALK * M_OH * DTCH
+           CHEMPROD(3,80,L) = CHEMPROD(3,80,L) + k_oh_alkooh * M_ALKOOH * M_OH * DTCH
+    
+           CHEMLOSS(1,80,L) = CHEMLOSS(1,80,L) + LOSS * M_ALKO2 * DTCH
+           CHEMLOSS(3,80,L) = CHEMLOSS(3,80,L) + k_ho2_alko2 * M_HO2 * M_ALKO2 * DTCH
+           CHEMLOSS(4,80,L) = CHEMLOSS(4,80,L) + 0.5_r8 * k_no_alko2_a * M_NO * M_ALKO2 * DTCH
+           CHEMLOSS(5,80,L) = CHEMLOSS(5,80,L) + 0.5_r8 * k_no_alko2_b * M_NO * M_ALKO2 * DTCH
+           
+           call QSSA(80,'ALKO2',DTCH,QLIN,ST,PROD,LOSS,ZC(80,L))
    
            !//..ALKOOH------------------------------------------
            !//..Modified by SK in Feb 2025 to match WACCM-------------------------
            
-           PROD = &
-                 + k_ho2_alko2 * M_ALKO2 * M_HO2 
+           PROD = k_ho2_alko2 * M_ALKO2 * M_HO2 
                  
            LOSS = k_oh_alkooh * M_OH &!ALKOOH + OH -> ALKO2
-                  + DALKOOH * M_ALKOOH !ALKOOH + hv -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + 0.9*HO2 + 0.8*MEK + OH
-           call QSSA(40,'ALKOOH',DTCH,QLIN,ST,PROD,LOSS,ZC(81,L))
+                  + DALKOOH !ALKOOH + hv -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + 0.9*HO2 + 0.8*MEK + OH
+           
+           CHEMPROD(1,81,L) = CHEMPROD(1,81,L) + PROD * DTCH
+           CHEMPROD(2,81,L) = CHEMPROD(2,81,L) + k_ho2_alko2 * M_ALKO2 * M_HO2  * DTCH
+           
+           CHEMLOSS(1,81,L) = CHEMLOSS(1,81,L) + LOSS * M_ALKOOH * DTCH
+           CHEMLOSS(3,81,L) = CHEMLOSS(3,81,L) + k_oh_alkooh * M_OH * M_ALKOOH * DTCH
+           CHEMLOSS(4,81,L) = CHEMLOSS(4,81,L) + DALKOOH * M_ALKOOH * DTCH
+                         
+           call QSSA(81,'ALKOOH',DTCH,QLIN,ST,PROD,LOSS,ZC(81,L))
    
            !//..ALKNIT------------------------------------------
            !//..Modified by SK in Feb 2025 to match WACCM-------------------------
            
-           PROD = &
-                 + k_no_alko2_b * M_ALKO2 * M_NO !ALKO2 + NO -> ALKNIT
+           PROD = k_no_alko2_b * M_ALKO2 * M_NO !ALKO2 + NO -> ALKNIT
                  
-           LOSS = k_oh_alknit * M_OH &!ALKNIT + OH -> 0.4*CH2O + 0.8*CH3CHO + 0.8*CH3COCH3 + NO2
-                  + DALKNIT * M_ALKNIT !ALKNIT + hv -> NO2 + 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK
-           call QSSA(40,'ALKNIT',DTCH,QLIN,ST,PROD,LOSS,ZC(82,L))
+           LOSS = k_oh_alknit * M_OH &!ALKNIT + OH -> 0.4*CH2O + 0.8*CH3CHO + 0.8*CH3COCH3 + NO2 
+                  + DALKNIT !ALKNIT + hv -> NO2 + 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK 
+           call QSSA(82,'ALKNIT',DTCH,QLIN,ST,PROD,LOSS,ZC(82,L))
    
            !//..ENEO2------------------------------------------
            !//..Modified by SK in Feb 2025 to match WACCM-------------------------
            
-           PROD = &
-                 + k_oh_bigene * M_OH !BIGENE + OH -> ENEO2
-                 
-           LOSS = k_no_eneo2_a * M_NO &!ENEO2 + NO -> CH3CHO + 0.5*CH2O + 0.5*CH3COCH3 + HO2 + NO2 
-                  + k_no_eneo2_b * M_NO !ENEO2 + NO -> HONITR
-           call QSSA(40,'ENEO2',DTCH,QLIN,ST,PROD,LOSS,ZC(83,L))
+           PROD = k_oh_bigene * M_OH * M_BIGENE !BIGENE + OH -> ENEO2
+           
+           LOSS = 0.5_r8 * k_no_eneo2_a * M_NO &!ENEO2 + NO -> CH3CHO + 0.5*CH2O + 0.5*CH3COCH3 + HO2 + NO2 (Trying out a 50% split)
+                  + 0.5_r8 * k_no_eneo2_b * M_NO !ENEO2 + NO -> HONITR (Trying out a 50% split)
+
+           CHEMPROD(1,83,L) = CHEMPROD(1,83,L) + PROD * DTCH
+           CHEMPROD(2,83,L) = CHEMPROD(2,83,L) + k_oh_bigene * M_BIGENE * M_OH * DTCH
+           
+           CHEMLOSS(1,83,L) = CHEMLOSS(1,83,L) + LOSS * M_ENEO2 * DTCH
+           CHEMLOSS(3,83,L) = CHEMLOSS(3,83,L) + 0.5_r8 * k_no_eneo2_a * M_NO * M_ENEO2 * DTCH
+           CHEMLOSS(4,83,L) = CHEMLOSS(4,83,L) + 0.5_r8 * k_no_eneo2_b * M_NO * M_ENEO2 * DTCH
+           call QSSA(83,'ENEO2',DTCH,QLIN,ST,PROD,LOSS,ZC(83,L))
    
            !//..HONITR------------------------------------------
            !//..Modified by SK in Feb 2025 to match WACCM-------------------------
 
-           PROD = &
-                 + k_no_eneo2_b * M_NO !ENEO2 + NO -> HONITR
-                 
+           PROD = 0.5_r8 * k_no_eneo2_b * M_NO * M_ENEO2 !ENEO2 + NO -> HONITR
+           !PROD = 0_r8      
            LOSS = k_oh_honitr * M_OH &!HONITR + OH -> ONITR + HO2 
-                  + DHONITR * M_HONITR ! NO2 + 0.67*HO2 + 0.33*CH3CHO + 0.33*CH2O + 0.33*CO + 0.33*GLYALD + 0.33*CH3CO3 + 0.17*HYAC + 0.17*CH3COCH3 
+                  + DHONITR ! NO2 + 0.67*HO2 + 0.33*CH3CHO + 0.33*CH2O + 0.33*CO + 0.33*GLYALD + 0.33*CH3CO3 + 0.17*HYAC + 0.17*CH3COCH3 
                   !HONITR + aer -> HNO3 f(SAD), g=0.005 (NOT INCLUDED)
                   !MACRO2 + NO -> HONITR 1.30e-13 exp(360/T) (NOT INCLUDED)
                   !ISOPNITA + OH -> 0.7*HYAC + 0.7*GLYALD + 0.7*NO2 + 0.3*CH2O + 0.3*HONITR + 0.3*HO2  4.000e-11 (NOT INCLUDED)
                   !ISOPNITB + OH -> 0.5*HYAC + 0.5*GLYALD + 0.5*NOA + HO2 + 0.5*HONITR 4.000e-11 (NOT INCLUDED)
                   !MBONO3O2 + NO -> 0.25*HMPROP + 0.25*CH2O + 1.25*NO2 + 0.75*HONITR + 0.75*CH3COCH3 + 0.75*HO2 2.60E-12*exp( 365/T) (NOT INCLUDED)
                   !MBONO3O2 + NO3 -> 0.25*HMPROP + 0.25*CH2O + 1.25*NO2 + 0.75*HONITR + 0.75*CH3COCH3 + 0.75*HO2 2.40E-12 (NOT INCLUDED)
-
+           !LOSS = 0_r8
+           CHEMPROD(1,84,L) = CHEMPROD(1,84,L) + PROD * DTCH
+           CHEMPROD(2,84,L) = CHEMPROD(2,84,L) + 0.5_r8 * k_no_eneo2_b * M_ENEO2 * M_NO * DTCH
+           
+           CHEMLOSS(1,84,L) = CHEMLOSS(1,84,L) + LOSS * M_HONITR * DTCH
+           CHEMLOSS(3,84,L) = CHEMLOSS(3,84,L) + k_oh_honitr * M_OH * M_HONITR * DTCH
+           CHEMLOSS(4,84,L) = CHEMLOSS(4,84,L) + DHONITR * M_HONITR * DTCH
                
-           call QSSA(40,'HONITR',DTCH,QLIN,ST,PROD,LOSS,ZC(84,L))
+           call QSSA(84,'HONITR',DTCH,QLIN,ST,PROD,LOSS,ZC(84,L))
    
            !//..ACETON (CH3COCH3)-----------------------------------------------
            !//..SK updated reactions to match WACCM; Feb-2025....
            
            PROD = &
-                k_no_c3h7o2 * M_C3H7O2 * M_NO * fa_no_c3h7o2 * fb_no_c3h7o2 &
-                + k_ch3o2_c3h7o2 * M_CH3O2 * M_C3H7O2 &
-                                 * (0.5_r8 * fb_no_c3h7o2 + 0.25_r8) &
-                + 0.25_r8 * k_no_alko2_a &!ALKO2 + NO -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK + NO2 (added SK VOC updates)
+                !k_no_c3h7o2 * M_C3H7O2 * M_NO * fa_no_c3h7o2 * fb_no_c3h7o2 &
+                !+ k_ch3o2_c3h7o2 * M_CH3O2 * M_C3H7O2 &
+                !                 * (0.5_r8 * fb_no_c3h7o2 + 0.25_r8) &
+                0.82_r8 * k_no_c3h7o2_a * M_C3H7O2 * M_NO &
+                + 0.82_r8 * k_ch3o2_c3h7o2_a * M_CH3O2 * M_C3H7O2 &
+                + 0.25_r8 * k_no_alko2_a * M_NO * M_ALKO2 &!ALKO2 + NO -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK + NO2 (added SK VOC updates)
                 + 0.25_r8 * DALKOOH * M_ALKOOH &!ALKOOH + hv -> 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + 0.9*HO2 + 0.8*MEK + OH
                 + 0.25_r8 * DALKNIT * M_ALKNIT &!ALKNIT + hv -> NO2 + 0.4*CH3CHO + 0.1*CH2O + 0.25*CH3COCH3 + HO2 + 0.8*MEK
-                + 0.8_r8 * k_oh_alknit * M_OH &!ALKNIT + OH -> 0.4*CH2O + 0.8*CH3CHO + 0.8*CH3COCH3 + NO2 
+                + 0.8_r8 * k_oh_alknit * M_OH * M_ALKNIT &!ALKNIT + OH -> 0.4*CH2O + 0.8*CH3CHO + 0.8*CH3COCH3 + NO2 
                 + 0.5_r8 * k_no3_bigene * M_NO3 * M_BIGENE &!BIGENE + NO3 -> NO2 + CH3CHO + 0.5*CH2O + 0.5*CH3COCH3 
                 + 0.5_r8 * k_no_eneo2_a * M_ENEO2 * M_NO &!ENEO2 + NO -> CH3CHO + 0.5*CH2O + 0.5*CH3COCH3 + HO2 + NO2
                 + 0.17_r8 * DHONITR * M_HONITR &!HONITR + hv -> NO2 + 0.67*HO2 + 0.33*CH3CHO + 0.33*CH2O + 0.33*CO + 0.33*GLYALD + 0.33*CH3CO3 + 0.17*HYAC + 0.17*CH3COCH3
@@ -2943,15 +3008,19 @@ module pchemc_ij
            CHEMLOSS(4,50,L) = CHEMLOSS(4,50,L) + DACETON_A  * M_ACETON *  DTCH
            CHEMLOSS(5,50,L) = CHEMLOSS(5,50,L) + DACETON_B  * M_ACETON *  DTCH
    
-   
+               
            
            CHEMPROD(1,50,L) = CHEMPROD(1,50,L) + PROD * DTCH
+           CHEMPROD(2,50,L) = CHEMPROD(2,50,L) + k_no_c3h7o2_a * M_C3H7O2 * M_NO * DTCH
+           CHEMPROD(3,50,L) = CHEMPROD(3,50,L) + k_ch3o2_c3h7o2_a * M_CH3O2 * M_C3H7O2 * DTCH
+           CHEMPROD(4,50,L) = CHEMPROD(4,50,L) + 0.25_r8 * k_no_alko2_a * M_NO * M_ALKO2 * DTCH
+           CHEMPROD(5,50,L) = CHEMPROD(5,50,L) + 0.25_r8 * (DALKOOH * M_ALKOOH + DALKNIT * M_ALKNIT) * DTCH
+           CHEMPROD(6,50,L) = CHEMPROD(6,50,L) + 0.8_r8 * k_oh_alknit * M_OH * M_ALKNIT * DTCH
+           CHEMPROD(7,50,L) = CHEMPROD(7,50,L) + 0.5_r8 * k_no3_bigene * M_NO3 * M_BIGENE * DTCH + 0.5 * k_no_eneo2_a * M_ENEO2 * M_NO * DTCH
+           CHEMPROD(8,50,L) = CHEMPROD(8,50,L) + 0.17_r8 * DHONITR * M_HONITR * DTCH
+           CHEMPROD(9,50,L) = CHEMPROD(9,50,L) + 0.52_r8 * (k_o3_soaC1 * M_Apine * M_O3 + k_o3_soaC1 * M_Bpine * M_O3 + k_o3_soaC2 * M_Limon * M_O3 + k_o3_soaC4 * M_Myrcene * M_O3 + k_o3_soaC5 * M_Sestrp * M_O3) * DTCH 
            
-    
-   
-           
-   
-           call QSSA(29,'ACETON',DTCH,QLIN,ST,PROD,LOSS,ZC(50,L))
+           call QSSA(50,'ACETON',DTCH,QLIN,ST,PROD,LOSS,ZC(50,L))
    
            !//..HCOOH (formic acid)------------------------------------------------
            !//..SK updated reactions to match WACCM; Feb-2025....
@@ -2972,10 +3041,25 @@ module pchemc_ij
                 + POLLX(85)
 
             LOSS = &
-                 k_hcooh_oh * M_OH !HCOOH + OH -> HO2 + CO2 + H2O
+                 k_hcooh_oh * M_OH &!HCOOH + OH -> HO2 + CO2 + H2O 
+                 + VDEP_L(85)
+                 
+            if (L .eq. 1) DDDIAG(85) = DDDIAG(85) + VDEP_L(85) * M_HCOOH * DTCH
 
             CHEMPROD(1,85,L) = CHEMPROD(1,85,L) + PROD * DTCH
             CHEMLOSS(1,85,L) = CHEMLOSS(1,85,L) + LOSS * M_HCOOH * DTCH
+            CHEMLOSS(2,85,L) = CHEMLOSS(2,85,L) + VDEP_L(85) * M_HCOOH * DTCH
+            CHEMPROD(2,85,L) = CHEMPROD(2,85,L) + k_hoch2oo_ho2 * M_HOCH2OO  * M_HO2 * DTCH
+            CHEMPROD(3,85,L) = CHEMPROD(3,85,L) + k_hoch2oo_no * M_HOCH2OO * M_NO * DTCH
+            CHEMPROD(4,85,L) = CHEMPROD(4,85,L) + 0.35_r8 * k_c2h2_oh * M_C2H2 * M_OH * DTCH
+            CHEMPROD(5,85,L) = CHEMPROD(5,85,L) + 0.37_r8 * k_o3_c2h4 * M_C2H4 * M_O3 * DTCH
+            CHEMPROD(6,85,L) = CHEMPROD(6,85,L) + 0.12_r8 * k_c3h6_o3 * M_C3H6 * M_O3 * DTCH
+            CHEMPROD(7,85,L) = CHEMPROD(7,85,L) + 0.11_r8 * k_o3_isoprene * M_ISOPREN * M_O3 * DTCH
+            CHEMPROD(8,85,L) = CHEMPROD(8,85,L) + 0.05_r8 * ( k_o3_soaC1 * M_Apine * M_O3 + k_o3_soaC2 * M_Bpine * M_O3 + k_o3_soaC2 * M_Limon * M_O3  + k_o3_soaC4 * M_Myrcene * M_O3 + k_o3_soaC5 * M_Sestrp * M_O3 ) * DTCH
+
+            CHEMLOSS(3,85,L) = CHEMLOSS(3,85,L) + k_hcooh_oh * M_OH * M_HCOOH * DTCH
+
+
            call QSSA(85,'HCOOH',DTCH,QLIN,ST,PROD,LOSS,ZC(85,L))
    
            !//..CH3COOH (acetic acid)------------------------------------------------
@@ -2988,9 +3072,21 @@ module pchemc_ij
                    !MCO3 + HO2 -> 0.15*O3 + 0.15*CH3COOH + 0.4*CH3COOOH + 0.45*OH + 0.45*CO2 + 0.45*CH2O + 0.45*CH3CO3 
                  + POLLX(86)
            LOSS = &
-                  k_ch3cooh_oh * M_OH 
+                  k_ch3cooh_oh * M_OH &
+                  + VDEP_L(86)
+                 
+           if (L .eq. 1) DDDIAG(86) = DDDIAG(86) + VDEP_L(86) * M_HCOOH * DTCH
+
            CHEMPROD(1,86,L) = CHEMPROD(1,86,L) + PROD * DTCH
+           CHEMPROD(2,86,L) = CHEMPROD(2,86,L) + 0.1_r8 * k_ch3co3_ch3o2 * M_CH3CO3 * M_CH3O2 * DTCH
+           CHEMPROD(3,86,L) = CHEMPROD(3,86,L) + 0.15_r8 * k_ch3co3_ho2 * M_CH3CO3 * M_HO2 * DTCH
+           CHEMPROD(4,86,L) = CHEMPROD(4,86,L) + 0.12_r8 * k_c3h6_o3 * M_C3H6 * M_O3 * DTCH
+               
+
            CHEMLOSS(1,86,L) = CHEMLOSS(1,86,L) + LOSS * M_CH3COOH * DTCH
+           CHEMLOSS(2,86,L) = CHEMLOSS(2,86,L) + VDEP_L(86) * M_CH3COOH * DTCH
+           CHEMLOSS(3,86,L) = CHEMLOSS(3,86,L) + k_ch3cooh_oh * M_OH * M_CH3COOH * DTCH
+
                   
            call QSSA(86,'CH3COOH',DTCH,QLIN,ST,PROD,LOSS,ZC(86,L))        
            
@@ -3116,7 +3212,11 @@ module pchemc_ij
            !//..C3H8------------------------------------------------------------
            PROD = POLLX(48)
            LOSS = k_oh_c3h8 * M_OH 
-   
+           
+           CHEMLOSS(1,48,L) = CHEMLOSS(1,48,L) + LOSS * M_C3H8 * DTCH
+           CHEMPROD(1,48,L) = CHEMPROD(1,48,L) + PROD * DTCH
+           CHEMLOSS(3,48,L) = CHEMLOSS(3,48,L) + k_oh_c3h8 * M_OH * M_C3H8 * DTCH
+
            call QSSA(37,'C3H8',DTCH,QLIN,ST,PROD,LOSS,ZC(48,L))
    
    
@@ -3125,7 +3225,14 @@ module pchemc_ij
            LOSS = &
                 k_oh_c3h6_m * M_OH &
                 + k_o3_c3h6 * M_O3
-   
+
+           CHEMLOSS(1,9,L) = CHEMLOSS(1,9,L) + LOSS * M_C3H6 * DTCH
+           CHEMPROD(1,9,L) = CHEMPROD(1,9,L) + PROD * DTCH
+           CHEMLOSS(3,9,L) = CHEMLOSS(3,9,L) + k_oh_c3h6_m * M_OH * M_C3H6 * DTCH
+           CHEMLOSS(4,9,L) = CHEMLOSS(4,9,L) + k_o3_c3h6 * M_O3 * M_C3H6 * DTCH
+     
+                
+                
            call QSSA(38,'C3H6',DTCH,QLIN,ST,PROD,LOSS,ZC(9,L))
    
    

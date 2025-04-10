@@ -10,6 +10,7 @@
 # Wall clock limit (setting for one year 96:0:0):
 ##SBATCH --time=165:00:0
 #SBATCH --time=85:00:0
+##SBATCH --time=13:00:0
 ##SBATCH --time=28:00:0
 ###SBATCH --qos=devel
 #

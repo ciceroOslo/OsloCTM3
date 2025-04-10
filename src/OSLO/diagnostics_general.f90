@@ -101,8 +101,8 @@ module diagnostics_general
   real(r8), dimension(LPAR,IPAR,JPAR) :: OxCHEMLOSSMASS
   real(r8), dimension(LPAR,IPAR,JPAR) :: OxCHEMPRODMASS
   !// Only save prod and loss for selected components
-  integer,parameter :: ncPL = 15 !RBS 4-5 -> 6
-  integer,dimension(ncPL), parameter :: compsPL = (/5,6,7,8,13,16,20,35,46,50,52,85,86,113,114/) !Add for VOCMIP
+  integer,parameter :: ncPL = 23 !RBS 4-5 -> 6
+  integer,dimension(ncPL), parameter :: compsPL = (/5,6,7,8,9,13,16,20,35,46,48, 50,52,77, 78, 80, 81, 83, 84, 85,86,113,114/) !Add for VOCMIP
 
   !// ----------------------------------------------------------------------
   character(len=*), parameter, private :: f90file='diagnostics_general.f90'
