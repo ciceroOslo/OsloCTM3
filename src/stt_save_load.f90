@@ -31,6 +31,7 @@ module stt_save_load
   !// ----------------------------------------------------------------------
   public
   private getField_and_interpolate
+  private getField_and_interpolate_rMom
   !// ----------------------------------------------------------------------
 
 contains
@@ -70,8 +71,10 @@ contains
 
     !// Locals
     real(r8) :: SUMT
+    
     real(r8), dimension(IPAR,JPAR,LPAR) :: R8XYZ
-
+    real(rMom), dimension(IPAR,JPAR,LPAR) :: R4XYZ 
+    
     integer :: &
          version, IN_IPAR, IN_JPAR, IN_LPAR, IN_NDAYS, IN_IYEAR, &
          I, J, L, N, M, ND, XND
@@ -277,11 +280,11 @@ contains
 
     end if !// if (MODE .eq. 0) then
 
-   
 
     !// STT
     !//---------------------------------------------------------------------
     do N = 1, NPAR
+
        if (ZEROINIT(N) .eq. 0) then
           write(6,'(a)') f90file//':'//subr// &
                ': already initialised: '//trim(TNAME(N))
@@ -317,25 +320,32 @@ contains
              !// Check variable
              status = nf90_inq_varid(ncid, TRIM(varname), var_id)
              if (status .eq. NF90_NOERR) then
+               
+                !// Variable exists - get it
+                call getField_and_interpolate_rMom(ncid, var_id, filename, &
+                     varname, f90file//':'//subr, &
+                     IN_IPAR, IN_JPAR, IN_LPAR, IN_XDEDG, IN_YDEDG, &
+                     IN_ETAA, IN_ETAB, LREGRID, R4XYZ)
+               
 
                 if (moments(m) .eq. 'SUT') then
-                   SUT(:,:,:,N) = R8XYZ(:,:,:)
+                   SUT(:,:,:,N) = R4XYZ(:,:,:)
                 else if (moments(m) .eq. 'SVT') then
-                   SVT(:,:,:,N) = R8XYZ(:,:,:)
+                   SVT(:,:,:,N) = R4XYZ(:,:,:)
                 else if (moments(m) .eq. 'SWT') then
-                   SWT(:,:,:,N) = R8XYZ(:,:,:)
+                   SWT(:,:,:,N) = R4XYZ(:,:,:)
                 else if (moments(m) .eq. 'SUU') then
-                   SUU(:,:,:,N) = R8XYZ(:,:,:)
+                   SUU(:,:,:,N) = R4XYZ(:,:,:)
                 else if (moments(m) .eq. 'SVV') then
-                   SVV(:,:,:,N) = R8XYZ(:,:,:)
+                   SVV(:,:,:,N) = R4XYZ(:,:,:)
                 else if (moments(m) .eq. 'SWW') then
-                   SWW(:,:,:,N) = R8XYZ(:,:,:)
+                   SWW(:,:,:,N) = R4XYZ(:,:,:)
                 else if (moments(m) .eq. 'SUV') then
-                   SUV(:,:,:,N) = R8XYZ(:,:,:)
+                   SUV(:,:,:,N) = R4XYZ(:,:,:)
                 else if (moments(m) .eq. 'SUW') then
-                   SUW(:,:,:,N) = R8XYZ(:,:,:)
+                   SUW(:,:,:,N) = R4XYZ(:,:,:)
                 else if (moments(m) .eq. 'SVW') then
-                   SVW(:,:,:,N) = R8XYZ(:,:,:)
+                   SVW(:,:,:,N) = R4XYZ(:,:,:)
                 end if
 
              else
@@ -383,7 +393,7 @@ contains
 
     end do !// do N = 1, NPAR
 
-    
+
     !// XSTT
     do N = 1, NOTRPAR
 
@@ -450,7 +460,6 @@ contains
        end if
 
     end do !// do N = 1, NOTRPAR
-
 
 
     !//---------------------------------------------------------------------
@@ -676,6 +685,143 @@ contains
 
     !// --------------------------------------------------------------------
   end subroutine getField_and_interpolate
+  !// ----------------------------------------------------------------------
+!// ----------------------------------------------------------------------
+  subroutine getField_and_interpolate_rMom(ncid, var_id, filename, &
+               varname, caller, &
+               IN_IPAR, IN_JPAR, IN_LPAR, IN_XDEDG, IN_YDEDG, &
+               IN_ETAA, IN_ETAB, LREGRID, R4XYZ)
+    !// --------------------------------------------------------------------
+    !// This routine is bound to subroutine load_restart_file, and reads
+    !// a 3d field from a netCDF file, with ncid as file id and
+    !// var_id as variable id.
+    !// If resolution on file differs from model resolution, the field is
+    !// interpolated to model resoluion.
+    !// Vertical interpolation is not possible yet.
+    !//
+    !// Amund Sovde Haslerud, August 2017
+    !// --------------------------------------------------------------------
+    use cmn_precision, only: r8,rMom
+    use cmn_size, only: IPAR, JPAR, LPAR
+    use cmn_ctm, only: XDEDG, YDEDG
+    use regridding, only: E_GRID
+    use netcdf
+    use ncutils, only: handle_error
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    !// Input
+    integer, intent(in) :: ncid, var_id, IN_IPAR, IN_JPAR, IN_LPAR
+    character(len=*), intent(in) :: filename, varname, caller
+    real(r8), intent(in) :: IN_XDEDG(IN_IPAR+1), IN_YDEDG(IN_JPAR+1)
+    real(r8), intent(in) :: IN_ETAA(IN_LPAR+1), IN_ETAB(IN_LPAR+1)
+    logical, intent(in) :: LREGRID
+    !// Output
+    real(rMom), intent(out) :: R4XYZ(IPAR,JPAR,LPAR)
+    
+    !// Local variables
+    integer :: status, I, J, L
+    integer, dimension(3) :: dimIDs3d, dimLen3d
+    real(rMom) :: IN_FIELD(IN_IPAR, IN_JPAR, IN_LPAR)
+
+    real(r8),dimension(IPAR,JPAR) :: R8XY
+    real(r8),dimension(IN_IPAR,IN_JPAR) :: R8XY_IN
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'getField_and_interpolate_rMom'
+    !// --------------------------------------------------------------------
+
+    !// Initialise
+    R4XYZ(:,:,:) = 0._r8
+
+    !// Variable information
+    status = nf90_inquire_variable(ncid, var_id, dimIDs=dimIDs3d)
+    if (status .ne. NF90_NOERR) call handle_error(status, &
+         f90file//':'//subr//':'//trim(filename)// &
+         ': inquire variable '//trim(varname)//' called by '//caller)
+
+    !// 1. Dimension of the variable
+    status = nf90_inquire_dimension(ncid,dimIDs3d(1),len=dimLen3d(1))
+    if (status .ne. NF90_NOERR) call handle_error(status, &
+         f90file//':'//subr//':'//trim(filename)// &
+         ': inquire dimesions 1 '//trim(varname)//' called by '//caller)
+    !// 2. Dimension of the variable
+    status = nf90_inquire_dimension(ncid,dimIDs3d(2),len=dimLen3d(2))
+    if (status .ne. NF90_NOERR) call handle_error(status, &
+         f90file//':'//subr//':'//trim(filename)// &
+         ': inquire dimesions 2 '//TRIM(varname)//' called by '//caller)
+    !// 3. Dimension of the variable
+    status = nf90_inquire_dimension(ncid,dimIDs3d(3),len=dimLen3d(3))
+    if (status .ne. NF90_NOERR) call handle_error(status, &
+         f90file//':'//subr//':'//trim(filename)// &
+         ': inquire dimesions 3 '//TRIM(varname)//' called by '//caller)
+
+    !// Check the dimensions
+    if ( (dimLen3d(1) .ne. IN_IPAR) .or. (dimLen3d(2) .ne. IN_JPAR) .or. &
+         (dimLen3d(3) .ne. IN_LPAR) ) then
+       write(6,'(a)') f90file//':'//subr//': resolution mismatch - stop'
+       write(6,'(a,3i5)') 'On file',dimLen3d
+       write(6,'(a,3i5)') 'On file',IN_IPAR, IN_JPAR, IN_LPAR
+       write(6,'(a)') 'Routine called by '//caller
+       stop
+    end if
+
+    !// Get variable
+    status = nf90_get_var(ncid, var_id, IN_FIELD)
+    if (status .ne. NF90_NOERR) call handle_error(status, &
+         f90file//':'//subr//':'//trim(filename)// &
+         ': get '//trim(varname)//' called by '//caller)
+
+
+    !// Will so far only handle files where vertical resolution is the same
+    !// as in model run.
+    if (IN_LPAR .ne. LPAR) then
+       write(6,'(a,2(1x,i3))') f90file//':'//subr// &
+            ': Vertical resolution of restart file must match! - stopping'
+       write(6,'(a,2(1x,i3))') 'restart file/IN_LPAR/LPAR: '//trim(filename),&
+            IN_LPAR, LPAR
+       write(6,'(a)') 'Routine called by '//caller
+       stop
+    end if
+
+
+
+    !// Regrid horizontally?
+    !// IMPORTANT: L-loop must be revised if vertical interpolation is
+    !//            included.
+    if (.not. LREGRID) then
+       !// No regridding
+       do L = 1, LPAR
+          do J = 1, JPAR
+             do I = 1, IPAR
+                R4XYZ(I,J,L) = IN_FIELD(I,J,L)
+             end do
+          end do
+       end do
+    else
+
+       !// Must regrid horizontally
+!$omp parallel private (L) &
+!$omp          shared (IN_XDEDG,IN_YDEDG,XDEDG,YDEDG,IN_FIELD,R8XY,R4XYZ,&
+!$omp                  R8XY_IN, IN_IPAR, IN_JPAR, IN_LPAR) &
+!$omp          default(NONE)
+!$omp do
+       do L = 1, IN_LPAR
+          !// Interpolate
+          R8XY_IN(:,:) = real(IN_FIELD(:,:,L),r8)
+          call E_GRID(R8XY_IN,IN_XDEDG,IN_YDEDG,IN_IPAR,IN_JPAR, &
+               R8XY,XDEDG,YDEDG,IPAR,JPAR,1)
+          R4XYZ(:,:,L) = real(R8XY(:,:),rMom)
+       end do
+!$omp end do
+!$omp end parallel
+
+       !// Possible future vertical regridding
+
+
+    end if
+
+    !// --------------------------------------------------------------------
+  end subroutine getField_and_interpolate_rMom
   !// ----------------------------------------------------------------------
 
 
