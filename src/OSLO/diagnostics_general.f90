@@ -3047,7 +3047,7 @@ contains
          f90file//':'//subr//': putting ihyb')
 
     !// delta-time in seconds
-    DTDIAG = real(NDAY + 1 - NDAY0, r8) * 84600._r8
+    DTDIAG = real(NDAY + 1 - NDAY0, r8) * 86400._r8
     status = nf90_put_var(ncid,time_id,DTDIAG)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': putting NRAVG')
@@ -3749,7 +3749,7 @@ contains
          f90file//':'//subr//': putting ihyb')
 
     !// delta-time in seconds
-    DTDIAG = real(NDAY + 1 - NDAY0, r8) * 84600._r8
+    DTDIAG = real(NDAY + 1 - NDAY0, r8) * 86400._r8
     status = nf90_put_var(ncid,time_id,DTDIAG)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': putting NRAVG')
