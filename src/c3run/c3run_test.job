@@ -14,7 +14,7 @@
 # ####SBATCH --partition=long
 #
 # Max memory usage (CPU < 16: 6000; CPU >= 16 3000):
-#SBATCH --mem-per-cpu=3000M
+#SBATCH --mem-per-cpu=3600M
 #
 # Number of cores:
 #SBATCH --ntasks=1
