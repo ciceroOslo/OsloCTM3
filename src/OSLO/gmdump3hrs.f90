@@ -23,13 +23,13 @@ module gmdump3hrs
   !logical, parameter :: LDUMP3HRS = .false.
   
   !// List of tracers to put out
-  integer, parameter :: trp_nr = 17, sul_nr = 2, slt_nr = 8, min_nr = 8, &
+  integer, parameter :: trp_nr = 20, sul_nr = 2, slt_nr = 8, min_nr = 8, &
        nit_nr = 5, bio_nr = 4, moa_nr=2, ffc_nr = 4, bfc_nr = 4, &
        soa_ant_nr = 4, soa_nat_nr = 17, ntr_nr = 1, mtr_nr = 9, sfc_nr = 39 !OEH
   integer, parameter,dimension(trp_nr) :: &
        !//trp_list = (/ 1, 6, 13, 43, 44 /)
        !//For HYway
-       trp_list = (/1,4,5,6,7,8,9,13,20,37,43,44,48,50,52,61,114/)
+       trp_list = (/1,4,5,6,7,8,9,13,14,20,35,37,43,44,48,50,52,61,114,193/)
   integer, parameter,dimension(mtr_nr) :: &
        mtr_list =(/280,281,282,283,284,285,286,287,288/)
   integer, parameter,dimension(sul_nr) :: &

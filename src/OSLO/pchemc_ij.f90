@@ -2170,6 +2170,10 @@ contains
              !//..benzene----------------------------------------------------
              PROD = POLLX(193)
              LOSS = k_oh_benzene * M_OH
+
+             CHEMPROD(1,193,L) = CHEMPROD(1,193,L) + PROD * DTCH
+             CHEMLOSS(1,193,L) = CHEMLOSS(1,193,L) + LOSS * M_BENZENE * DTCH
+
              call QSSA(1,'benzene',DTCH,QLIN,ST,PROD,LOSS,ZC(193,L))
              if (LOSS .gt. ZTMP) M_BENZENE = ZC(193,L)
 
@@ -2657,6 +2661,10 @@ contains
              + VDEP_L(14)
 
         if (L .eq. 1) DDDIAG(14) = DDDIAG(14) + VDEP_L(14) * M_CH3CHO * DTCH
+
+        CHEMPROD(1,14,L) = CHEMPROD(1,14,L) + PROD * DTCH
+        CHEMLOSS(1,14,L) = CHEMLOSS(1,14,L) + LOSS * M_CH3CHO * DTCH
+        CHEMLOSS(2,14,L) = CHEMLOSS(2,14,L) + VDEP_L(14) * M_CH3CHO * DTCH
 
         call QSSA(28,'CH3CHO',DTCH,QLIN,ST,PROD,LOSS,ZC(14,L))
 
