@@ -23,13 +23,13 @@ module gmdump3hrs
   !logical, parameter :: LDUMP3HRS = .false.
   
   !// List of tracers to put out
-  integer, parameter :: trp_nr = 17, sul_nr = 2, slt_nr = 8, min_nr = 8, &
+  integer, parameter :: trp_nr = 23, sul_nr = 2, slt_nr = 8, min_nr = 8, &
        nit_nr = 5, bio_nr = 4, moa_nr=2, ffc_nr = 4, bfc_nr = 4, &
        soa_ant_nr = 4, soa_nat_nr = 17, ntr_nr = 1, mtr_nr = 9, sfc_nr = 39 !OEH
   integer, parameter,dimension(trp_nr) :: &
        !//trp_list = (/ 1, 6, 13, 43, 44 /)
        !//For HYway
-       trp_list = (/1,4,5,6,7,8,9,13,20,37,43,44,48,50,52,61,114/)
+       trp_list = (/1,4,5,6,7,8,9,13,14,20,35,37,43,44,48,50,52,61,85,86,87,114,193/)
   integer, parameter,dimension(mtr_nr) :: &
        mtr_list =(/280,281,282,283,284,285,286,287,288/)
   integer, parameter,dimension(sul_nr) :: &
@@ -645,7 +645,7 @@ contains
     use cmn_precision, only: r8
     use cmn_size, only: IPAR, JPAR, LPAR
     use cmn_ctm, only:  AREAXY, XDGRD, YDGRD, ZGRD, NRMETD
-    use cmn_met, only:  ZOFLE
+    use cmn_met, only:  ZOFLE, P 
     use ncutils, only:  handle_error
     !// --------------------------------------------------------------------
     implicit none
@@ -675,6 +675,10 @@ contains
     character(len=10)       :: field_name                      !Name of field 
     integer                 :: cnt_lon_lat_lev_time(4)         !Count memory for added tracer field
     integer                 :: dim_lon_lat_lev_time(4)         !Dimension id for field
+
+    integer                 :: cnt_lon_lat_time(3)         !Count memory for added tracer field
+    integer                 :: dim_lon_lat_time(3)         !Dimension id for field
+    
     integer                 :: lat_dim_id                      !Dimension id for latitude
     integer                 :: lat_id                          !Variable id for latitude
     integer                 :: lev_dim_id                      !Dimension id for level
@@ -687,12 +691,20 @@ contains
     integer                 :: ncid                            !fileno for output netcdf file
     integer                 :: nsteps                          !Number of timesteps already in nc-file
     real(r8)                :: rtcdmp(IPAR,JPAR,LPAR)          !3D field to dump to file
+
+    real(r8)                :: rtcdmp2d(IPAR,JPAR)          !3D field to dump to file
+    
     character(len=10)       :: TCNAME_AVG(NPAR_IN)             !Tracer name in the order not following MTC
     real(r8)                :: time                            !Time steps
     integer                 :: time_dim_id                     !Dimension id for time
     integer                 :: time_id                         !Variable id for time
     integer                 :: TCINFO(NPAR_IN,2)               !Tracer info (compno,dim_id,comp_id)
+
+    integer                 :: TCINFO_SFC(2)               !Tracer info (compno,dim_id,comp_id)
     integer                 :: srt_lon_lat_lev_time(4)         !Start value for tracer
+
+    integer                 :: srt_lon_lat_time(3)         !Start value for tracer
+    
     integer                 :: srt_time(1)                     !Start value for time
     integer                 :: status                          !Status for netcdf file 0 =OK, other value = error
     integer :: I, J, L, N
@@ -715,7 +727,7 @@ contains
           stop
        end if
     END DO
-  
+    
     !// longitudes 0:360
     do i = 1, ipar
        if (XDGRD(i) .lt. 0._r8) then
@@ -764,7 +776,13 @@ contains
        dim_lon_lat_lev_time(2)=lat_dim_id
        dim_lon_lat_lev_time(3)=lev_dim_id
        dim_lon_lat_lev_time(4)=time_dim_id
-     
+
+       !// Defining the combined id for a field (lon / lev /time)
+       dim_lon_lat_time(1)=lon_dim_id
+       dim_lon_lat_time(2)=lat_dim_id
+       dim_lon_lat_time(3)=time_dim_id
+
+       
        !// Defining the lon/lat/lev-variable
        status = nf90_def_var(ncid,"lon",nf90_float,lon_dim_id,lon_id)
        if (status/=nf90_noerr) call handle_error(status,'define lon variable')
@@ -808,7 +826,24 @@ contains
           !// Put more attributes here if you want to . Ex: long_name
         
        END DO  !Loop on averageable variables
-     
+
+       !//Define 2D surface pressure
+       field_name = 'srfacepres'
+       status = nf90_def_var(ncid,field_name,nf90_float, &
+            dim_lon_lat_time, TCINFO_SFC(2))
+       if (status/=nf90_noerr) call handle_error(status,'define tracer variable')
+       !// Deflate netcdf4
+       status = nf90_def_var_deflate(ncid,TCINFO_SFC(2),nc4shuffle,1,nc4deflate)
+       
+       if (status/=nf90_noerr) call handle_error(status,'define tracer variable deflate')
+       
+       !// Add text descriptions and units
+       status = nf90_put_att(ncid,TCINFO_SFC(2),'units','hPa')        
+       if (status/=nf90_noerr) call handle_error(status,'attribute units tracer')
+       !//End define 2D surface pressure.
+       
+
+       
        !// End definition mode
        status = nf90_enddef(ncid)
        if (status/=nf90_noerr) call handle_error(status,'end defmode')
@@ -874,6 +909,13 @@ contains
           if (status/=nf90_noerr) call handle_error(status,'inq tracer varid')
        end do
 
+
+       !// ADD HERE.
+       field_name = 'srfacepres' 
+       status = nf90_inq_varid(ncid,field_name,TCINFO_SFC(2))
+       if (status/=nf90_noerr) call handle_error(status,'inq tracer varid')
+          
+
        !// Get variable id for time
        status = nf90_inq_varid(ncid,"time",time_id) 
        if (status/=nf90_noerr) call handle_error(status,'inq time varid')
@@ -932,7 +974,27 @@ contains
        if (status/=nf90_noerr) call handle_error(status,'putting tracer data')
 
     END DO
-  
+
+    !// Add the surface pressure:
+    !// For the 2D  fields:
+    !// Defining how far to count for each time a data set is added
+    !write(6,*)'setting count vecor'
+    cnt_lon_lat_time = (/IPAR , JPAR , 1/)
+    !// Defining where to start adding the new time step
+    !write(6,*)'setting start vector'
+    srt_lon_lat_time = (/1, 1, nbr_steps/)
+
+    RTCDMP2D(:,:) = P(:,:)
+    !// Put variable tracer field
+    status = nf90_put_var(ncid,  &           !File id
+         TCINFO_SFC(2), &                      !field_id for netCDF file (should match id set in def_var) 
+         RTCDMP2D,                          &  !Tracer field (REAL4)
+         start=srt_lon_lat_time,      &  !starting point for writing
+         count=cnt_lon_lat_time )        !Counts how many bytes written
+    if (status/=nf90_noerr) call handle_error(status,'putting tracer data')
+    
+
+    
     !// close netcdf file
     status = nf90_close(ncid)
     if (status/=nf90_noerr) call handle_error(status,'close file')
