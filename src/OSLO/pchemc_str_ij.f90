@@ -3013,6 +3013,7 @@ contains
         ZC_LOCAL(43,L) = M_NO
         ZC_LOCAL(44,L) = M_NO2
         ZC_LOCAL(46,L) = M_CH4
+        ZC_LOCAL(52,L) = M_CH3OH
         ZC_LOCAL(101,L) = M_MCF
         ZC_LOCAL(102,L) = M_HCFC22
         ZC_LOCAL(103,L) = M_CFC11
