@@ -6,8 +6,8 @@ emission arrays E2DS and E3DS, and may be updated more often.
 --- IMPORTANT!!! ------------------------------------------------------------
 Nothing special yet.
 --- Aircraft emission data --------------------------------------------------
-  AirScen CEDS2017 2014     #NONE/REACT4C_5a/Quantify_MA8/TradeOff_1e
-  AirEmisPath '/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/'
+  AirScen CEDS2017 2015     #NONE/REACT4C_5a/Quantify_MA8/TradeOff_1e
+  AirEmisPath '/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0521_AircraftFix/'
 --- Lightning emission data -------------------------------------------------
   1       No. of species with lightning sources; emissions in Tg/yr
   'NO'       14.0D0   5.0000D+00  0
