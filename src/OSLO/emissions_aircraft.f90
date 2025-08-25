@@ -767,8 +767,6 @@ contains
        call read_ceds_2017()
     else if (AirScen(1:11) .eq. 'CEDS2021fix') then
        call read_ceds_2021fix()
-    else if (AirScen(1:5) .eq. 'COVID') then
-       call read_covid_avi()
     else if (AirScen(1:4) .eq. 'CEDS') then
        call read_ceds_original()
     end if
