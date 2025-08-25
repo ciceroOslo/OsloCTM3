@@ -71,7 +71,7 @@ export RESTARTDIR=$RESULTDIR/restart_$PID
 
 # Set input file name
 export INPUTFILE=L60CTM_test.inp
-export EMISFILE=Ltracer_emis_GAINS_test.inp
+export EMISFILE=Ltracer_emis_GAINS_2015_Baseline.inp
 
 # Name of main program
 export PROGFILE=osloctm3

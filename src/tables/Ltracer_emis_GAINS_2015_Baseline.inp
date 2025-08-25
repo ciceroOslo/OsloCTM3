@@ -63,8 +63,6 @@ filename / description  (See detailed description below)
 
 
 
-
-
 '/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_CO_2015_CTM.nc'
   401    1.0000d+00  ZP1   99  9999  ENE   2    0    0    0   'ENE'  2015
     CO 1.d0
@@ -94,7 +92,6 @@ filename / description  (See detailed description below)
   401    1.0000d+00  ZP1   99  9999  SHI   2    0    0    0   'SHI'  2015
     CO 1.d0
     xxx 0 To close this data set
-
 
 
 
@@ -138,37 +135,46 @@ filename / description  (See detailed description below)
 
 
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_NH3_2015_CTM.nc'
-  401    1.0000d+00  ZP1   99  9999  AGR   2    0    0    0   'AGR'  2015
+
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/NH3-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_200001-201412_CICERO.nc'
+  460    1.0000d+00  HLF   99  9999  AGR   2    0    0    0   'NH3_em_anthro_AGR'  2014
     NH3 1.d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_NH3_2015_CTM.nc'
-  401    1.0000d+00  ZP1   99  9999  ENE   2    0    0    0   'ENE'  2015
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/NH3-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_200001-201412_CICERO.nc'
+  460    1.0000d+00  HLF   99  9999  ENE   2    0    0    0   'NH3_em_anthro_ENE'  2014
     NH3 1.d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_NH3_2015_CTM.nc'
-  401    1.0000d+00  ZP1   99  9999  IND   2    0    0    0   'IND'  2015
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/NH3-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_200001-201412_CICERO.nc'
+  460    1.0000d+00  HLF   99  9999  IND   2    0    0    0   'NH3_em_anthro_IND'  2014
     NH3 1.d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_NH3_2015_CTM.nc'
-  401    1.0000d+00  ZP1   99  9999  TRA   2    0    0    0   'TRA'  2015
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/NH3-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_200001-201412_CICERO.nc'
+  460    1.0000d+00  HLF   99  9999  TRA   2    0    0    0   'NH3_em_anthro_TRA'  2014
     NH3 1.d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_NH3_2015_CTM.nc'
-  401    1.0000d+00  ZP1   99  9999  RCO   2    0    0    0   'RCO'  2015
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/NH3-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_200001-201412_CICERO.nc'
+  460    1.0000d+00  HLF   99  9999  RCO   2    0    0    0   'NH3_em_anthro_RCO'  2014
     NH3 1.d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_NH3_2015_CTM.nc'
-  401    1.0000d+00  ZP1   99  9999  WAS   2    0    0    0   'WAS'  2015
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/NH3-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_200001-201412_CICERO.nc'
+  460    1.0000d+00  HLF   99  9999  SLV   2    0    0    0   'NH3_em_anthro_SOL'  2014
     NH3 1.d0
     xxx 0 To close this data set
 
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/NH3-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_200001-201412_CICERO.nc'
+  460    1.0000d+00  HLF   99  9999  WAS   2    0    0    0   'NH3_em_anthro_WAS'  2014
+    NH3 1.d0
+    xxx 0 To close this data set
 
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/NH3-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_200001-201412_CICERO.nc'
+  460    1.0000d+00  HLF   99  9999  SHI   2    0    0    0   'NH3_em_anthro_SHI'  2014
+    NH3 1.d0
+    xxx 0 To close this data set
 
 
 
@@ -949,7 +955,6 @@ filename / description  (See detailed description below)
     bcFF1fob 0.8d0
     bcFF1fil 0.2d0
     xxx 0 To close this data set
-
 
 
 
