@@ -140,7 +140,7 @@ module emissions_megan
   real(r8), dimension(IPAR,JPAR) :: WPmap
 
   !// Monthly CO2 (vmr) for isoprene
-  integer, parameter :: CO2nyears = 2018-1750
+  integer, parameter :: CO2nyears = 2026-1750
   real(r8), dimension(12,CO2nyears) :: CO2monthly
   real(r8) :: CO2thisMonth
   character(len=80) :: file_globalCO2
