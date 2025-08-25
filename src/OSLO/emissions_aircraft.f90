@@ -245,6 +245,11 @@ contains
        dft_ac = 2000._r8
        dz_ac  = dft_ac*ft2km
        actual_levels = 25
+    else if (trim(AirScen).eq.'CEDS2021fix') then
+       !// CEDS 2021 with emission fix
+       dft_ac = 2000._r8
+       dz_ac  = dft_ac*ft2km
+       actual_levels = 25 
     else if (trim(AirScen).eq.'CEDS2017') then
        !// CEDS/CMIP6 emissions
        dft_ac = 2000._r8

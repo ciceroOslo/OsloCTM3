@@ -39,7 +39,7 @@ filename / description  (See detailed description below)
   401    1.0000d+00  ZP1   99  9999  TRA   2    0    0    0   'TRA'  2015
     NO 0.62608694d0   # Convert from NO2 to NO: 30/46 * 0.96
    NO2 0.04d0         # 0.04 as NO2
-    xxx 0 To close this data set
+    xxx 0 To close this data set 
 
 '/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_NOx_2015_CTM.nc'
   401    1.0000d+00  ZP1   99  9999  RCO   2    0    0    0   'RCO'  2015
