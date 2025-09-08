@@ -38,6 +38,8 @@ module emisutils_oslo
   !//   subroutine ceds_biomass_burning
   !//   subroutine ceds_biomass_burning_novert
   !//   subroutine gfed4_rd_daily
+  !//   subroutine gfas4htap3_monthly  !MTL added 2025
+  !//   subroutine gfas4htap3_daily  !MTL added 2025
   !//   subroutine getmeganmonthly
   !//
   !// Amund Sovde Haslerud, March 2017,
@@ -4422,7 +4424,6 @@ contains
        end do
 
 
-
        !// multiply by area for interpolation, kg/m2/s --> kg/s
        do J = 1, JQRT
           R8Q(:,J) = R8Q(:,J) * QXYBOX(J)
@@ -5152,6 +5153,718 @@ contains
 
 
 
+  
+  !// ------------------------------------------------------------------
+  subroutine gfas4htap3_monthly(JMONTH,JYEAR)  
+    !// ------------------------------------------------------------------
+    !// This reads monthly emissions of GFAS4HTAP3 biomass burning.
+    !//
+    !// Input resolution is 0.1x0.1 degrees, which is first interpolated
+    !// to 0.5x0.5 degrees, then distributed according
+    !// to RETRO vertical distribution (also 0.5x0.5 degrees), before
+    !// interpolated to CTM3 resolution.
+    !//
+    !// Interpolation is PARALLELLIZED!
+    !//
+    !// 
+    !// Variables info:
+    !//   EPAR_FIR:    Max number of components in EMIS_FIR
+    !//   NEFIR:       The number of components in EMIS_FIR
+    !//   EPAR_FIR_LM: Number of layers in emission set, starting from surface.
+    !//   ECOMP_FIR:   Transport numbers of the components in EMIS_FIR
+    !//   EMIS_FIR:    Size (LPAR,EPAR_FIR,IDBLK,JDBLK,MPBLK)
+    !//
+    !// Amund Sovde Haslerud, January 2017
+    !// ------------------------------------------------------------------
+     use cmn_size, only: IPAR, JPAR, LPAR, LPARW, NPAR, MPBLK
+    use cmn_ctm, only: LMMAP, XDEDG, YDEDG, MPBLKJB, MPBLKJE, MPBLKIB, MPBLKIE
+    use cmn_chem, only: TNAME
+    use cmn_met, only: MYEAR
+    use cmn_parameters, only: A0, CPI180
+    use regridding, only: E_GRID
+    use cmn_oslo, only: EPAR_FIR, NEFIR, EPAR_FIR_LM, ECOMP_FIR, EMIS_FIR, &
+         FF_PATH, FF_YEAR, METHANEMIS, &
+         FF_CNAMES, FF_BNAMES, FF_VARNAME, FF_SCALE
+    use ncutils, only: get_netcdf_var_1d, readnc_2d_from3d
+    use, intrinsic :: ieee_arithmetic
+    !// ------------------------------------------------------------------
+    implicit none
+    !// ------------------------------------------------------------------
+    !// Input
+    integer, intent(in) :: JMONTH, JYEAR
+
+    !// Locals
+    integer :: I,J,L,N_EMIS,II,JJ,MP,y,leapdays !MTL 
+
+    !// Dimensions
+    integer, parameter :: IRES=360 ,JRES=180, IHLF=720, JHLF=360, LHLF=13
+    integer, parameter :: IQRT=3600, JQRT=1800 !MTL 
+    !// XY grid
+    real(r8)   :: HXBEDGE(IHLF+1), HYBEDGE(JHLF+1),HXYBOX(JHLF)
+    real(r8)   :: QXBEDGE(IQRT+1), QYBEDGE(JQRT+1),QXYBOX(JQRT)
+
+    real(r8) :: BBH_FIR(IHLF,JHLF,EPAR_FIR_LM), HLFDUM(IHLF,JHLF)
+    real(r8) :: R8Q(IQRT,JQRT), RDUM2(IQRT,JQRT)
+
+    !// Interpolated array
+    real(r8)  :: RXY8(IPAR,JPAR,EPAR_FIR_LM)
+
+    !// File variables
+    logical :: ex
+    integer :: nLon, nLat, nTime, sTime
+    character(len=200) :: INFILE
+    character(len=13) :: infile_daterange
+    integer :: NTRNR, getY, startY
+    real(r8) :: EDATA(IHLF,JHLF,EPAR_FIR), tscale, mmday, sumA, sumB
+
+    real(r8),dimension(12) :: daymonth = (/0.0_r8, 31.0_r8, 59.0_r8, 90.0_r8, 120.0_r8, 151.0_r8, 181.0_r8, 212.0_r8, 243.0_r8, 273.0_r8, 304.0_r8, 334.0_r8 /)
+
+    real(r8), allocatable, dimension(:) :: inLon, inLat, inTime
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'ceds_biomass_burning'
+    !// ------------------------------------------------------------------
+
+    write(6,'(a)') f90file//':'//subr//': Biomass burning (CEDS)'
+
+    !// Initialize emissions
+    EMIS_FIR(:,:,:,:,:) = 0._r8
+
+    !// ------------------------------------------------------------------
+
+    !// Largely follow GFED4 read-in.
+
+    !// Year to read
+    if (FF_YEAR .ne. 9999) then
+       getY = FF_YEAR
+    else
+       getY = MYEAR !// Use meteorological year
+    end if
+    
+
+    !// Open file and read the data...
+      
+    !// Read file resolution
+    infile = trim(FF_PATH)//trim(FF_BNAMES(1))//'_monthly.nc'
+
+
+    !// Check resolution (latitude/longitude/time)
+    !// This routine allocates inLon/inLat/inTime
+    call get_netcdf_var_1d( infile, 'longitude',  inLon  )
+    call get_netcdf_var_1d( infile, 'latitude',  inLat  )
+    call get_netcdf_var_1d( infile, 'time', inTime )
+
+    nLon  = SIZE( inLon  )
+    nLat  = SIZE( inLat  )
+    nTime = SIZE( inTime )
+
+    if (nLon .ne. IQRT .or. nLat .ne. JQRT) then
+       write(6,'(a,2i5)') f90file//':'//subr//': Wrong lon/lat size',nLon,nLat
+       write(6,'(a,2i5)') '  Should be:',IQRT,JQRT
+       stop
+    end if
+    
+    !// Find timestep to read
+    startY = 2003
+    write(6,'(a,i5)') '  month to fetch: ', JMONTH 
+    write(6,'(a,2i5)') '  year to fetch, start year on file:', getY, startY
+
+    !// GFAS includes leap year
+    leapdays = 0
+    do y = startY+1, getY
+        if (mod(y, 4) == 0 .and. (mod(y, 100) /= 0 .or. mod(y, 400) == 0)) then
+            leapdays = leapdays + 1
+        end if
+    end do    
+    
+    mmday = daymonth(JMONTH) + real(getY - startY, r8) * 365._r8 + real(leapdays,r8)  
+    sTime = -1
+    do I = 1, nTime
+       if (inTime(I) .eq. mmday) then
+          sTime = I
+          exit
+       end if
+    end do
+
+    if (sTime .eq. -1) then 
+       write(6,'(a)') f90file//':'//subr//': Wrong inTime index'
+       stop
+    else 
+       write(6,'(a,i5,f12.3)') &
+            '  Month index (sTime) and time (inTime(sTime)):',sTime,inTime(sTime)
+    end if
+
+    deallocate( inLon, inLat, inTime )
+  
+    !// Set up grid (start 0E,90S, all input data will be flipped to that.)
+    call get_xyedges(nLon,nLat,QXBEDGE,QYBEDGE,1)
+
+    !// QRT Grid box areas
+    do J = 1, JQRT
+       QXYBOX(J) =  A0*A0 * CPI180 * (QXBEDGE(2) - QXBEDGE(1)) &
+            * (sin(CPI180*QYBEDGE(J+1)) - sin(CPI180*QYBEDGE(J)))
+    end do
+
+
+    !// Set up halfdegrees grid (start 0E,90S, all input data will be flipped to that.)
+    call get_xyedges(IHLF,JHLF,HXBEDGE,HYBEDGE,1)
+
+    !// HLF Grid box areas
+    do J = 1, JHLF
+       HXYBOX(J) =  A0*A0 * CPI180*(HXBEDGE(2) - HXBEDGE(1)) &
+            * (sin(CPI180*HYBEDGE(J+1)) - sin(CPI180*HYBEDGE(J)))
+    end do
+
+
+    !// Get vertical distribution
+    !// ------------------------------------------------------------------
+    INFILE = trim(FF_PATH)//'bb_altitudes_aggregated.0.5x0.5.nc'
+    write(6,'(a)') '  Reading BBH '//trim(INFILE)
+
+    !// Read the BBH data
+    call read_retrobbh(INFILE,IHLF,JHLF,EPAR_FIR_LM,BBH_FIR,LPARW,LMMAP)
+
+
+    !// Collect emissions of specified partitionings, for each of
+    !// the emitted components.
+    !// ------------------------------------------------------------------
+
+    !// Initialize 3D HLF array (which will be interpolated later)
+    EDATA(:,:,:) = 0._r8
+
+    do N_EMIS = 1, NEFIR
+
+       !// Skip component if not included
+       if (ECOMP_FIR(N_EMIS) .le. 0) cycle
+
+       !// Skip if scaling factor is zero
+       if (FF_SCALE(N_EMIS) .eq. 0._r8) cycle
+
+       !// File name, version 1-2
+       infile = trim(FF_PATH)//trim(FF_BNAMES(N_EMIS))//'_monthly.nc'
+
+       inquire(file=infile,exist=ex)
+       if (.not. ex) then
+          write(6,'(a)') f90file//':'//subr//': no such file: '//trim(infile)
+          stop
+       end if
+
+       write(6,'(a)') '  Reading '//trim(FF_VARNAME(N_EMIS))//' from '//trim(INFILE)
+
+       call readnc_2d_from3d(INFILE, 'longitude', nlon, 'latitude', nlat,'time', &
+            sTime, FF_VARNAME(N_EMIS), R8Q)  
+
+       !// Check for and remove missing values
+       do J = 1, JQRT
+          do I = 1, IQRT
+             if (ieee_is_nan(R8Q(I,J))) R8Q(I,J) = 0._r8
+             !if (R8Q(I,J) .ge. 1.e+20_r8) then   
+             !   R8Q(I,J) = 0._r8
+             !end if
+          end do
+       end do
+
+       RDUM2(:,:) = 0._r8
+       !// Flip so field starts at (0E,90S - GFAS data already has longitudinal orientation is 0 --> 360)
+       do J = 1, JQRT
+          RDUM2(:,J) = R8Q(:,JQRT+1-J)
+       end do
+       !do I = 1, IQRT/2
+       !   R8Q(IQRT/2+I,:) = RDUM2(I,:)
+       !end do
+       !do I = (IQRT/2)+1, IQRT
+       !   R8Q(I-IQRT/2,:) = RDUM2(I,:)         
+       !end do
+       R8Q(:,:) = 0._r8
+       R8Q(:,:) = RDUM2(:,:)
+
+
+       !// multiply by area for interpolation, kg/m2/s --> kg/s
+       do J = 1, JQRT
+          R8Q(:,J) = R8Q(:,J) * QXYBOX(J)  !Check dataset 
+       end do
+
+
+       HLFDUM(:,:) = 0._r8
+       !// From 0.1 to 0.5 degree
+       call E_GRID(R8Q,QXBEDGE,QYBEDGE,IQRT,JQRT, HLFDUM, &
+                 HXBEDGE,HYBEDGE,IHLF,JHLF,1)
+
+       sumB = sum(R8Q)
+       sumA = sum(HLFDUM)
+       if (abs(sumB-sumA)/sumB .gt. 1.e-5_r8) then
+          write(6,'(a,es20.12,es20.12)') f90file//':'//subr// &
+               ':  Wrong sum before/after interp. ', sumB, sumA
+          stop
+       end if
+
+       EDATA(:,:,N_EMIS) = HLFDUM(:,:)
+
+    end do !// do N_EMIS = 1, NEFIR
+
+    !// Distribute vertically and interpolate to model resolution
+    !// ------------------------------------------------------------------
+    do N_EMIS = 1, NEFIR
+
+      !// If component is not included, go to next N_EMIS
+      if (ECOMP_FIR(N_EMIS) .le. 0) cycle
+
+      NTRNR = ECOMP_FIR(N_EMIS)
+
+       !// Distribute with height
+!$omp parallel private (L,I,J,HLFDUM) &
+!$omp          shared (EDATA,BBH_FIR,RXY8,LMMAP,HXBEDGE,HYBEDGE, &
+!$omp                  XDEDG,YDEDG,N_EMIS) &
+!$omp          default(NONE)
+!$omp do
+      do L = 1, EPAR_FIR_LM
+         HLFDUM(:,:) = EDATA(:,:,N_EMIS)
+         !// Seems BBH_FIR may be zero for some EDATA. If so, we put
+         !// emissions at the surface.
+         if (maxval(HLFDUM) .gt. 0._r8) then
+            HLFDUM(:,:) = HLFDUM(:,:) * BBH_FIR(:,:,LMMAP(L))
+            if (L .eq. 1) then
+               do J = 1, JHLF
+                  do I = 1, IHLF
+                     if (sum(BBH_FIR(I,J,:)) .eq. 0._r8) &
+                           HLFDUM(I,J) = EDATA(I,J,N_EMIS)
+                  end do
+               end do
+            end if
+            !// No need to check the other levels. Sum of BBH_FIR in vertical
+            !// is always 0 or 1.
+
+            !// Interpolate
+            call E_GRID(HLFDUM,HXBEDGE,HYBEDGE,IHLF,JHLF, RXY8(:,:,L), &
+                 XDEDG,YDEDG,IPAR,JPAR,1)
+
+         else
+            RXY8(:,:,L) = 0._r8
+         end if
+      end do !// do L = 1, EPAR_FIR_LM
+!$omp end do
+!$omp end parallel
+
+
+
+      !// Put into EMIS_FIR and scale it
+!$omp parallel private (MP,I,J,L,II,JJ) &
+!$omp         shared (RXY8,EMIS_FIR,MPBLKJB,MPBLKJE,MPBLKIB,MPBLKIE,N_EMIS,FF_SCALE) &
+!$omp         default(NONE)
+!$omp do
+      do MP = 1, MPBLK
+        !// Loop over latitude (J is global, JJ is block)
+        do J = MPBLKJB(MP), MPBLKJE(MP)
+          JJ    = J - MPBLKJB(MP) + 1
+
+          !// Loop over longitude (I is global, II is block)
+          do I = MPBLKIB(MP), MPBLKIE(MP)
+            II    = I - MPBLKIB(MP) + 1
+
+            do L = 1, EPAR_FIR_LM
+               EMIS_FIR(L,N_EMIS,II,JJ,MP) = RXY8(I,J,L) * FF_SCALE(N_EMIS)
+            end do
+          end do
+        end do
+      end do
+
+!$omp end do
+!$omp end parallel
+      tscale = 0._r8
+      do MP = 1, MPBLK
+        do J = MPBLKJB(MP), MPBLKJE(MP)
+          JJ    = J - MPBLKJB(MP) + 1
+          do I = MPBLKIB(MP), MPBLKIE(MP)
+            II    = I - MPBLKIB(MP) + 1
+            do L = 1, EPAR_FIR_LM
+               tscale = tscale + EMIS_FIR(L,N_EMIS,II,JJ,MP)
+            end do
+          end do
+        end do
+      end do
+      write(6,'(a,a10,1x,i3,es12.5,a)') ' * Total FF ',FF_CNAMES(N_emis),NTRNR,&
+           tscale*2628000.e-9_r8,' Tg/mon'
+
+    end do !// do do N_EMIS = 1, NEFIR
+
+    write(6,'(a)') f90file//':'//subr//': Forest fires emissions are updated'
+
+
+    !// ------------------------------------------------------------------
+  end subroutine gfas4htap3_monthly
+  !// ----------------------------------------------------------------------
+
+  
+
+
+  !// ------------------------------------------------------------------
+  subroutine gfas4htap3_daily(JDATE,JMONTH,JYEAR)  !MTL
+    !// ------------------------------------------------------------------
+    !// This reads daily emissions of GFAS4HTAP3 biomass burning.
+    !//
+    !// Input resolution is 0.1x0.1 degrees, which is first interpolated
+    !// to 0.5x0.5 degrees, then distributed according
+    !// to RETRO vertical distribution (also 0.5x0.5 degrees), before
+    !// interpolated to CTM3 resolution.
+    !//
+    !// Interpolation is PARALLELLIZED!
+    !//
+    !// 
+    !// Variables info:
+    !//   EPAR_FIR:    Max number of components in EMIS_FIR
+    !//   NEFIR:       The number of components in EMIS_FIR
+    !//   EPAR_FIR_LM: Number of layers in emission set, starting from surface.
+    !//   ECOMP_FIR:   Transport numbers of the components in EMIS_FIR
+    !//   EMIS_FIR:    Size (LPAR,EPAR_FIR,IDBLK,JDBLK,MPBLK)
+    !//
+    !// Amund Sovde Haslerud, January 2017
+    !// ------------------------------------------------------------------
+     use cmn_size, only: IPAR, JPAR, LPAR, LPARW, NPAR, MPBLK
+    use cmn_ctm, only: LMMAP, XDEDG, YDEDG, MPBLKJB, MPBLKJE, MPBLKIB, MPBLKIE
+    use cmn_chem, only: TNAME
+    use cmn_met, only: MYEAR
+    use cmn_parameters, only: A0, CPI180
+    use regridding, only: E_GRID
+    use cmn_oslo, only: EPAR_FIR, NEFIR, EPAR_FIR_LM, ECOMP_FIR, EMIS_FIR, &
+         FF_PATH, FF_YEAR, METHANEMIS, &
+         FF_CNAMES, FF_BNAMES, FF_VARNAME, FF_SCALE
+    use ncutils, only: get_netcdf_var_1d, readnc_2d_from3d
+    use, intrinsic :: ieee_arithmetic
+    !// ------------------------------------------------------------------
+    implicit none
+    !// ------------------------------------------------------------------
+    !// Input
+    integer, intent(in) :: JDATE, JMONTH, JYEAR  !MTL
+
+    !// Locals
+    integer :: I,J,L,N_EMIS,II,JJ,MP,y,m !MTL
+    integer :: totaldays
+    logical :: is_leap
+    
+    !// Dimensions
+    integer, parameter :: IRES=360 ,JRES=180, IHLF=720, JHLF=360, LHLF=13
+    integer, parameter :: IQRT=3600, JQRT=1800 !MTL 
+    !// XY grid
+    real(r8)   :: HXBEDGE(IHLF+1), HYBEDGE(JHLF+1),HXYBOX(JHLF)
+    real(r8)   :: QXBEDGE(IQRT+1), QYBEDGE(JQRT+1),QXYBOX(JQRT)
+
+    real(r8) :: BBH_FIR(IHLF,JHLF,EPAR_FIR_LM), HLFDUM(IHLF,JHLF)
+    real(r8) :: R8Q(IQRT,JQRT), RDUM2(IQRT,JQRT)
+
+    !// Interpolated array
+    real(r8)  :: RXY8(IPAR,JPAR,EPAR_FIR_LM)
+
+    !// File variables
+    logical :: ex
+    integer :: nLon, nLat, nTime, sTime
+    character(len=200) :: INFILE
+    character(len=13) :: infile_daterange
+    integer :: NTRNR, getY, startY
+    real(r8) :: EDATA(IHLF,JHLF,EPAR_FIR), tscale, mmday, sumA, sumB
+
+    real(r8),dimension(12) :: daymonth = (/31.0_r8, 28.0_r8, 31.0_r8, 30.0_r8, 31.0_r8, 30.0_r8, 31.0_r8, 31.0_r8, 30.0_r8, 31.0_r8, 30.0_r8, 31.0_r8 /)
+
+    real(r8), allocatable, dimension(:) :: inLon, inLat, inTime
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'ceds_biomass_burning'
+    !// ------------------------------------------------------------------
+
+    write(6,'(a)') f90file//':'//subr//': Biomass burning (CEDS)'
+
+    !// Initialize emissions
+    EMIS_FIR(:,:,:,:,:) = 0._r8
+
+    !// ------------------------------------------------------------------
+
+    !// Largely follow GFED4 read-in.
+
+    !// Year to read
+    if (FF_YEAR .ne. 9999) then
+       getY = FF_YEAR
+    else
+       getY = MYEAR !// Use meteorological year
+    end if
+
+
+    !// Open file and read the data...
+    
+    !// Read file resolution
+    infile = trim(FF_PATH)//trim(FF_BNAMES(1))//'_daily.nc'
+
+
+    !// Check resolution (latitude/longitude/time)
+    !// This routine allocates inLon/inLat/inTime
+    call get_netcdf_var_1d( infile, 'longitude',  inLon  )
+    call get_netcdf_var_1d( infile, 'latitude',  inLat  )
+    call get_netcdf_var_1d( infile, 'time', inTime )
+
+    nLon  = SIZE( inLon  )
+    nLat  = SIZE( inLat  )
+    nTime = SIZE( inTime )
+
+    if (nLon .ne. IQRT .or. nLat .ne. JQRT) then
+       write(6,'(a,2i5)') f90file//':'//subr//': Wrong lon/lat size',nLon,nLat
+       write(6,'(a,2i5)') '  Should be:',IQRT,JQRT
+       stop
+    end if
+    
+
+    !// Find timestep to read
+    startY = 2003
+    write(6,'(a,i5)') '  month to fetch: ', JDATE
+    write(6,'(a,i5)') '  month to fetch: ', JMONTH 
+    write(6,'(a,2i5)') '  year to fetch, start year on file:', getY, startY
+
+    !Add days for full prior years
+    totaldays = 0
+    do y = startY,gety-1
+       if (is_leap_year(y)) then
+          totaldays = totaldays + 366
+       else
+          totaldays = totaldays + 365
+       end if
+    end do
+
+    !// Add days for full prior months in the current year
+    !// GFAS includes leap year 
+    do m = 1, JMONTH-1
+       if (m == 2 .and. is_leap_year(getY)) then
+          totaldays = totaldays + 29
+       else
+          totaldays = totaldays + int(daymonth(m))
+       end if
+    end do
+
+    !Add days in current month 
+    totaldays = totaldays + JDATE - 1
+   
+    mmday = totaldays
+    
+    sTime = -1
+    do I = 1, nTime
+       if (inTime(I) .eq. mmday) then
+          sTime = I
+          exit
+       end if
+    end do
+
+    if (sTime .eq. -1) then 
+       write(6,'(a)') f90file//':'//subr//': Wrong inTime index'
+       stop
+    else 
+       write(6,'(a,i5,f12.3)') &
+            '  Month index (sTime) and time (inTime(sTime)):',sTime,inTime(sTime)
+    end if
+
+    deallocate( inLon, inLat, inTime )
+  
+    !// Set up grid (start 0E,90S, all input data will be flipped to that.)
+    call get_xyedges(nLon,nLat,QXBEDGE,QYBEDGE,1)
+
+    !// QRT Grid box areas
+    do J = 1, JQRT
+       QXYBOX(J) =  A0*A0 * CPI180 * (QXBEDGE(2) - QXBEDGE(1)) &
+            * (sin(CPI180*QYBEDGE(J+1)) - sin(CPI180*QYBEDGE(J)))
+    end do
+
+
+    !// Set up halfdegrees grid (start 0E,90S, all input data will be flipped to that.)
+    call get_xyedges(IHLF,JHLF,HXBEDGE,HYBEDGE,1)
+
+    !// HLF Grid box areas
+    do J = 1, JHLF
+       HXYBOX(J) =  A0*A0 * CPI180*(HXBEDGE(2) - HXBEDGE(1)) &
+            * (sin(CPI180*HYBEDGE(J+1)) - sin(CPI180*HYBEDGE(J)))
+    end do
+
+
+    !// Get vertical distribution
+    !// ------------------------------------------------------------------
+    INFILE = trim(FF_PATH)//'bb_altitudes_aggregated.0.5x0.5.nc'
+    write(6,'(a)') '  Reading BBH '//trim(INFILE)
+
+    !// Read the BBH data
+    call read_retrobbh(INFILE,IHLF,JHLF,EPAR_FIR_LM,BBH_FIR,LPARW,LMMAP)
+
+
+    !// Collect emissions of specified partitionings, for each of
+    !// the emitted components.
+    !// ------------------------------------------------------------------
+
+    !// Initialize 3D HLF array (which will be interpolated later)
+    EDATA(:,:,:) = 0._r8
+
+    do N_EMIS = 1, NEFIR
+
+       !// Skip component if not included
+       if (ECOMP_FIR(N_EMIS) .le. 0) cycle
+
+       !// Skip if scaling factor is zero
+       if (FF_SCALE(N_EMIS) .eq. 0._r8) cycle
+
+       !// File name, version 1-2
+       infile = trim(FF_PATH)//trim(FF_BNAMES(N_EMIS))//'_daily.nc'
+
+       inquire(file=infile,exist=ex)
+       if (.not. ex) then
+          write(6,'(a)') f90file//':'//subr//': no such file: '//trim(infile)
+          stop
+       end if
+
+       write(6,'(a)') '  Reading '//trim(FF_VARNAME(N_EMIS))//' from '//trim(INFILE)
+
+       call readnc_2d_from3d(INFILE, 'longitude', nlon, 'latitude', nlat,'time', &
+            sTime, FF_VARNAME(N_EMIS), R8Q)  
+
+       !// Check for and remove missing values
+       do J = 1, JQRT
+          do I = 1, IQRT
+             if (ieee_is_nan(R8Q(I,J))) R8Q(I,J) = 0._r8
+             !if (R8Q(I,J) .ge. 1.e+20_r8) then  
+             !   R8Q(I,J) = 0._r8
+             !end if
+          end do
+       end do
+
+       RDUM2(:,:) = 0._r8
+       !// Flip so field starts at (0E,90S - GFAS data already has longitudinal orientation is 0 --> 360)
+       do J = 1, JQRT
+          RDUM2(:,J) = R8Q(:,JQRT+1-J)
+       end do
+       !do I = 1, IQRT/2
+       !   R8Q(IQRT/2+I,:) = RDUM2(I,:)
+       !end do
+       !do I = (IQRT/2)+1, IQRT
+       !   R8Q(I-IQRT/2,:) = RDUM2(I,:)         
+       !end do
+       R8Q(:,:) = 0._r8
+       R8Q(:,:) = RDUM2(:,:)
+
+
+       !// multiply by area for interpolation, kg/m2/s --> kg/s
+       do J = 1, JQRT
+          R8Q(:,J) = R8Q(:,J) * QXYBOX(J)  !Check dataset 
+       end do
+
+
+       HLFDUM(:,:) = 0._r8
+       !// From 0.1 to 0.5 degree
+       call E_GRID(R8Q,QXBEDGE,QYBEDGE,IQRT,JQRT, HLFDUM, &
+                 HXBEDGE,HYBEDGE,IHLF,JHLF,1)
+
+       sumB = sum(R8Q)
+       sumA = sum(HLFDUM)
+       if (abs(sumB-sumA)/sumB .gt. 1.e-5_r8) then
+          write(6,'(a,es20.12,es20.12)') f90file//':'//subr// &
+               ':  Wrong sum before/after interp. ', sumB, sumA
+          stop
+       end if
+
+       EDATA(:,:,N_EMIS) = HLFDUM(:,:)
+
+    end do !// do N_EMIS = 1, NEFIR
+
+    !// Distribute vertically and interpolate to model resolution
+    !// ------------------------------------------------------------------
+    do N_EMIS = 1, NEFIR
+
+      !// If component is not included, go to next N_EMIS
+      if (ECOMP_FIR(N_EMIS) .le. 0) cycle
+
+      NTRNR = ECOMP_FIR(N_EMIS)
+
+       !// Distribute with height
+!$omp parallel private (L,I,J,HLFDUM) &
+!$omp          shared (EDATA,BBH_FIR,RXY8,LMMAP,HXBEDGE,HYBEDGE, &
+!$omp                  XDEDG,YDEDG,N_EMIS) &
+!$omp          default(NONE)
+!$omp do
+      do L = 1, EPAR_FIR_LM
+         HLFDUM(:,:) = EDATA(:,:,N_EMIS)
+         !// Seems BBH_FIR may be zero for some EDATA. If so, we put
+         !// emissions at the surface.
+         if (maxval(HLFDUM) .gt. 0._r8) then
+            HLFDUM(:,:) = HLFDUM(:,:) * BBH_FIR(:,:,LMMAP(L))
+            if (L .eq. 1) then
+               do J = 1, JHLF
+                  do I = 1, IHLF
+                     if (sum(BBH_FIR(I,J,:)) .eq. 0._r8) &
+                           HLFDUM(I,J) = EDATA(I,J,N_EMIS)
+                  end do
+               end do
+            end if
+            !// No need to check the other levels. Sum of BBH_FIR in vertical
+            !// is always 0 or 1.
+
+            !// Interpolate
+            call E_GRID(HLFDUM,HXBEDGE,HYBEDGE,IHLF,JHLF, RXY8(:,:,L), &
+                 XDEDG,YDEDG,IPAR,JPAR,1)
+
+         else
+            RXY8(:,:,L) = 0._r8
+         end if
+      end do !// do L = 1, EPAR_FIR_LM
+!$omp end do
+!$omp end parallel
+
+
+
+      !// Put into EMIS_FIR and scale it
+!$omp parallel private (MP,I,J,L,II,JJ) &
+!$omp         shared (RXY8,EMIS_FIR,MPBLKJB,MPBLKJE,MPBLKIB,MPBLKIE,N_EMIS,FF_SCALE) &
+!$omp         default(NONE)
+!$omp do
+      do MP = 1, MPBLK
+        !// Loop over latitude (J is global, JJ is block)
+        do J = MPBLKJB(MP), MPBLKJE(MP)
+          JJ    = J - MPBLKJB(MP) + 1
+
+          !// Loop over longitude (I is global, II is block)
+          do I = MPBLKIB(MP), MPBLKIE(MP)
+            II    = I - MPBLKIB(MP) + 1
+
+            do L = 1, EPAR_FIR_LM
+               EMIS_FIR(L,N_EMIS,II,JJ,MP) = RXY8(I,J,L) * FF_SCALE(N_EMIS)
+            end do
+          end do
+        end do
+      end do
+
+!$omp end do
+!$omp end parallel
+      tscale = 0._r8
+      do MP = 1, MPBLK
+        do J = MPBLKJB(MP), MPBLKJE(MP)
+          JJ    = J - MPBLKJB(MP) + 1
+          do I = MPBLKIB(MP), MPBLKIE(MP)
+            II    = I - MPBLKIB(MP) + 1
+            do L = 1, EPAR_FIR_LM
+               tscale = tscale + EMIS_FIR(L,N_EMIS,II,JJ,MP)
+            end do
+          end do
+        end do
+      end do
+      write(6,'(a,a10,1x,i3,es12.5,a)') ' * Total FF ',FF_CNAMES(N_emis),NTRNR,&
+           tscale*2628000.e-9_r8,' Tg/mon'
+
+    end do !// do do N_EMIS = 1, NEFIR
+
+    write(6,'(a)') f90file//':'//subr//': Forest fires emissions are updated'
+
+    
+  contains
+    
+    logical function is_leap_year(y)
+      integer, intent(in) :: y
+      is_leap_year = (mod(y,4) == 0 .and. (mod(y,100) /= 0 .or. mod(y,400) == 0))
+    end function is_leap_year
+      
+    !// ------------------------------------------------------------------
+  end subroutine gfas4htap3_daily
+  !// ----------------------------------------------------------------------
+
+  
+
+  
   !// ----------------------------------------------------------------------
   subroutine getmeganmonthly(INFILE,INVAR,R8XY,IRES,JRES,MRES,NSETS,&
        XBEDGE,YBEDGE)
