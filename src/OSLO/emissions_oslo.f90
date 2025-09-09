@@ -762,6 +762,62 @@ contains
           write(6,'(a,i5)') f90file//':'//subr// &
                ': Number of emitted species (NEFIR): ',NEFIR
 
+       else if (ETAG .eq. 575 .or. ETAG .eq. 576) then   !MTL
+          !// GFAS
+          if (ETAG .eq. 575) then
+             FF_TYPE = 10  !//GFAS monthly
+          else
+             FF_TYPE = 11 !//GFAS daily
+          end if
+
+          !// Year to read (9999 will use meteorological year)
+          FF_YEAR = EYEAR
+
+          !// Read info line
+          read(ifnr,*) ELINE
+
+          !// Read all that components that should be read
+          NEFIR = 0 !// Counter
+          do N = 1, EPAR_FIR
+             read(ifnr,*) ENAME, BNAME, EVAR, EFACT
+
+             if (trim(ENAME) .ne. '---') then
+                !// Find transport number
+                do NTR = 1, NPAR
+                   if (trim(ENAME) .eq. trim(TNAME(NTR))) exit
+                end do
+             else
+                exit !// Done reading
+             end if
+
+             if (NTR .gt. NPAR) then
+                !// Wrong species in emission list
+                write(6,'(a)') '* '//trim(ENAME)//' not included - skipping'
+             else if (NTR .gt. 0) then
+                NEFIR = NEFIR + 1
+                if (NEFIR .gt. EPAR_FIR) then
+                   write(6,'(a,2i5)') f90file//':'//subr// &
+                        ': GFAS: Number of species > EPAR_FIR',NEFIR,EPAR_FIR
+                   stop
+                end if
+
+                !// Save transport numbers
+                ECOMP_FIR(NEFIR) = NTR
+
+                FF_CNAMES(NEFIR) = ENAME
+                FF_BNAMES(NEFIR) = BNAME ! change to FF_PREFIX
+                FF_VARNAME(NEFIR) = EVAR
+                FF_SCALE(NEFIR) = EFACT
+                write(6,'(a10,a20,a20,f7.4)') &
+                     FF_CNAMES(NEFIR), FF_BNAMES(NEFIR), &
+                     FF_VARNAME(NEFIR), FF_SCALE(NEFIR)
+
+             end if
+
+          end do !// do N = 1, EPAR_FIR
+          write(6,'(a,i5)') f90file//':'//subr// &
+               ': Number of emitted species (NEFIR): ',NEFIR
+          
        end if
     end if !// if (trim(EFILE) .ne. 'endFF') then
 
@@ -787,6 +843,7 @@ contains
     use cmn_ctm, only: JDAY, JMON, JDATE, JYEAR
     use emisutils_oslo, only: gfed4_rd, gfed4_rd_daily, ceds_biomass_burning, &
          gfed4_rd_novert, gfed4_rd_novert_daily, &
+         gfas4htap3_monthly, gfas4htap3_daily, & !MTL 
          emis_setscaling_2dfields, ceds_biomass_burning_novert
     use cmn_oslo, only: FF_TYPE
     use emissions_aircraft, only: aircraft_emis_master
@@ -835,6 +892,13 @@ contains
        !// GFEDv4, daily, no vertical scaling in read-in, use BLH Z for that.
        if (NOPS .eq. 1 .and. NMET .eq. 1) &
             call gfed4_rd_novert_daily(JDATE,JMON,JYEAR)
+    else if (FF_TYPE .eq. 10) then
+       !// GFAS
+       if (LNEWM) call gfas4htap3_monthly(JMON,JYEAR)  !MTL
+    else if (FF_TYPE .eq. 11) then
+       !// GFAS
+       if (NOPS .eq. 1 .and. NMET .eq. 1) &
+            call gfas4htap3_daily(JDATE,JMON,JYEAR)
     else if (FF_TYPE .ne. 0) then
        write(6,'(a,i2,a)') f90file//':'//subr//': FF_TYPE = ',FF_TYPE,&
             ' is not valid:'
