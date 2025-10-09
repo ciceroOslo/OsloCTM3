@@ -920,37 +920,37 @@ filename / description  (See detailed description below)
 
 
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_fossil.nc'
   401    1.d0  ZP1   99  9999  ENE   2    0    0    0   'ENE'  2040
     bcFF1fob 0.8d0
     bcFF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_fossil.nc'
   401    1.d0  ZP1   99  9999  IND   2    0    0    0   'IND'  2040
     bcFF1fob 0.8d0
     bcFF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_fossil.nc'
   401    1.d0  ZP1   99  9999  TRA   2    0    0    0   'TRA'  2040
     bcFF1fob 0.8d0
     bcFF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_fossil.nc'
   401    1.d0  ZP1   99  9999  RCO   2    0    0    0   'RCO'  2040
     bcFF1fob 0.8d0
     bcFF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_fossil.nc'
   401    1.d0  ZP1   99  9999  WAS   2    0    0    0   'WAS'  2040
     bcFF1fob 0.8d0
     bcFF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_fossil.nc'
   401    1.d0  ZP1   99  9999  SHI   2    0    0    0   'SHI'  2040
     bcFF1fob 0.8d0
     bcFF1fil 0.2d0
@@ -962,50 +962,38 @@ filename / description  (See detailed description below)
 
 
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/BC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460    1.d0  HLF   99  9999  AGR   2    0    0    0   'BC_em_SOLID_BIOFUEL_anthro_AGR'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  ENE   2    0    0    0   'ENE'  2040
     bcBF1fob 0.8d0
     bcBF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/BC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460    1.d0  HLF   99  9999  ENE   2    0    0    0   'BC_em_SOLID_BIOFUEL_anthro_ENE'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  IND   2    0    0    0   'IND'  2040
     bcBF1fob 0.8d0
     bcBF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/BC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460    1.d0  HLF   99  9999  IND   2    0    0    0   'BC_em_SOLID_BIOFUEL_anthro_IND'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  TRA   2    0    0    0   'TRA'  2040
     bcBF1fob 0.8d0
     bcBF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/BC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460    1.d0  HLF   99  9999  TRA   2    0    0    0   'BC_em_SOLID_BIOFUEL_anthro_TRA'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  RCO   2    0    0    0   'RCO'  2040
     bcBF1fob 0.8d0
     bcBF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/BC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460    1.d0  HLF   99  9999  RCO   2    0    0    0   'BC_em_SOLID_BIOFUEL_anthro_RCO'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  WAS   2    0    0    0   'WAS'  2040
     bcBF1fob 0.8d0
     bcBF1fil 0.2d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/BC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460    1.d0  HLF   99  9999  SLV   2    0    0    0   'BC_em_SOLID_BIOFUEL_anthro_SOL'  2014
-    bcBF1fob 0.8d0
-    bcBF1fil 0.2d0
-    xxx 0 To close this data set
-
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/BC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460    1.d0  HLF   99  9999  WAS   2    0    0    0   'BC_em_SOLID_BIOFUEL_anthro_WAS'  2014
-    bcBF1fob 0.8d0
-    bcBF1fil 0.2d0
-    xxx 0 To close this data set
-
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/BC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460    1.d0  HLF   99  9999  SHI   2    0    0    0   'BC_em_SOLID_BIOFUEL_anthro_SHI'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_BC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  SHI   2    0    0    0   'SHI'  2040
     bcBF1fob 0.8d0
     bcBF1fil 0.2d0
     xxx 0 To close this data set
@@ -1015,37 +1003,37 @@ filename / description  (See detailed description below)
 
 
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_fossil.nc'
   401   1.6d0  ZP1   99  9999  ENE   2    0    0    0   'ENE'  2040
     omFF1fob 0.5d0
     omFF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_fossil.nc'
   401   1.6d0  ZP1   99  9999  IND   2    0    0    0   'IND'  2040
     omFF1fob 0.5d0
     omFF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_fossil.nc'
   401   1.6d0  ZP1   99  9999  TRA   2    0    0    0   'TRA'  2040
     omFF1fob 0.5d0
     omFF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_fossil.nc'
   401   1.6d0  ZP1   99  9999  RCO   2    0    0    0   'RCO'  2040
     omFF1fob 0.5d0
     omFF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_fossil.nc'
   401   1.6d0  ZP1   99  9999  WAS   2    0    0    0   'WAS'  2040
     omFF1fob 0.5d0
     omFF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM.nc'
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_fossil.nc'
   401   1.6d0  ZP1   99  9999  SHI   2    0    0    0   'SHI'  2040
     omFF1fob 0.5d0
     omFF1fil 0.5d0
@@ -1055,50 +1043,38 @@ filename / description  (See detailed description below)
 
 
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/OC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460   1.6d0  HLF   99  9999  AGR   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_AGR'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  ENE   2    0    0    0   'ENE'  2040
     omBF1fob 0.5d0
     omBF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/OC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460   1.6d0  HLF   99  9999  ENE   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_ENE'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  IND   2    0    0    0   'IND'  2040
     omBF1fob 0.5d0
     omBF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/OC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460   1.6d0  HLF   99  9999  IND   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_IND'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  TRA   2    0    0    0   'TRA'  2040
     omBF1fob 0.5d0
     omBF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/OC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460   1.6d0  HLF   99  9999  TRA   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_TRA'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  RCO   2    0    0    0   'RCO'  2040
     omBF1fob 0.5d0
     omBF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/OC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460   1.6d0  HLF   99  9999  RCO   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_RCO'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  WAS   2    0    0    0   'WAS'  2040
     omBF1fob 0.5d0
     omBF1fil 0.5d0
     xxx 0 To close this data set
 
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/OC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460   1.6d0  HLF   99  9999  SLV   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_SOL'  2014
-    omBF1fob 0.5d0
-    omBF1fil 0.5d0
-    xxx 0 To close this data set
-
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/OC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460   1.6d0  HLF   99  9999  WAS   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_WAS'  2014
-    omBF1fob 0.5d0
-    omBF1fil 0.5d0
-    xxx 0 To close this data set
-
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/OC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460   1.6d0  HLF   99  9999  SHI   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_SHI'  2014
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GAINS_LRTAP_v2_1/LRTAP_Baseline_v5_OC_2040_CTM_solid_biofuel.nc'
+  401   1.6d0  ZP1   99  9999  SHI   2    0    0    0   'SHI'  2040
     omBF1fob 0.5d0
     omBF1fil 0.5d0
     xxx 0 To close this data set
@@ -1184,33 +1160,32 @@ format(char)/name for 2d-variable/tracer info
 -BBB- Used for biomass burning - may list several species -------------------
 filename / description
   ID     SCALE       RES MONTH YEAR  CAT TYPE UNIT DIURN DATASET_NAME
-'/cluster/projects/nn9188k/OsloCTM3/EMIS/GFEDv4/'
-  572    1.0000d-00  HLF   99  9999  NAT   0   -1    0   'biomass_burning'
-  #CTMname    GFEDname        Scaling    Part.factor (SAVA/BORF/TEMF/DEFO/PEAT/AGRI)
-   'CO'       'CO'             1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'NO'       'NOx'            0.9000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'NO2'      'NOx'            0.1533d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'CH4'      'CH4'            0.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'C2H4'     'C2H4'           1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'C2H6'     'C2H6'           1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'C3H6'     'C3H6'           1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'C4H10'    'NMHC'           0.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'C6H14'    'Higher_Alkanes' 1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'C6HXR'    'Toluene_lump'   1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'Tolmatic' 'Toluene_lump'   1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'CH2O'     'CH2O'           1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'CH3CHO'   'C2H4O'          1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'ISOPRENE' 'C5H8'           1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'C3H8'     'C3H8'           1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'ACETONE'  'C3H6O'          1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'NH3'      'NH3'            1.0000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'SO2'      'SO2'            0.9750d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'SO4'      'SO2'            0.0375d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 1.00d0
-   'bcBB1fob' 'BC'             0.8000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 0.00d0
-   'bcBB1fil' 'BC'             0.2000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 0.00d0
-   'omBB1fob' 'OC'             1.3000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 0.00d0
-   'omBB1fil' 'OC'             1.3000d0   1.00d0 1.00d0 1.00d0 1.00d0 1.00d0 0.00d0
-   '---'      '---'            0.0000d0   0.00d0 0.00d0 0.00d0 0.00d0 0.00d0 0.00d0
+'/cluster/projects/nn9188k/OsloCTM3/EMIS/GFAS4HTAP3/daily_orig/'
+  576    1.0000d-00  QRT   99  9999  NAT   0   -1    0   'biomass_burning'
+  #CTMname    Fileprefix      DatasetName      Scaling
+   'CO'       'CO'             'CO'            1.0000d0
+   'NO'       'NOx'            'NOx'           0.9000d0
+   'NO2'      'NOx'            'NOx'           0.1533d0
+   'CH4'      'CH4'            'CH4'           0.0000d0
+   'C2H4'     'C2H4'           'C2H4'          1.0000d0
+   'C2H6'     'C2H6'           'C2H6'          1.0000d0
+   'C3H6'     'C3H6'           'C3H6'          1.0000d0
+   'C6H14'    'Higher_Alkanes' 'Higher_Alkanes' 1.0000d0
+   'C6HXR'    'C8H10'          'C8H10'         1.0000d0
+   'Tolmatic' 'C7H8'           'C7H8'          1.0000d0
+   'CH2O'     'CH2O'           'CH2O'          1.0000d0
+   'CH3CHO'   'C2H4O'          'C2H4O'         1.0000d0
+   'ISOPRENE' 'C5H8'           'C5H8'          1.0000d0
+   'C3H8'     'C3H8'           'C3H8'          1.0000d0
+   'ACETONE'  'C3H6O'          'C3H6O'         1.0000d0
+   'NH3'      'NH3'            'NH3'           1.0000d0
+   'SO2'      'SO2'            'SO2'           0.9750d0
+   'SO4'      'SO2'            'SO2'           0.0375d0
+   'bcBB1fob' 'BC'             'BC'            0.8000d0
+   'bcBB1fil' 'BC'             'BC'            0.2000d0
+   'omBB1fob' 'OC'             'OC'            1.3000d0
+   'omBB1fil' 'OC'             'OC'            1.3000d0
+   '---'      '---'            '---'           0.0000d0
 'endFF' 'endFF'  -------------------------------------------------------------
 
 
