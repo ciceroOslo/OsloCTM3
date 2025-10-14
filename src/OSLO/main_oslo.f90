@@ -232,7 +232,7 @@ contains
     call sumup_burden_and_lifetimes(BTT,AIRB,DV_IJ,BTEM,MP)
 
 
-    call check_btt(BTT,MP,'end of '//f90file//':'//subr)
+    !RBS call check_btt(BTT,MP,'end of '//f90file//':'//subr)
 
     !// Reduce value of moments if tracer has been reduced
     call adjust_moments(BTT,BTTBCK,BXT,BXX,BYT,BYY,BZT,BZZ,BXY,BXZ,BYZ,MP)

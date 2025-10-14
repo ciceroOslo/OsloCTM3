@@ -87,7 +87,7 @@ module CMN_PARAMETERS
 
 
   !// Logical operator for including more extensive debugging
-  logical, parameter :: LDEBUG=.true.
+  logical, parameter :: LDEBUG=.false.
 
   !//-----------------------------------------------------------------------
 end module CMN_PARAMETERS
