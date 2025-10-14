@@ -260,7 +260,7 @@ module emissions_aircraft
         dft_ac = 2000._r8
         dz_ac  = dft_ac*ft2km
         actual_levels = 25   
-      else if (trim(AirScen).eq.'CEDS2024') then
+      else if (trim(AirScen).eq.'CEDS2025') then
         dft_ac = 2000._r8
         dz_ac  = dft_ac*ft2km
         actual_levels = 25
@@ -776,8 +776,8 @@ module emissions_aircraft
         call read_ceds_2017()
      else if (AirScen(1:11) .eq. 'CEDS2021fix') then
         call read_ceds_2021fix()
-     else if (AirScen(1:11) .eq. 'CEDS2024') then
-        call read_ceds_2024()
+     else if (AirScen(1:11) .eq. 'CEDS2025') then
+        call read_ceds_2025()
      else if (AirScen(1:5) .eq. 'COVID') then
         call read_covid_avi()
      else if (AirScen(1:4) .eq. 'CEDS') then
@@ -2523,14 +2523,14 @@ module emissions_aircraft
    end subroutine read_ceds_2017
    !// ----------------------------------------------------------------------
  !// ----------------------------------------------------------------------
-   subroutine read_ceds_2024()
+   subroutine read_ceds_2025()
      !// --------------------------------------------------------------------
      !// Read original resolution data from CEDS and interpolate
      !// horizontally.
      !//
      !// Amund Sovde Haslerud, October 2017
      !// MTL 07/01/17
-     !// RBS 06/03/25
+     !// RBS 07/07/25
      !// --------------------------------------------------------------------
      use cmn_met, only: MYEAR
      use cmn_parameters, only: A0, CPI180
@@ -2571,14 +2571,14 @@ module emissions_aircraft
      integer, dimension(12), parameter :: midmonth = &
           (/15, 45, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349 /)
      !// --------------------------------------------------------------------
-     character(len=*), parameter :: subr = 'read_ceds_2024'
+     character(len=*), parameter :: subr = 'read_ceds_2025'
      !// --------------------------------------------------------------------
  
      !// Generate file name
      getY = AirScenYear  
      start_year = 1750
  
-     version = '2024-10-21'
+     version = '2025-04-18'
      ctag = '_gn_'
      if (getY .ge. 1750 .and. getY .le. 1799) then 
         infileyear = '175001-179912'
@@ -2592,8 +2592,8 @@ module emissions_aircraft
         infileyear = '190001-194912'
      else if (getY .ge. 1950 .and. getY .le. 1999) then
         infileyear = '195001-199912'
-     else if (getY .ge. 2000 .and. getY .le. 2022) then
-        infileyear = '200001-202212'
+     else if (getY .ge. 2000 .and. getY .le. 2023) then
+        infileyear = '200001-202312'
      endif
      
  
@@ -2837,7 +2837,7 @@ module emissions_aircraft
  
  
      !// --------------------------------------------------------------------
-   end subroutine read_ceds_2024
+   end subroutine read_ceds_2025
   !// ----------------------------------------------------------------------
  
    !// ----------------------------------------------------------------------
