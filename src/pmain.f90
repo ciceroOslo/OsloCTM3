@@ -758,7 +758,7 @@ program pmain
       if (LSOA) call soa_diag2file_nc4(NDAY,NDAYI)
 
       !// Chemistry budgets
-      !call chembud_output(JYEAR,JMON,JDATE,NDAY)
+      !call chembud_output_nc(JYEAR,JMON,JDATE,NDAY)
 
       !// Write diagnostics: scavenging daily totals
       if (LDLYSCAV(1)) then
