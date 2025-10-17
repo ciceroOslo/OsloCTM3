@@ -101,8 +101,8 @@ module diagnostics_general
   real(r8), dimension(LPAR,IPAR,JPAR) :: OxCHEMLOSSMASS
   real(r8), dimension(LPAR,IPAR,JPAR) :: OxCHEMPRODMASS
   !// Only save prod and loss for selected components
-  integer,parameter :: ncPL = 4
-  integer,dimension(ncPL), parameter :: compsPL = (/13,46,113,114/)
+  integer,parameter :: ncPL = 7
+  integer,dimension(ncPL), parameter :: compsPL = (/1,6,46,40,72,73,107/)
 
   !// ----------------------------------------------------------------------
   character(len=*), parameter, private :: f90file='diagnostics_general.f90'
@@ -116,7 +116,7 @@ module diagnostics_general
        ch4n2o_burden, &
        tnd_emis2file, &
        nchemdiag, save_chemPL, save_chemOxPL, chembud_output, init_chembud, &
-       chembud_output_nc !ZS
+       chembud_output_nc !MTL added 
   !// ----------------------------------------------------------------------
 
 contains
@@ -3510,8 +3510,8 @@ contains
     status = nf90_def_dim(ncid,"lev",LPAR,lev_dim_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define lev dim')
-    !RBS++
-    !// Define spatial dimensions (ilat, ilon)
+       
+   !//MTL define spatial dimensions of ilat/ilon/ilev
     status = nf90_def_dim(ncid,"ilat",JPAR+1,ilat_dim_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define ilat dim')
@@ -3521,17 +3521,7 @@ contains
     status = nf90_def_dim(ncid,"ilev",LPAR+1,ilev_dim_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define ilev dim')
-    !RBS--
-    status = nf90_def_dim(ncid,"nchemdiag",nchemdiag,nchemdiag_dim_id)
-    if (status .ne. nf90_noerr) call handle_error(status, &
-         f90file//':'//subr//': define nchemdiag dim')
-
-    !status = nf90_def_dim(ncid,"nchemdiag",nchemdiag_id,nchemdiag_dim_id)
-    !if (status .ne. nf90_noerr) call handle_error(status, &
-    !     f90file//':'//subr//': define nchemdiag dim')
-
-
-    !// Define ilon/ilat/ilev
+    !// Define ilon/ilat/ilev - MTL: wrong definition 
     !status = nf90_def_var(ncid,"ilon",nf90_double,ilon_dim_id,ilon_id)
     !if (status .ne. nf90_noerr) call handle_error(status, &
     !     f90file//':'//subr//': define ilon variable')
@@ -3541,12 +3531,23 @@ contains
     !status = nf90_def_var(ncid,"ilev",nf90_double,ilev_dim_id,ilev_id)
     !if (status .ne. nf90_noerr) call handle_error(status, &
     !     f90file//':'//subr//': define ilev variable')
+    !//MTL
 
-    !// Define size of date stamps    
+    !//MTL
+    status = nf90_def_dim(ncid,"nchemdiag",nchemdiag,nchemdiag_dim_id)
+    if (status .ne. nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define nchemdiag dim')
+    !status = nf90_def_dim(ncid,"nchemdiag",nchemdiag_id,nchemdiag_dim_id)
+    !if (status .ne. nf90_noerr) call handle_error(status, &
+    !     f90file//':'//subr//': define nchemdiag dim')
+    !//MTL
+    
+    !// Define size of date stamps
     status = nf90_def_dim(ncid,"date_size",size(start_time),date_size_dim_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define date_size dim')
-
+    
+    
     !//---------------------------------------------------------------------
 
     !// Define the lon/lat/lev
@@ -3570,12 +3571,14 @@ contains
     status = nf90_def_var(ncid,"ilev",nf90_double,ilev_dim_id,ilev_id)
     if (status .ne. nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': define ilev variable')
-
-!RBS    !// Define time
-!RBS    status = nf90_def_var(ncid,"time",nf90_double,time_dim_id,time_id)
-!RBS    if (status .ne. nf90_noerr) call handle_error(status, &
-!RBS         f90file//':'//subr//': define time variable')
-
+    
+    !//MTL
+    !// Define time
+    !status = nf90_def_var(ncid,"time",nf90_double,time_dim_id,time_id)
+    !if (status .ne. nf90_noerr) call handle_error(status, &
+    !     f90file//':'//subr//': define time variable')
+    !//MTL
+    
     !// Putting attributes to lon/lat/lev variables
     status = nf90_put_att(ncid,lon_id,'units','degree_east')
     if (status .ne. nf90_noerr) call handle_error(status, &
@@ -3791,14 +3794,15 @@ contains
 
     !// For each tracer put out loss and prod
     do N = 1, ncPL
-       TRID = compsPL(N)
-       TRNR = trsp_idx(TRID)
-
+       TRID = compsPL(N)   !MTL 
+       TRNR = trsp_idx(TRID) !MTL
+       
        !// Only put out if included
        if (trsp_idx(compsPL(N)) .le. 0) cycle
 
-       !//varname = trim(TNAME(N))//'_LOSS'
-       varname = trim(TNAME(trsp_idx(compsPL(N))))//'_LOSS'
+       !varname = trim(TNAME(N))//'_LOSS'
+       varname = trim(TNAME(trsp_idx(compsPL(N))))//'_LOSS' !MTL
+       
        !// Lost mass in chemistry
        do L = 1, LPAR
           do J = 1, JPAR
@@ -3813,8 +3817,8 @@ contains
        status = nf90_put_var(ncid, comploss_id(N), RTMP)
        if (status .ne. nf90_noerr) call handle_error(status, &
             f90file//':'//subr//': putting '//trim(varname))
-       
-       varname = trim(TNAME(trsp_idx(compsPL(N))))//'_PROD'
+
+       varname = trim(TNAME(trsp_idx(compsPL(N))))//'_PROD'  !MTL
        !// Produced mass in chemistry
        do L = 1, LPAR
           do J = 1, JPAR

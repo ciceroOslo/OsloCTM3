@@ -250,6 +250,11 @@ contains
        dft_ac = 2000._r8
        dz_ac  = dft_ac*ft2km
        actual_levels = 25
+    else if (trim(AirScen).eq.'HTAP3') then  !MTL
+       !// HTAP3 emissions using CEDS vertical distribution 
+       dft_ac = 2000._r8
+       dz_ac  = dft_ac*ft2km
+       actual_levels = 25
     else if (trim(AirScen).eq.'CEDS2021fix') then
        !// CEDS 2021 with emission fix
        dft_ac = 2000._r8
@@ -769,6 +774,8 @@ contains
        call read_ceds_2021fix()
     else if (AirScen(1:4) .eq. 'CEDS') then
        call read_ceds_original()
+    else if (AirScen(1:5) .eq. 'HTAP3') then
+       call read_htap3()
     end if
 
     !// --------------------------------------------------------------------
@@ -2814,6 +2821,320 @@ contains
 
 
 
+  
+  !// ----------------------------------------------------------------------
+  subroutine read_htap3()
+    !// --------------------------------------------------------------------
+    !// Read original resolution data from HTAP3 and interpolate
+    !// horizontally.
+    !//
+    !// 
+    !// MTL 09/26/25
+    !// --------------------------------------------------------------------
+    use cmn_met, only: MYEAR
+    use cmn_parameters, only: A0, CPI180
+    use ncutils, only: get_netcdf_var_1d, readnc_3d_from4d
+    use regridding, only: E_GRID
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+
+    !// Locals
+    integer :: I,J,H,LAC,NAC,N, ICOMP
+    integer :: MAX_ITER, grid_type
+
+    integer :: sTime, M, getY, start_year, daynr
+    integer :: nLon, nLat, nLev, nTime
+
+    !// For getting file name
+    character(len=200) :: infile
+    real(r8), dimension(EPAR_AC):: scalefac
+    character(len=5), dimension(EPAR_AC) :: FILECOMP
+    character(len=10) :: version
+    !character(len=4) :: ctag
+    character(len=4) :: infileyear
+
+    !// File variables
+    logical :: fnr_ok
+    integer :: ifnr
+
+    !// Interpolated field
+    real(r8) :: in_src(IPAR,JPAR,maxlevels), R8CTM(IPAR,JPAR)
+   
+    real(r8) :: ESUM_AC(EPAR_AC), sumB, sumA
+
+    real(r8), dimension(:), allocatable :: &
+         XBEDGE, YBEDGE, XYBOX,inTime,inLon,inLat,inLev
+    real(r8), dimension(:,:,:), allocatable :: HLFDUM, RDUM
+
+    integer, dimension(12), parameter :: daymonth = &
+         (/1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 /)
+    !// --------------------------------------------------------------------
+    character(len=*), parameter :: subr = 'read_htap3'
+    !// --------------------------------------------------------------------
+
+    !// Generate file name
+    getY = AirScenYear
+    write(infileyear,'(i4.4)') getY
+    !start_year = 1750
+
+    !version = '2017-05-18'
+    !ctag = '_gn_'
+    !if (getY .ge. 1750 .and. getY .le. 1799) then 
+    !   infileyear = '175001-179912'
+    !else if (getY .ge. 1800 .and. getY .le. 1849) then
+    !   infileyear = '180001-184912'
+    !else if (getY .eq. 1850) then
+    !   infileyear = '185001-185012'
+    !else if (getY .ge. 1851 .and. getY .le. 1899) then
+    !   infileyear = '185101-189912'
+    ! else if (getY .ge. 1900 .and. getY .le. 1949) then
+    !   infileyear = '190001-194912'
+    !else if (getY .ge. 1950 .and. getY .le. 1999) then
+    !   infileyear = '195001-199912'
+    !else if (getY .ge. 2000 .and. getY .le. 2014) then
+    !   infileyear = '200001-201412'
+    !endif
+    
+
+    !// Set file component name and scale factor
+    do NAC = 1, EPAR_AC
+       if (trim(ECOMP_NAMES(NAC)) .eq. 'CO') then
+          FILECOMP(NAC) = 'CO'
+          scalefac(NAC) = 1._r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'C2H4') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.1546_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'C2H6') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.0052_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'C3H6') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.0453_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'C6H14') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.1812_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'C6HXR_SOA' .or. &
+                trim(ECOMP_NAMES(NAC)) .eq. 'C6HXR') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.0115_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'CH2O') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.123_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'CH3CHO') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.2195_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'NO') then
+          FILECOMP(NAC) = 'NOx'
+          scalefac(NAC) = 0.652_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'C3H8') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.000078_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'ACETONE') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.00369_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'SO2') then
+          FILECOMP(NAC) = 'SO2'
+          scalefac(NAC) = 1._r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'Tolmatic') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.04769_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'Benzene') then
+          FILECOMP(NAC) = 'NMVOC'
+          scalefac(NAC) = 0.0168_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'omFF1fob') then
+          FILECOMP(NAC) = 'OC'
+          scalefac(NAC) = 0.5_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'omFF1fil') then
+          FILECOMP(NAC) = 'OC'
+          scalefac(NAC) = 0.5_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'bcFF1fob') then
+          FILECOMP(NAC) = 'BC'
+          scalefac(NAC) = 0.8_r8
+       else if (trim(ECOMP_NAMES(NAC)) .eq. 'bcFF1fil') then
+          FILECOMP(NAC) = 'BC'
+          scalefac(NAC) = 0.2_r8
+       else
+          write(6,'(a)') f90file//':'//subr// &
+               ': Unknown species: '//trim(ECOMP_NAMES(NAC))
+          stop
+       end if
+    end do
+
+  
+    !//Get resolution (latitude/longitude/time)
+    infile = trim(AirEmisPath)//'edgar_htapv32_AIR_'//trim(infileyear)//'_'//trim(FILECOMP(1))//'_ctm3format.nc'
+
+    !// This routine allocates inLon/inLat/inTime
+    call get_netcdf_var_1d( infile, 'lon',  inLon  )
+    call get_netcdf_var_1d( infile, 'lat',  inLat  )
+    call get_netcdf_var_1d( infile, 'level', inLev  )
+    call get_netcdf_var_1d( infile, 'time', inTime )
+
+    nLon  = SIZE( inLon  )
+    nLat  = SIZE( inLat  )
+    nLev  = SIZE( inLev  )
+    nTime = SIZE( inTime )
+
+    if (nLev .ne. actual_levels) then
+       write(6,'(a,2i5)') f90file//':'//subr// &
+            ': nLev != actual_levels ',nLev,actual_levels
+       stop
+    end if
+
+    !// Time step to fetch
+    !// Number month
+    daynr = daymonth(JMON)
+    sTime = -1
+    do M = 1, nTime
+       if (inTime(M) .eq. daynr) then
+          sTime = M !// Found the time step
+          exit
+       end if
+    end do
+
+    if (sTime .eq. -1) then
+       write(6,'(a)') f90file//':'//subr//': Wrong inTime index'
+       stop
+    else
+       write(6,'(a,4i5,f12.1)') f90file//':'//subr// &
+            ': mon/year/sTime/daynr:',JMON,getY,sTime,daynr,inTime(sTime)
+    end if
+
+    !// Allocate arrays
+    allocate (XBEDGE(nLon+1),YBEDGE(nLat+1), &
+              HLFDUM(nLon,nLat,nLev)&
+              ,RDUM(nLon,nLat,nLev),XYBOX(nLat))
+
+    !// Data starts at (180W,90S), i.e. grid_type 2
+    grid_type = 2
+    call get_xyedges(nLon,nLat,XBEDGE,YBEDGE,grid_type)
+
+    !// Grid box areas
+    do J = 1, nLat
+       XYBOX(J) =  A0*A0 * CPI180*(XBEDGE(2)-XBEDGE(1)) &
+            * (sin(CPI180*YBEDGE(J+1)) - sin(CPI180*YBEDGE(J)))
+    end do
+
+    !// Sum of emissions before interpolation
+    ESUM_AC(:) = 0._r8
+
+    do NAC = 1, EPAR_AC
+
+       !// Cycle if species is not included
+       if (ECOMP_AC(NAC) .le. 0) cycle
+
+       !// Initialize
+       RDUM(:,:,:) = 0._r8
+       HLFDUM(:,:,:) = 0._r8
+       in_src(:,:,:) = 0._r8
+
+       !// Emissions
+       !// ------------------------------------------------------
+       !//Get resolution (latitude/longitude/time)
+       infile = trim(AirEmisPath)//'edgar_htapv32_AIR_'//trim(infileyear)//'_'//trim(FILECOMP(NAC))//'_ctm3format.nc'
+       
+       !// Read data for this month
+       call readnc_3d_from4d(INFILE, 'lon', nLon, 'lat', nLat, &
+            'level', nLev, 'time', sTime, &
+            trim('emis_avi'), RDUM)
+       write(*,'(a)') '    Read '//FILECOMP(NAC)//' data -> '//trim(ECOMP_NAMES(NAC))
+
+
+       !// Scale with corresponding fraction
+       HLFDUM(:,:,:) = RDUM(:,:,:) * scalefac(NAC)
+
+       !// Scale with area (xybox is m2)--> kg/s. Done before interpolation,
+       !// since interpolation routine needs field to be per grid box.
+       !// MTL: HTAP3 data is already in kg/s
+       !do LAC = 1, nLev
+       !   do J = 1, nLat
+       !      HLFDUM(:,J,LAC) = HLFDUM(:,J,LAC) * XYBOX(J)
+       !   end do
+       !end do
+      
+         
+          
+!$omp parallel private (LAC,R8CTM) &
+!$omp          shared (HLFDUM,nLon,nLat,XBEDGE,YBEDGE,in_src,nLev) &
+!$omp          shared (XDEDG,YDEDG) &
+!$omp          shared (XYBOX) &
+!$omp          default(NONE)
+!$omp do
+       do LAC = 1, nLev
+
+          !// No need to interpolate zero field
+          if (maxval(HLFDUM(:,:,LAC)) .eq. 0._r8) then
+             in_src(:,:,LAC) = 0._r8
+             cycle
+          end if
+
+          !// Interpolate into R8CTM (no moments, only mean field
+          call E_GRID(HLFDUM(:,:,LAC),XBEDGE,YBEDGE,nLon,nLat, &
+               R8CTM,XDEDG,YDEDG,IPAR,JPAR,2)
+
+          !// Put into 3D array
+          in_src(:,:,LAC) = R8CTM(:,:)
+
+       end do
+!$omp end do
+!$omp end parallel
+
+       !write(*,'(a,es20.12,es20.12,es20.12)'), 'Max/min in_src kg/s:',maxval(in_src),minval(in_src),sum(in_src)
+
+       !// Put into emission array, first hour
+       do J = 1, JPAR
+          do I = 1, IPAR
+             do LAC = 1, actual_levels
+                EMIS_AC_IN(LAC,NAC,I,J,1) = in_src(I,J,LAC)
+             end do
+          end do
+       end do
+       !// Assume no hour-to-hour variation
+       do H = 2, 24
+          do J = 1, JPAR
+             do I = 1, IPAR
+                do LAC = 1, actual_levels
+                   EMIS_AC_IN(LAC,NAC,I,J,H) = EMIS_AC_IN(LAC,NAC,I,J,1)
+                end do
+             end do
+          end do
+       end do
+          
+       !// Sum of original data as kg/year
+       ESUM_AC(NAC) = sum(HLFDUM) * 86400._r8 * 365._r8
+    end do !// do NAC = 1, EPAR_AC
+
+
+
+    !// De-allocate
+    deallocate (XBEDGE,YBEDGE,XYBOX,HLFDUM,RDUM)
+
+    !// Print total emissions
+    write(6,'(a)') '    Total emissions [Tg/year] for emitted species:'
+    do NAC = 1, EPAR_AC
+       N = ECOMP_TRNR(NAC)
+       if (N .gt. 0) then
+          sumB = ESUM_AC(NAC)*1.e-9_r8
+          sumA = sum(EMIS_AC_IN(:,NAC,:,:,:))*3600._r8*365.e-9_r8
+          if (abs(sumA-sumB)/sumB .gt. 1.e-5_r8) then
+             write(6,'(a,es20.12,es20.12)') f90file//':'//subr// &
+                  ':  Wrong sum before/after interp. ', sumB, sumA
+             stop
+          else
+             write(6,'(a,2f16.7)') '    '//TNAME(N)//' emitted (Tg/yr): ',sumB
+          end if
+       else
+          write(6,'(a)') '    '//ECOMP_NAMES(NAC)//' not included'
+       end if
+    end do
+
+
+    !// --------------------------------------------------------------------
+  end subroutine read_htap3
+  !// ----------------------------------------------------------------------
+
+  
   !// ----------------------------------------------------------------------
   subroutine get_xyedges(ISIZE,JSIZE,XBEDGE,YBEDGE,START)
     !// --------------------------------------------------------------------
