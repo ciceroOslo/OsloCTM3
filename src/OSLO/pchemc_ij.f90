@@ -2279,6 +2279,17 @@ contains
 
         if (L .eq. 1) DDDIAG(6) = DDDIAG(6) + VDEP_L(6) * M_CO * DTCH
 
+
+        !RBS ADDED
+        CHEMLOSS(1,6,L) = CHEMLOSS(1,6,L) + LOSS * M_CO * DTCH
+        CHEMLOSS(2,6,L) = CHEMLOSS(2,6,L) + VDEP_L(6) * M_CO * DTCH
+        CHEMLOSS(3,6,L) = CHEMLOSS(3,6,L) + (k_oh_co_a + k_oh_co_b) * M_OH * M_CO*DTCH
+
+        CHEMPROD(1,6,L) = CHEMPROD(1,6,L) + PROD * DTCH
+        CHEMPROD(2,6,L) = CHEMPROD(2,6,L) + DBCH2O * M_CH2O * DTCH
+        CHEMPROD(3,6,L) = CHEMPROD(3,6,L) + k_cho_o2 * M_O2 * M_CHO * DTCH
+        !RBS ADDED END
+
         call QSSA(24,'CO',DTCH,QLIN,ST,PROD,LOSS,ZC(6,L))
 
 
