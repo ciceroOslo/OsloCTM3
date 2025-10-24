@@ -2247,16 +2247,16 @@ contains
 
         !ZS ozone diags
         CHEMLOSS(2,1,L) = CHEMLOSS(2,1,L) + VDEP_L(1) * M_O3 * DTCH
-        CHEMLOSS(3,1,L) = CHEMLOSS(3,1,L) + k_od_h2o * M_H2O * M_O1D
-        CHEMLOSS(4,1,L) = CHEMLOSS(4,1,L) + (k_o3_ho2 * M_HO2 &
+        CHEMLOSS(3,1,L) = CHEMLOSS(3,1,L) + k_od_h2o * M_H2O * M_O1D * DTCH
+        CHEMLOSS(4,1,L) = CHEMLOSS(4,1,L) + ((k_o3_ho2 * M_HO2 &
                 + k_o3_oh * M_OH &
                 + k_o3_c3h6 * M_C3H6 &
                 + k_o3_c2h4 * M_C2H4) * M_O3 &
-                + k_od_h2o * M_H2O * M_O1D
+                + k_od_h2o * M_H2O * M_O1D ) * DTCH
         CHEMPROD(1,1,L) = CHEMPROD(3,1,L) + (LOSS_2 &
                 - VDEP_L(43) &
-                - k_op_no_m * M_O3P) * M_NO 
-        CHEMPROD(2,1,L) = CHEMPROD(4,1,L) + 2._r8 * DO2 * M_O2
+                - k_op_no_m * M_O3P) * M_NO * DTCH
+        CHEMPROD(2,1,L) = CHEMPROD(4,1,L) + 2._r8 * DO2 * M_O2 * DTCH
         !ZS
 
         !//..H2O2------------------------------------------------------------
