@@ -42,6 +42,7 @@ module emissions_volcanoes
 
   !// Path to the files
   character(len=100) :: volc_path
+  character(len=100) :: volc_path_erruption
   !// Year for emissions
   integer :: volc_year
 
@@ -76,12 +77,15 @@ contains
     character(len=*), intent(in) :: pathname
     integer, intent(in) :: YEAR, INFMT
     !// --------------------------------------------------------------------
-    volc_path = trim(pathname)
+    
     if (INFMT .eq. 553) then
        LHTAP_VOLC = .true.
+       volc_path_erruption = trim(pathname)
     else if (INFMT .eq. 554) then
        LACOM_VOLC = .true.
+       volc_path = trim(pathname)
     else
+       volc_path = trim(pathname)
        write(6,'(a,i5)') &
            '*** emissions_volcanoes.f90: No such INFMT for volcanoes:',INFMT
     end if
@@ -92,7 +96,8 @@ contains
        !// Force year of emissions
        volc_year = YEAR
     end if
-    write(6,'(a)') '* Volcanic path/file: '//trim(volc_path)
+    write(6,'(a)') '* Volcanic path/file: '//trim(pathname)
+    !//trim(volc_path)
     !// --------------------------------------------------------------------
   end subroutine init_volcPATH
   !// ----------------------------------------------------------------------
@@ -120,7 +125,9 @@ contains
 
     if (LHTAP_VOLC) then
        call read_volcEMIS_HTAP()
-    else if (LACOM_VOLC) then
+    end if
+
+    if (LACOM_VOLC) then
        call read_volcEMIS_ACOM()
     end if
     !// --------------------------------------------------------------------
@@ -173,7 +180,7 @@ contains
 
     !// Fetch data from file
     write(cyear(1:4),'(i4.4)') volc_year
-    filename = trim(volc_path)//'volc_so2_'//cyear//'.nc'
+    filename = trim(volc_path_erruption)//'volc_so2_'//cyear//'.nc'
     write(6,'(a)') '* Reading volcanic SO2 emissions: '//trim(filename)
 
     call get_netcdf_var_1d( filename, 'lon',  inLon )
