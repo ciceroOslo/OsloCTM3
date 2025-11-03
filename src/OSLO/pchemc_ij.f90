@@ -2419,6 +2419,13 @@ module pchemc_ij
            CHEMPROD(1,6,L) = CHEMPROD(1,6,L) + PROD * DTCH
            CHEMPROD(2,6,L) = CHEMPROD(2,6,L) + DBCH2O * M_CH2O * DTCH
            CHEMPROD(3,6,L) = CHEMPROD(3,6,L) + k_cho_o2 * M_O2 * M_CHO * DTCH
+           CHEMPROD(4,6,L) = CHEMPROD(4,6,L) + 0.44_r8 * k_o3_c2h4 * M_O3 * M_C2H4* DTCH
+           CHEMPROD(5,6,L) = CHEMPROD(5,6,L) + 0.4_r8 * k_o3_c3h6 * M_O3 * M_C3H6 * DTCH
+           CHEMPROD(6,6,L) = CHEMPROD(6,6,L) + DHCOHCO * M_HCOHCO* DTCH
+           CHEMPROD(7,6,L) = CHEMPROD(7,6,L) + DRCOHCO * M_RCOHCO* DTCH
+           CHEMPROD(8,6,L) = CHEMPROD(8,6,L) + (k_oh_hcohco_m_a + 2._r8*k_oh_hcohco_m_c) * M_OH * M_HCOHCO* DTCH
+           CHEMPROD(9,6,L) = CHEMPROD(9,6,L) + k_oh_rcohco * M_OH * M_RCOHCO* DTCH
+           CHEMPROD(10,6,L) = CHEMPROD(10,6,L) + DACETON_B * M_ACETON* DTCH
            !RBS ADDED END
            
            call QSSA(24,'CO',DTCH,QLIN,ST,PROD,LOSS,ZC(6,L))
