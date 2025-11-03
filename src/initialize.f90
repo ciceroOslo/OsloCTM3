@@ -38,7 +38,7 @@ contains
     use cmn_precision, only: r8, rMom
     use cmn_size, only: IPAR, IPARW, JPAR, JPARW, LPAR, LPARW, IDBLK, &
          JDBLK, MPBLK, MPIPAR, MPJPAR, LOSLOCSTRAT, LE90, IMDIV, &
-         NTDPAR, NTBPAR, NSBPAR, NSTPAR, NPAR, NRMETD
+         NTDPAR, NTBPAR, NSBPAR, NSTPAR, NPAR, NPAR_TROP, NRMETD
     use cmn_chem, only: INFILE_T, INFILE_WET, INFILE_DRY, INFILE_EMIS!, &
          !INFILE_POLAR_O3LOSS, INFILE_RES, INFILE_MEGAN, INFILE_LIGHTNING
     use cmn_ctm, only: MPBLKIB, MPBLKIE, MPBLKJB, MPBLKJE, &
@@ -684,8 +684,8 @@ contains
 
     !// Need this section to be species, not transport numbers
     read(5,*)
-    read(5,'(18x,L1,18(1x,10L1))') LBGA1,(LBGT1(I),I=1,NPAR)
-    read(5,'(18x,L1,18(1x,10L1))') LBGA2,(LBGT2(I),I=1,NPAR)
+    read(5,'(18x,L1,19(1x,10L1))') LBGA1,(LBGT1(I),I=1,NPAR)
+    read(5,'(18x,L1,19(1x,10L1))') LBGA2,(LBGT2(I),I=1,NPAR)
 
       write(6,'(a9,11a7)')' tends: ', (TLDIAG(I), I=1,NTND)
       write(6,'(a9,2x,L1,18(1x,10L1))') ' 1D budgt',LBGA1,LBGT1
@@ -803,7 +803,7 @@ contains
     !// tendency boxes
     !// ---------------------------------------------------------------------
     read(5,*)
-    read(5,'(19x,18(1x,10L1))') (LBGTA(I),I=1,NPAR)
+    read(5,'(19x,19(1x,10L1))') (LBGTA(I),I=1,NPAR)
       write(6,'(a,18(1x,10L1))') ' 1D tracer m/m:',LBGTA
 
     !// time series at specified stations, full L-profiles
@@ -812,7 +812,7 @@ contains
     read(5,*)
     read(5,'(5x,31i1/5x,29i1/5x,31i1/5x,30i1/5x,31i1/5x,30i1/5x,31i1/5x,31i1/5x,30i1/5x,31i1/5x,30i1/5x,31i1)') JDO_S
 
-    read(5,'(i5,14x,18(1x,10l1))') NBOXS,(LBGTS(I),I=1,NPAR)
+    read(5,'(i5,14x,19(1x,10l1))') NBOXS,(LBGTS(I),I=1,NPAR)
     if (NBOXS .gt. NSBPAR) then
        write(6,'(a,3i5)') f90file//':'//subr// &
             ': # boxes > NSBPAR: ',NBOXS,NBOXS,NSBPAR
