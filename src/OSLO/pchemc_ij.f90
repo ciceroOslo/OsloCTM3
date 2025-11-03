@@ -459,7 +459,8 @@ module pchemc_ij
          k_ho2_alko2 = r_ho2_alko2(JTEMP)
          k_o3_isoprene = r_o3_isoprene(JTEMP)
          k_ch2o_ho2 = r_ch2o_ho2(JTEMP)
-
+         k_ch3o2_c3h7o2_a = r_ch3o2_c3h7o2_a(JTEMP)
+         k_no_c3h7o2_a = r_no_c3h7o2_a(JTEMP)
          !// SOA JTEMP reactions
          k_o3_soaC1 = r_o3_soaC1(JTEMP)
          k_oh_soaC1 = r_oh_soaC1(JTEMP)
@@ -533,7 +534,6 @@ module pchemc_ij
          k_cho_o2   = r_cho_o2
          k_ch3o2_c2h5o2  = r_ch3o2_c2h5o2
          k_ch3o2_c3h7o2  = r_ch3o2_c3h7o2
-         k_ch3o2_c3h7o2_a = r_ch3o2_c3h7o2_a
          k_ch3o2_c4h9o2  = r_ch3o2_c4h9o2
          k_ch3o2_c6h13o2 = r_ch3o2_c6h13o2
          k_ch3o2_ch3cob  = r_ch3o2_ch3cob
@@ -543,7 +543,6 @@ module pchemc_ij
          k_ch3o2_isor2   = r_ch3o2_isor2
          k_oh_ar2    = r_oh_ar2
          k_no_c3h7o2 = r_no_c3h7o2
-         k_no_c3h7o2_a = r_no_c3h7o2_a
          !// Added by SK during VOC updates
          k_no_alko2_a = r_no_alko2_a
          k_no3_bigene = r_no3_bigene

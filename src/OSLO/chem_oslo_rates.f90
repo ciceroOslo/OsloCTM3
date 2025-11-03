@@ -48,8 +48,8 @@ module chem_oslo_rates
        r_ch3o2_isor1, &
        r_ch3o2_isor2, &
        r_no_c3h7o2, &
-       r_no_c3h7o2_a, &
-       r_ch3o2_c3h7o2_a, &
+       !r_no_c3h7o2_a, &
+       !r_ch3o2_c3h7o2_a, &
        r_h_ho2_a, r_h_ho2_b, r_h_ho2_c, &
        r_op_hno3, &
        r_od_cfc11_a, r_od_cfc11_b, &
@@ -121,7 +121,9 @@ module chem_oslo_rates
        r_oh_c2h5oh, r_oh_alkooh, r_c3h6_o3, &
        r_ch3co3_ch3o2, r_hoch2oo_ho2, r_ch3co3_ho2, r_hoch2oo, &
        r_ho2_alko2,  r_c2h4_o3, r_o3_isoprene, r_ch2o_ho2, & 
-
+       !//Bug fix
+       r_no_c3h7o2_a, &
+       r_ch3o2_c3h7o2_a, &
        !// Previously: just r_ch3o2_ch3o2,  May 2022 split by masan&
        !// Into: CH3O2 + CH3O2 -> 2*CH2O + 2*HO2 and
        !// CH3O2 + CH3O2 -> CH2O + CH3OH 
@@ -281,11 +283,12 @@ contains
     !//                 fb4349*(HO_2 + ACETON))
     !// IUPAC number: ROO_4 or ROO_5
     r_no_c3h7o2 = 4.90e-12_r8
-    !//SK Added this in March 2025, from WACCM to check acetone production
-    r_no_c3h7o2_a = 4.20e-12_r8 * exp(180._r8 * ZTEM)
-   
 
-    r_no_isor1(I) = 2.8e-12_r8 * exp(300._r8 * ZTEM)
+    !!//SK Added this in March 2025, from WACCM to check acetone production
+    !r_no_c3h7o2_a = 4.20e-12_r8 * exp(180._r8 * ZTEM)
+    !
+    !
+    !r_no_isor1(I) = 2.8e-12_r8 * exp(300._r8 * ZTEM)
 
 
     !// CH3O2 + C2H5O2 --> 0.5( CH3O + (1-fb4323)*(CH3 + HCHO)
@@ -318,8 +321,8 @@ contains
     !// CH3O2 + C3H7O2 --> Products
     !// IUPAC number: use ROO_41
     r_ch3o2_c3h7o2 = 1.00e-13_r8
-    !//SK Added this in March 2025, from WACCM to check acetone production
-    r_ch3o2_c3h7o2_a = 3.75e-13_r8 * exp(-40 * ZTEM)
+    !!//SK Added this in March 2025, from WACCM to check acetone production
+    !r_ch3o2_c3h7o2_a = 3.75e-13_r8 * exp(-40 * ZTEM)
 
     !// CH3O2 + CH3COD --> HO2 + CH3O + RCOHCO
     !//   CH3COD = CH3COCH2(O2)
@@ -679,6 +682,14 @@ contains
        !//CH2O + HO2 -> HOCH2OO
        r_ch2o_ho2 = 9.70e-15_r8 * exp(625._r8 * ZTEM)
 
+       !Bug fix:
+       !!//SK Added this in March 2025, from WACCM to check acetone production
+       r_no_c3h7o2_a(I) = 4.20e-12_r8 * exp(180._r8 * ZTEM)
+    
+       r_no_isor1(I) = 2.8e-12_r8 * exp(300._r8 * ZTEM)
+       !!//SK Added this in March 2025, from WACCM to check acetone production
+       r_ch3o2_c3h7o2_a(I) = 3.75e-13_r8 * exp(-40 * ZTEM)
+       
        !// SOA
        !// Reaction rates for precursor hydrocarbon oxidation:
        !// The rates and expressions for temperature dependence come from
