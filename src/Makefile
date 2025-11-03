@@ -28,7 +28,7 @@ COMPDIR  = $(shell pwd)
 #--- SET USER CHOICES (NO SPACES BEFORE OR AFTER Y/N SIGNS) ------
 #-----------------------------------------------------------------
 #Compiler options O=Optimize, D=Debug, A=Agressive optimization
-OPTS :=A
+OPTS :=D
 #Native (metdata) horizontal resolution (HNATIVET42 / HNATIVET159 / ...)
 HNATIVE :=HNATIVET159
 #Native (metdata) vertical resolution (L40 / L60)
@@ -55,11 +55,11 @@ NITRATE :=Y
 #Sea salt
 SEASALT :=Y
 #Dust
-DUST :=N
+DUST :=Y
 #Secondary organic aerosols
 SOA :=Y
 #E90 (MUST be Y to calculate STE fluxes!)
-E90 :=N
+E90 :=Y
 #LINOZ (NOT set up to replace stratospheric chemistry, only included
 #       to calculate STE flux as UCI does it.
 LINOZ :=N
