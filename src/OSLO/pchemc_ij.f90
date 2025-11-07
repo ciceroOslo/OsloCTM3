@@ -1226,9 +1226,8 @@ contains
             OH_NEW = PROD / LOSS
             
             !ZS
-            CHEMLOSS(1,40,L) = CHEMLOSS(1,40,L) + LOSS * DTCH
-            CHEMPROD(1,40,L) = CHEMPROD(1,40,L) + PROD * M_OH * DTCH
-            
+            OxCHEMPROD(L) = OxCHEMPROD(L) + PROD * DTCH
+            OxCHEMLOSS(L) = OxCHEMLOSS(L) + LOSS * M_OH * DTCH 
             !ZS
 
             !//..HO2--------------------------------------------------------
@@ -2240,8 +2239,8 @@ contains
              + PROD_NO
 
         !// Sum up prod and loss (both are per second here)
-        OxCHEMPROD(L) = OxCHEMPROD(L) + PROD*DTCH
-        OxCHEMLOSS(L) = OxCHEMLOSS(L) + LOSS*DTCH
+        !ZS OxCHEMPROD(L) = OxCHEMPROD(L) + PROD*DTCH
+        !ZS OxCHEMLOSS(L) = OxCHEMLOSS(L) + LOSS*DTCH
 
         M_O3NO = M_O3NO + (PROD - LOSS) * DTCH
 
@@ -2253,10 +2252,10 @@ contains
                 + k_o3_c3h6 * M_C3H6 &
                 + k_o3_c2h4 * M_C2H4) * M_O3 &
                 + k_od_h2o * M_H2O * M_O1D ) * DTCH
-        CHEMPROD(1,1,L) = CHEMPROD(3,1,L) + (LOSS_2 &
+        CHEMPROD(1,1,L) = CHEMPROD(1,1,L) + (LOSS_2 &
                 - VDEP_L(43) &
                 - k_op_no_m * M_O3P) * M_NO * DTCH
-        CHEMPROD(2,1,L) = CHEMPROD(4,1,L) + 2._r8 * DO2 * M_O2 * DTCH
+        CHEMPROD(2,1,L) = CHEMPROD(2,1,L) + 2._r8 * DO2 * M_O2 * DTCH
         !ZS
 
         !//..H2O2------------------------------------------------------------
@@ -2881,8 +2880,8 @@ contains
 
               !ZS 3=gaseous, 4=aqueous
               CHEMPROD(1,73,L) = CHEMPROD(1,73,L) + PROD * DTCH
-              CHEMPROD(2,73,L) = CHEMPROD(3,73,L) + CTOT4072 * M_OH * M_SO2 * DTCH
-              CHEMPROD(3,73,L) = CHEMPROD(4,73,L) + (CAQ1572 * M_H2O2 &            
+              CHEMPROD(2,73,L) = CHEMPROD(2,73,L) + CTOT4072 * M_OH * M_SO2 * DTCH
+              CHEMPROD(3,73,L) = CHEMPROD(3,73,L) + (CAQ1572 * M_H2O2 &            
                       + CAQ1772 * M_HO2NO2 &
                       + CAQ0172 * M_O3 &
                       + CCATSO2 &
