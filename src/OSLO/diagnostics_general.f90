@@ -3233,7 +3233,7 @@ contains
     do L = L1, L2
 
        !// Factor to convert from molec/cm3 to kg/gridbox
-       rfac = 1.e6_r8 / AVOGNR * 48._r8 * 1.e-3_r8 * DV(L)
+       rfac = 1.e6_r8 / AVOGNR *17._r8 * 1.e-3_r8 * DV(L) !ZS changed to OH
 
        !// Save loss, but convert from molec/cm3 to
        !// kg/gridbox. Numbers are accumulated for current time step.
