@@ -1150,7 +1150,7 @@ filename / description  (See detailed description below)
     xxx 0 To close this data set
 
 '/cluster/projects/nn9188k/OsloCTM3/EMIS/CEDS0517/CEDS_CICERO/OC-em-SOLID-BIOFUEL-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18-supplemental-data_gn_200001-201412_CICERO.nc'
-  460   1.6d0  HLF   99  9999  SHI   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_SHI'  2014
+  460     HLF   99  9999  SHI   2    0    0    0   'OC_em_SOLID_BIOFUEL_anthro_SHI'  2014
     omBF1fob 0.5d0
     omBF1fil 0.5d0
     xxx 0 To close this data set
