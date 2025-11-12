@@ -4,3 +4,5 @@ osloctm3
 # Compiled modules
 mod/
 bin/
+c3run/
+tables/
