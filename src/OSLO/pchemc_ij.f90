@@ -1225,6 +1225,10 @@ contains
             !// Set new OH
             OH_NEW = PROD / LOSS
 
+            !ZS
+            OxCHEMPROD(L) = OxCHEMPROD(L) + PROD * DTCH
+            OxCHEMLOSS(L) = OxCHEMLOSS(L) + LOSS * M_OH * DTCH 
+            !ZS
 
 
             !//..HO2--------------------------------------------------------
@@ -2236,11 +2240,25 @@ contains
              + PROD_NO
 
         !// Sum up prod and loss (both are per second here)
-        OxCHEMPROD(L) = OxCHEMPROD(L) + PROD*DTCH
-        OxCHEMLOSS(L) = OxCHEMLOSS(L) + LOSS*DTCH
+        !ZS OxCHEMPROD(L) = OxCHEMPROD(L) + PROD*DTCH
+        !ZS OxCHEMLOSS(L) = OxCHEMLOSS(L) + LOSS*DTCH
 
         M_O3NO = M_O3NO + (PROD - LOSS) * DTCH
 
+        !ZS ozone diags
+        CHEMLOSS(2,1,L) = CHEMLOSS(2,1,L) + VDEP_L(1) * M_O3 * DTCH
+        CHEMLOSS(3,1,L) = CHEMLOSS(3,1,L) + k_od_h2o * M_H2O * M_O1D * DTCH
+        CHEMLOSS(4,1,L) = CHEMLOSS(4,1,L) + ((k_o3_ho2 * M_HO2 &
+                + k_o3_oh * M_OH &
+                + k_o3_c3h6 * M_C3H6 &
+                + k_o3_c2h4 * M_C2H4) * M_O3 &
+                + k_od_h2o * M_H2O * M_O1D ) * DTCH
+        CHEMPROD(1,1,L) = CHEMPROD(1,1,L) + (LOSS_2 &
+                - VDEP_L(43) &
+                - k_op_no_m * M_O3P) * M_NO * DTCH
+        CHEMPROD(2,1,L) = CHEMPROD(2,1,L) + 2._r8 * DO2 * M_O2 * DTCH
+        !ZS
+                
 
         !//..H2O2------------------------------------------------------------
         PROD = &
@@ -2278,6 +2296,17 @@ contains
              + VDEP_L(6)
 
         if (L .eq. 1) DDDIAG(6) = DDDIAG(6) + VDEP_L(6) * M_CO * DTCH
+
+
+        !RBS ADDED
+        CHEMLOSS(1,6,L) = CHEMLOSS(1,6,L) + LOSS * M_CO * DTCH
+        CHEMLOSS(2,6,L) = CHEMLOSS(2,6,L) + VDEP_L(6) * M_CO * DTCH
+        CHEMLOSS(3,6,L) = CHEMLOSS(3,6,L) + (k_oh_co_a + k_oh_co_b) * M_OH * M_CO*DTCH
+
+        CHEMPROD(1,6,L) = CHEMPROD(1,6,L) + PROD * DTCH
+        CHEMPROD(2,6,L) = CHEMPROD(2,6,L) + DBCH2O * M_CH2O * DTCH
+        CHEMPROD(3,6,L) = CHEMPROD(3,6,L) + k_cho_o2 * M_O2 * M_CHO * DTCH
+        !RBS ADDED END
 
         call QSSA(24,'CO',DTCH,QLIN,ST,PROD,LOSS,ZC(6,L))
 
@@ -2850,6 +2879,16 @@ contains
                    ) * M_SO2 &
                    + POLLX(73)
               LOSS = VDEP_L(73)
+
+              !ZS 2=gaseous, 3=aqueous
+              CHEMPROD(1,73,L) = CHEMPROD(1,73,L) + PROD * DTCH
+              CHEMPROD(2,73,L) = CHEMPROD(2,73,L) + CTOT4072 * M_OH * M_SO2 * DTCH
+              CHEMPROD(3,73,L) = CHEMPROD(3,73,L) + (CAQ1572 * M_H2O2 &            
+                      + CAQ1772 * M_HO2NO2 &
+                      + CAQ0172 * M_O3 &
+                      + CCATSO2 &
+                    ) * M_SO2 * DTCH
+              !ZS
 
               call QSSA(47,'SO4',DTCH,QLIN,ST,PROD,LOSS,ZC(73,L))
 
