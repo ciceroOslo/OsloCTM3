@@ -71,6 +71,7 @@ export RESTARTDIR=$RESULTDIR/restart_$PID
 
 # Set input file name
 export INPUTFILE=L60CTM_test.inp
+
 export EMISFILE=Ltracer_emis_ceds17_2014_megan_gfed4blhdaily.inp
 
 # Name of main program

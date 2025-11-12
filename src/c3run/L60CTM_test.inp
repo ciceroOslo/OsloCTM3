@@ -120,6 +120,7 @@ PFZON  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
 'tables/scavenging_dry.inp'            DRY deposition data set
 --- Emission list ---
 'tables/Ltracer_emis_ceds17_2014_megan_gfed4blhdaily.inp'     See ./tables/ for more
+
 ---- DIAGNOSTICS ---------------------------------------------------------------
 LDUMP3HRS - T: Write diagnostic 3 hourly output and monthly means of defined tracers; F: Do not
    all air trp sul slt min nit bio moa ffc bfc soa ntr
