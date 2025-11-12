@@ -151,7 +151,7 @@ module emissions_megan
   real(r8) :: DTOPS
 
   !// Global scaling - set to give 572Tg isoprene for year 2000, using
-  !// LAI climatology. Should be 0.466
+  !// LAI climatology. 
   real(r8), parameter :: &
        Cce = 4.05_r8 !wrong first test 0.483_r8
 
