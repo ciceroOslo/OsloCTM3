@@ -714,12 +714,14 @@ contains
           !// Also initialise GFED4 emission factors
           call gfed4_init()
 
-       else if (ETAG .eq. 568 .or. ETAG .eq. 574) then
+       else if (ETAG .eq. 568 .or. ETAG .eq. 574 .or. ETAG .eq. 575) then
           !// CEDS
           if (ETAG .eq. 568) then
-             FF_TYPE = 5  !// CEDS distributed with RETRO vertical
+             FF_TYPE = 5  !// CEDS (BB4CMIP6) distributed with RETRO vertical
+          else if (ETAG .eq. 575) then
+             FF_TYPE = 52 !// BB4CMIP7 distributed in BLH (altitude-weighted)
           else
-             FF_TYPE = 51 !// CEDS distributed in BLH (altitude-weighted)
+             FF_TYPE = 51 !// CEDS (BB4CMIP6) distributed in BLH (altitude-weighted)
           end if
 
           !// Year to read (9999 will use meteorological year)
@@ -795,7 +797,7 @@ contains
     use cmn_ctm, only: JDAY, JMON, JDATE, JYEAR
     use emisutils_oslo, only: gfed4_rd, gfed4_rd_daily, gfed5_rd_daily, ceds_biomass_burning, &
          gfed4_rd_novert, gfed4_rd_novert_daily, &
-         emis_setscaling_2dfields, ceds_biomass_burning_novert
+         emis_setscaling_2dfields, ceds_biomass_burning_novert,bb4cmip7_biomass_burning
     use cmn_oslo, only: FF_TYPE
     use emissions_aircraft, only: aircraft_emis_master
     use emissions_megan, only: megan_update_metdata
@@ -830,6 +832,9 @@ contains
     else if (FF_TYPE .eq. 5) then
        !// CEDS
        if (LNEWM) call ceds_biomass_burning(JMON,JYEAR)
+    else if (FF_TYPE .eq. 52) then
+       !// BB4CMIP7
+       if (LNEWM) call bb4cmip7_biomass_burning(JMON,JYEAR)
     else if (FF_TYPE .eq. 51) then
        !// CEDS distributed in BLH
        if (LNEWM) call ceds_biomass_burning_novert(JMON,JYEAR)
