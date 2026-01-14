@@ -81,6 +81,7 @@ program pmain
   !//-----------------------------------------------------------------------
   use stratchem_oslo, only: update_strat_boundaries
   use strat_h2o, only: set_h2_eurohydros, set_h2_hydrogen
+  !RBS for dust use soa_oslo, only: soa_diag2file_nc4, soa_nopsdiag
   use soa_oslo, only: soa_diag2file_nc4, soa_nopsdiag
   use fallingaerosols, only: aerosolsettling
   use sanderson, only: get_cover

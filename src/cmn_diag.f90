@@ -84,8 +84,12 @@ module CMN_DIAG
        AIRAVG(IPAR,JPAR,LPAR), &
        DVAVG(IPAR,JPAR,LPAR), &
        ZHAVG(LPAR+1,IPAR,JPAR), &
-       PSFCAVG(IPAR,JPAR)
-
+       PSFCAVG(IPAR,JPAR), &
+       SDAVG(IPAR,JPAR), & !Added for HYway soil output
+       SFTAVG(IPAR,JPAR), &
+       SWVL1AVG(IPAR,JPAR),&
+       STL1AVG(IPAR,JPAR)
+       
   !// Local time tracer diag.
   real(r8) :: GM0_LT(IPAR+1), LTGBL1(5), LTGBL2(5)
   real(r8), dimension(NSBPAR)       :: LTLAT,LTLNG ,LTSTN1,LTSTN2

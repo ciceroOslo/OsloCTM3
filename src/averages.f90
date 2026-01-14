@@ -53,6 +53,10 @@ contains
          ZGRD, ZEDG, ETAA, ETAB
     use cmn_met, only: METTYPE, metCYCLE, metREVNR, MET_ROOT, MPATH1,MPATH2
     use cmn_diag, only: NRAVG, STTAVG, AIRAVG, DVAVG, ZHAVG, PSFCAVG, &
+         SDAVG, & !Added for HYway soil output
+         SFTAVG, &
+         SWVL1AVG, &
+         STL1AVG, &
          RUNTITLE, NDAY1, JYEAR1, JMON1, JDATE1, &
          metTypeInfo, resolutionInfo, nc4deflate_global, nc4shuffle_global
     use cmn_chem, only: TMASS, TNAME
@@ -118,6 +122,7 @@ contains
          native_lev_id, &          !Variable id for native level size
          areaxy_id, &
          psfc_id, &
+         sd_id,sft_id,swvl1_id,stl1_id, & !For HYway soil output
          air_id, volume_id, airdens_id, temperature_id, &
          height_id, lmtrop_id, h2o_id, q_id, &
          comps_id(NPAR+NOTRPAR)
@@ -198,6 +203,32 @@ contains
           PSFCAVG(I,J) = ZNRAVG * PSFCAVG(I,J)
        end do
     end do
+    !// For HYway soil output
+    !// Snow depth
+    do J = 1,JPAR
+       do I = 1,IPAR
+          SDAVG(I,J) = ZNRAVG * SDAVG(I,J)
+       end do
+    end do
+    !// 2-m temperature
+    do J = 1,JPAR
+       do I = 1,IPAR
+          SFTAVG(I,J) = ZNRAVG * SFTAVG(I,J)
+       end do
+    end do
+    !// Volumetric soil water layer 1
+    do J = 1,JPAR
+       do I = 1,IPAR
+          SWVL1AVG(I,J) = ZNRAVG * SWVL1AVG(I,J)
+       end do
+    end do
+    !// Soil temperature layer 1
+    do J = 1,JPAR
+       do I = 1,IPAR
+          STL1AVG(I,J) = ZNRAVG * STL1AVG(I,J)
+       end do
+    end do
+    
     !// Height
     do J = 1,JPAR
        do I = 1,IPAR
@@ -632,6 +663,58 @@ contains
          f90file//':'//subr//': attribute unit Psfc')
 
 
+
+    !// For HYway soil output
+     status = nf90_def_var(ncid,"SD",nf90_float,dim_lon_lat_id,sd_id)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SD variable')
+    status = nf90_def_var_deflate(ncid,sd_id,nc4shuffle,1,nc4deflate)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SD variable')
+    status = nf90_put_att(ncid,sd_id,'units','m')
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SD')
+
+
+     status = nf90_def_var(ncid,"SFT",nf90_float,dim_lon_lat_id,sft_id)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SFT variable')
+    status = nf90_def_var_deflate(ncid,sft_id,nc4shuffle,1,nc4deflate)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SFT variable')
+    status = nf90_put_att(ncid,sft_id,'units','K')
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SFT')
+
+    status = nf90_def_var(ncid,"SWVL1",nf90_float,dim_lon_lat_id,swvl1_id)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define SWVL1 variable')
+    status = nf90_def_var_deflate(ncid,swvl1_id,nc4shuffle,1,nc4deflate)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate SWVL1 variable')
+    status = nf90_put_att(ncid,swvl1_id,'units','m3/m3')
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit SWVL1')
+
+    status = nf90_def_var(ncid,"STL1",nf90_float,dim_lon_lat_id,stl1_id)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define STL1 variable')
+    status = nf90_def_var_deflate(ncid,stl1_id,nc4shuffle,1,nc4deflate)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate STL1 variable')
+    status = nf90_put_att(ncid,stl1_id,'units','K')
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit STL1')
+
+    
+
+
+
+
+
+
+    
+
     !// Air (r4), deflate netcdf4
     status = nf90_def_var(ncid,"AIR",nf90_float,dim_lon_lat_lev_id,air_id)
     if (status/=nf90_noerr) call handle_error(status, &
@@ -858,6 +941,23 @@ contains
     if (status/=nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': putting PSFCAVG')
 
+    status = nf90_put_var(ncid,sd_id,SDAVG)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SDAVG')
+
+    status = nf90_put_var(ncid,sft_id,SFTAVG)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SFTAVG')
+
+    status = nf90_put_var(ncid,swvl1_id,SWVL1AVG)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting SWVL1AVG')
+
+    status = nf90_put_var(ncid,stl1_id,STL1AVG)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting STL1AVG')
+
+    
     !// Average gridbox air mass (r4)
     status = nf90_put_var(ncid,air_id,AIRAVG)
     if (status/=nf90_noerr) call handle_error(status, &
@@ -1055,8 +1155,9 @@ contains
     use cmn_precision, only: r8, rAvg
     use cmn_size, only: IPAR, JPAR, LPAR, NPAR, NOTRPAR, IDBLK, JDBLK, MPBLK
     use cmn_ctm, only: NTM, MPBLKIB, MPBLKIE, MPBLKJB, MPBLKJE, STT, AIR
-    use cmn_diag, only: STTAVG, AIRAVG, DVAVG, ZHAVG, PSFCAVG, NRAVG
-    use cmn_met, only: T, P, ZOFLE
+    use cmn_diag, only: STTAVG, AIRAVG, DVAVG, ZHAVG, PSFCAVG, &
+         SDAVG,SFTAVG,SWVL1AVG,STL1AVG,  NRAVG
+    use cmn_met, only: T, P, ZOFLE, SD, SFT, SWVL1, STL1
     use cmn_oslo, only: TEMPAVG, AMAVG, DV_IJ, LMTROP, &
           LMTROPAVG, XSTT, XSTTAVG
     use cmn_parameters, only: AVOGNR, M_AIR
@@ -1129,6 +1230,35 @@ contains
           PSFCAVG(I,J) = PSFCAVG(I,J) + real(P(I,J),rAvg)
        end do
     end do
+    !// For HYway soil output:
+    do J = 1, JPAR
+       do I = 1, IPAR
+          SDAVG(I,J) = SDAVG(I,J) + real(SD(I,J),rAvg)
+       end do
+    end do
+
+    do J = 1, JPAR
+       do I = 1, IPAR
+          SFTAVG(I,J) = SFTAVG(I,J) + real(SFT(I,J),rAvg)
+       end do
+    end do
+
+    do J = 1, JPAR
+       do I = 1, IPAR
+          SWVL1AVG(I,J) = SWVL1AVG(I,J) + real(SWVL1(I,J),rAvg)
+       end do
+    end do
+
+    do J = 1, JPAR
+       do I = 1, IPAR
+          STL1AVG(I,J) = STL1AVG(I,J) + real(STL1(I,J),rAvg)
+       end do
+    end do
+
+
+
+
+    
     !// ZOFLE (change to I,J,L)
     do J = 1, JPAR
        do I = 1, IPAR
@@ -1176,7 +1306,8 @@ contains
     use cmn_size, only: NOTRPAR
     use cmn_ctm, only: NTM, MPBLKIB, MPBLKIE, MPBLKJB, MPBLKJE, GMTAU, &
          IDAY, JDAY, JYEAR, JMON, JDATE, TMON
-    use cmn_diag, only: STTAVG, AIRAVG, DVAVG, ZHAVG, PSFCAVG, NRAVG, &
+    use cmn_diag, only: STTAVG, AIRAVG, DVAVG, ZHAVG, PSFCAVG, &
+         SDAVG,SFTAVG,SWVL1AVG,STL1AVG, NRAVG, &
          TAU1, NDAY1, JDAY1, JYEAR1, JMON1, JDATE1, TMON1
     use cmn_oslo, only: TEMPAVG, H2OAVG, AMAVG, LMTROPAVG, &
          QAVG, H2OAVG_LMT1, XSTTAVG
@@ -1193,6 +1324,13 @@ contains
     DVAVG(:,:,:)    = 0._rAvg
     !// Surface pressure
     PSFCAVG(:,:)    = 0._rAvg
+
+    !// For HYway soil output
+    SDAVG(:,:)      = 0._rAvg
+    SFTAVG(:,:)     = 0._rAvg
+    SWVL1AVG(:,:)   = 0._rAvg
+    STL1AVG(:,:)    = 0._rAvg
+    
     !// Temperature
     TEMPAVG(:,:,:)  = 0._rAvg
     !// H2O
