@@ -90,7 +90,7 @@ contains
     use cmn_precision, only: r8
     use cmn_size, only: IPAR,JPAR, LPAR, LOSLOCTROP, LSULPHUR, LSALT, &
          LDUST, LNITRATE, LBCOC, LSOA, TRACER_ID_MAX
-    use cmn_ctm, only: STT, AIR, JYEAR, JMON, JDATE
+    use cmn_ctm, only: STT, AIR, JYEAR, IYEAR, JMON, JDATE
     use cmn_chem, only: TNAME
     use cmn_oslo, only: trsp_idx, Xtrsp_idx, XSTT, XTNAME
     use cmn_met, only: P,T
@@ -160,7 +160,7 @@ contains
 
     !// Strings for filenames
     write(cyear,'(i4.4)') JYEAR
-    write(cday,'(i3.3)') NDAY
+    write(cday,'(i3.3)') NDAY - (JYEAR-IYEAR)*365
 
     !// String for time label
     time_label='hours since yyyy-mm-dd 00:00:00'
