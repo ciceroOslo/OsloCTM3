@@ -2758,7 +2758,8 @@ module pchemc_ij
    
            CHEMPROD(1,52,L) = CHEMPROD(1,52,L) + PROD * DTCH
            CHEMPROD(2,52,L) = CHEMPROD(2,52,L) + k_ch3o2_ch3o2_b * M_CH3O2 * M_CH3O2 * DTCH
-   
+           CHEMPROD(3,52,L) = CHEMPROD(3,52,L) + 0.3_r8 * k_ch3o2_c2h5o2 * M_CH3O2 * M_C2H5O2* DTCH
+           
            CHEMLOSS(1,52,L) = CHEMLOSS(1,52,L) + LOSS * M_CH3OH * DTCH
            CHEMLOSS(2,52,L) = CHEMLOSS(2,52,L) + VDEP_L(52) * M_CH3OH * DTCH
            CHEMLOSS(3,52,L) = CHEMLOSS(3,52,L) + k_oh_ch3oh * M_OH * M_CH3OH * DTCH
@@ -3386,7 +3387,21 @@ module pchemc_ij
                    + CCATSO2           ! catalytic
    
               if (L .eq. 1) DDDIAG(72) = DDDIAG(72) + VDEP_L(72) * M_SO2 * DTCH
-   
+
+              CHEMPROD(1,72,L) = CHEMPROD(1,72,L) + PROD * DTCH
+              CHEMPROD(2,72,L) = CHEMPROD(2,72,L) +  k_oh_dms_a * M_OH * M_DMS * DTCH
+              CHEMPROD(3,72,L) = CHEMPROD(3,72,L) +  k_no3_dms * M_NO3 * M_DMS * DTCH
+              CHEMPROD(4,72,L) = CHEMPROD(4,72,L) +  k_oh_h2s * M_OH * M_H2S * DTCH
+              CHEMPROD(5,72,L) = CHEMPROD(5,72,L) + 0.75_r8 * C4071b * M_OH * M_DMS * DTCH
+              
+              CHEMLOSS(1,72,L) = CHEMLOSS(1,72,L) + LOSS *  M_SO2  * DTCH
+              CHEMLOSS(2,72,L) = CHEMLOSS(2,72,L) + VDEP_L(72) * M_SO2 * DTCH
+              CHEMLOSS(3,72,L) = CHEMLOSS(3,72,L) + CTOT4072 * M_OH  * M_SO2 * DTCH
+              CHEMLOSS(4,72,L) = CHEMLOSS(4,72,L) + CAQ1572 * M_H2O2 * M_SO2 * DTCH
+              CHEMLOSS(5,72,L) = CHEMLOSS(5,72,L) + CAQ1772 * M_HO2NO2 * M_SO2 * DTCH
+              CHEMLOSS(6,72,L) = CHEMLOSS(6,72,L) + CCATSO2 * M_SO2 * DTCH
+              CHEMLOSS(7,72,L) = CHEMLOSS(7,72,L) + CAQ0172 * M_O3 * M_SO2 * DTCH
+              
               call QSSA(46,'SO2',DTCH,QLIN,ST,PROD,LOSS,ZC(72,L))
    
    
@@ -3401,7 +3416,19 @@ module pchemc_ij
                       ) * M_SO2 &
                       + POLLX(73)
                  LOSS = VDEP_L(73)
-   
+
+                 CHEMPROD(1,73,L) = CHEMPROD(1,73,L) + PROD * DTCH
+                 CHEMPROD(2,73,L) = CHEMPROD(2,73,L) + CTOT4072 * M_OH * M_SO2* DTCH
+                 CHEMPROD(3,73,L) = CHEMPROD(3,73,L) + CAQ1772 * M_HO2NO2* M_SO2* DTCH
+                 CHEMPROD(4,73,L) = CHEMPROD(4,73,L) + CAQ0172 * M_O3* M_SO2* DTCH
+                 CHEMPROD(5,73,L) = CHEMPROD(5,73,L) + CCATSO2 * M_SO2* DTCH
+                 CHEMPROD(6,73,L) = CHEMPROD(6,73,L) + CAQ1572 * M_H2O2 * M_SO2* DTCH
+                 
+                 CHEMLOSS(1,73,L) = CHEMLOSS(1,73,L) + LOSS *  M_SO4  * DTCH
+                 CHEMLOSS(2,73,L) = CHEMLOSS(2,73,L) + VDEP_L(73) * M_SO4 * DTCH
+                
+
+                 
                  call QSSA(47,'SO4',DTCH,QLIN,ST,PROD,LOSS,ZC(73,L))
    
                  if (L .eq. 1) DDDIAG(73) = DDDIAG(73) + VDEP_L(73) * M_SO4 * DTCH
