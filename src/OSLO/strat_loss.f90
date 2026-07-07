@@ -66,12 +66,12 @@ contains
     integer :: I, J, L, N, II, JJ
 
     !// Tropospheric components lost in stratosphere
-    integer, parameter :: CNR = 25
+    integer, parameter :: CNR = 36  !25+12
     integer, dimension(CNR), parameter :: COMP_LOST = &
          (/ 7,  8,  9, 10, 11, 12,     14,             18, 19, &
                                    26, 27, 28, 29, 30, 31, 32, &
            33, 34, 35, 36, 37, &
-                       48, 49, 50, 51/)
+           48, 49, 50, 51, 76, 77, 78, 80, 81,82,83,84,85,86,87/)
     !// Tracer 13,15,16,17 are also lost when stratospheric chemistry
     !// is NOT calculated.
     integer, parameter :: CNR_ADD = 4
