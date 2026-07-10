@@ -31,6 +31,7 @@ module emissions_volcanoes
   integer, parameter :: events_max = 426800
   integer :: events_tot
 
+  integer :: nevents_acom
   !// Indices for volcanoe emissions
   integer,dimension(events_max) :: volc_ii, volc_jj, volc_mp
   !// Emissions of SO2
@@ -123,13 +124,17 @@ contains
        return
     end if
 
+    !// Read continus volcanos first.
+    if (LACOM_VOLC) then
+       call read_volcEMIS_ACOM()
+    end if
+    
+    !// Then the erruptive
     if (LHTAP_VOLC) then
        call read_volcEMIS_HTAP()
     end if
 
-    if (LACOM_VOLC) then
-       call read_volcEMIS_ACOM()
-    end if
+    
     !// --------------------------------------------------------------------
   end subroutine read_volcEMIS
   !// ----------------------------------------------------------------------
@@ -163,11 +168,12 @@ contains
     !// --------------------------------------------------------------------
 
     !// Initialise
-    volc_ii(:) = 0
-    volc_jj(:) = 0
-    volc_emis_so2(:) = 0._r8
-    volc_event_start(:,:) = 0
-    volc_event_end(:,:)   = 0
+    !// Initialised in the other routine:
+    !volc_ii(:) = 0
+    !volc_jj(:) = 0
+    !volc_emis_so2(:) = 0._r8
+    !volc_event_start(:,:) = 0
+    !volc_event_end(:,:)   = 0
 
     !// Is SO2 included at all?
     if (.not. LSULPHUR) then
@@ -178,6 +184,11 @@ contains
     !// Skip if not included
     if (.not. LHTAP_VOLC) return
 
+    
+    print*,'number of events ACOM volcanic emissions',nevents_acom
+    
+
+    
     !// Fetch data from file
     write(cyear(1:4),'(i4.4)') volc_year
     filename = trim(volc_path_erruption)//'volc_so2_'//cyear//'.nc'
@@ -186,7 +197,7 @@ contains
     call get_netcdf_var_1d( filename, 'lon',  inLon )
     nEvents  = SIZE( inLon  )
 
-    if (nEvents .gt. events_max) then
+    if (nevents_acom+nEvents .gt. events_max) then
        print*,'emissions_volcanoes.f90: nEvents > events_max'
        print*,'nEvents:   ',nEvents
        print*,'events_max:',events_max
@@ -203,7 +214,8 @@ contains
     lastM = -1
     lastD = -1
 
-    do n = 1, nEvents
+    print*,'number of events erruptive volcanic emissions', nEvents
+    do n = 1,nEvents
 
        !// get year/month/day info
        tmpDate = nint(inDate(n))
@@ -214,12 +226,12 @@ contains
        !// Keep track of start/end of events for each day
        if (inD .ne. lastD) then
           !// we have a new day
-          volc_event_start(inD,inM) = n
-          volc_event_end(inD,inM)   = n !// This works as an initialisation
+          ! These are added to the continus ones. volc_event_start(inD,inM) = nevents_acom + n
+          volc_event_end(inD,inM)   = nevents_acom + n !// This works as an initialisation
           lastD = inD
        else
           !// Working on the same day as before; keep increasing the end event
-          volc_event_end(inD,inM)   = n
+          volc_event_end(inD,inM)   = nevents_acom + n
        end if
 
 
@@ -264,20 +276,20 @@ contains
        end if
 
        !// Assign i/j through ii/jj/mp
-       volc_ii(n) = all_mp_indices(1,iii,jjj)
-       volc_jj(n) = all_mp_indices(2,iii,jjj)
-       volc_mp(n) = all_mp_indices(3,iii,jjj)
+       volc_ii(nevents_acom+n) = all_mp_indices(1,iii,jjj)
+       volc_jj(nevents_acom+n) = all_mp_indices(2,iii,jjj)
+       volc_mp(nevents_acom+n) = all_mp_indices(3,iii,jjj)
 
        !// Emissions (convert from kt(SO2)/d to kg(SO2)/s
-       volc_emis_so2(n) = inEmis(n) * 1.e6_r8 / 86400._r8
+       volc_emis_so2(nevents_acom+n) = inEmis(n) * 1.e6_r8 / 86400._r8
        !// Volcanoe elevation [m]
-       volc_elev(n)     = inElev(n)
+       volc_elev(nevents_acom+n)     = inElev(n)
        !// Volcanoe plume heigh [m]
-       volc_cch(n)     = inCch(n)
+       volc_cch(nevents_acom+n)     = inCch(n)
 
-       if (volc_elev(n) .gt. volc_cch(n)) then
+       if (volc_elev(nevents_acom+n) .gt. volc_cch(nevents_acom+n)) then
           !// Correcting wrong values (may do this the other way around?)
-          volc_elev(n) = volc_cch(n)
+          volc_elev(nevents_acom+n) = volc_cch(nevents_acom+n)
        end if
 
     end do !// do n = 1, nEvents
@@ -325,6 +337,7 @@ contains
     !// Initialise
     volc_ii(:) = 0
     volc_jj(:) = 0
+    volc_mp(:) = 0
     volc_emis_so2(:) = 0._r8
     volc_event_start(:,:) = 0
     volc_event_end(:,:)   = 0
@@ -359,6 +372,7 @@ contains
 
     !// Number of (continuous) events
     nEvents = 0
+    nevents_acom = -1
     volc_event_start(:,:) = 1
     volc_event_end(:,:)   = 1
 
@@ -445,6 +459,8 @@ contains
 
     print*,'number of events ACOM volcanic emissions',nevents
 
+    nevents_acom = nevents
+    
     !// --------------------------------------------------------------------
   end subroutine read_volcEMIS_ACOM
   !// ----------------------------------------------------------------------
@@ -488,6 +504,7 @@ contains
 
     N_SO2 = trsp_idx(72) !// Transport number for SO2
 
+        
     !// Loop through all events of the day
     do n = volc_event_start(DAY,MONTH), volc_event_end(DAY,MONTH)
 
