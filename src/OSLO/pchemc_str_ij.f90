@@ -253,7 +253,7 @@ contains
          J_HCl,     J_H2O,     J_BrCl, &
          !// Components (extracted from ZC_LOCAL array)
          M_O3,        M_HNO3,     M_CO,      M_CH2O,      M_H2O2, &
-         M_CH3OH, &
+         M_CH3OH, M_SO4, &
          M_CH3O2H,    M_HO2NO2,   M_HO2,     M_CH3O2,     M_O3P, &
          M_O1D,       M_OH,       M_NO3,     M_N2O5,      M_NO, &
          M_NO2,       M_CH4,      M_MCF,     M_HCFC22,    M_CFC11, &
@@ -559,6 +559,7 @@ contains
         M_NO2     = ZC_LOCAL(44,L)
         M_CH4     = ZC_LOCAL(46,L)
         M_CH3OH   = ZC_LOCAL(52,L)
+        M_SO4     = ZC_LOCAL(73,L)
         M_MCF     = ZC_LOCAL(101,L)
         M_HCFC22  = ZC_LOCAL(102,L)
         M_CFC11   = ZC_LOCAL(103,L)
@@ -2025,6 +2026,11 @@ contains
         call QSSA(148,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_H2O_ac)
 
 
+        !// Add volcanic emissions of SO2 directly converted to SO4
+        PROD = EMISX(72,L)*1.4995_r8
+        LOSS = 0._r8
+        call QSSA(149,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_SO4)
+        
         !// NITROGEN
         PROD = k_o3_no2 * M_O3 * M_NO2      &! O3 + NO2        -> NO3 + O2
                + k_n2o5_heat * M_N2O5          &! N2O5 + heat     -> NO2 + NO3 
@@ -3071,6 +3077,7 @@ contains
         ZC_LOCAL(44,L) = M_NO2
         ZC_LOCAL(46,L) = M_CH4
         ZC_LOCAL(52,L) = M_CH3OH
+        ZC_LOCAL(73,L) = M_SO4     
         ZC_LOCAL(101,L) = M_MCF
         ZC_LOCAL(102,L) = M_HCFC22
         ZC_LOCAL(103,L) = M_CFC11
