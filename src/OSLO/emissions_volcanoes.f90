@@ -21,7 +21,7 @@ module emissions_volcanoes
   !//   subroutine add_volcEMIS
   !//  RBS: subroutine add_volcHoluhraun
   !//  RBS: subroutine add_volcKilauea
-  !//
+  !//   subroutine add_erruptive_volcEMIS
   !// Amund Sovde, March 2014
   !// ----------------------------------------------------------------------
   use cmn_precision, only: r8
@@ -31,15 +31,19 @@ module emissions_volcanoes
   integer, parameter :: events_max = 426800
   integer :: events_tot
 
-  integer :: nevents_acom
+  !integer :: nevents_acom
   !// Indices for volcanoe emissions
   integer,dimension(events_max) :: volc_ii, volc_jj, volc_mp
+  integer,dimension(events_max) :: volc_erp_ii, volc_erp_jj, volc_erp_mp
   !// Emissions of SO2
   real(r8),dimension(events_max)  :: volc_emis_so2
+  real(r8),dimension(events_max)  :: volc_erp_emis_so2
   !// Volcanoe elevation [m.a.s.l.]
   real(r8),dimension(events_max)  :: volc_elev
+  real(r8),dimension(events_max)  :: volc_erp_elev
   !// Cloud column height [m.a.s.l.]
   real(r8),dimension(events_max)  :: volc_cch
+  real(r8),dimension(events_max)  :: volc_erp_cch
 
   !// Path to the files
   character(len=100) :: volc_path
@@ -54,11 +58,12 @@ module emissions_volcanoes
   !// Keep track of which events belonging to which days
   real(r8), dimension(events_max) :: volc_mm, volc_dd !// May not be necessary
   integer, dimension(31,12) :: volc_event_start, volc_event_end
+  integer, dimension(31,12) :: volc_erp_event_start, volc_erp_event_end
 
   !// ----------------------------------------------------------------------
   save !// All variables are to be saved.
   private
-  public init_volcPATH, read_volcEMIS, add_volcEMIS, add_volcHoluhraun,add_volcKilauea
+  public init_volcPATH, read_volcEMIS, add_volcEMIS, add_erruptive_volcEMIS, add_volcHoluhraun,add_volcKilauea
   !// ----------------------------------------------------------------------
 
 contains
@@ -168,12 +173,12 @@ contains
     !// --------------------------------------------------------------------
 
     !// Initialise
-    !// Initialised in the other routine:
-    !volc_ii(:) = 0
-    !volc_jj(:) = 0
-    !volc_emis_so2(:) = 0._r8
-    !volc_event_start(:,:) = 0
-    !volc_event_end(:,:)   = 0
+    !// !!!!!!Initialised in the other routine:
+    volc_erp_ii(:) = 0
+    volc_erp_jj(:) = 0
+    volc_erp_emis_so2(:) = 0._r8
+    volc_erp_event_start(:,:) = 0
+    volc_erp_event_end(:,:)   = 0
 
     !// Is SO2 included at all?
     if (.not. LSULPHUR) then
@@ -185,7 +190,7 @@ contains
     if (.not. LHTAP_VOLC) return
 
     
-    print*,'number of events ACOM volcanic emissions',nevents_acom
+    !print*,'number of events ACOM volcanic emissions',nevents_acom
     
 
     
@@ -197,7 +202,7 @@ contains
     call get_netcdf_var_1d( filename, 'lon',  inLon )
     nEvents  = SIZE( inLon  )
 
-    if (nevents_acom+nEvents .gt. events_max) then
+    if (nEvents .gt. events_max) then
        print*,'emissions_volcanoes.f90: nEvents > events_max'
        print*,'nEvents:   ',nEvents
        print*,'events_max:',events_max
@@ -226,12 +231,12 @@ contains
        !// Keep track of start/end of events for each day
        if (inD .ne. lastD) then
           !// we have a new day
-          ! These are added to the continus ones. volc_event_start(inD,inM) = nevents_acom + n
-          volc_event_end(inD,inM)   = nevents_acom + n !// This works as an initialisation
+          volc_erp_event_start(inD,inM) = n
+          volc_erp_event_end(inD,inM)   =  n !// This works as an initialisation
           lastD = inD
        else
           !// Working on the same day as before; keep increasing the end event
-          volc_event_end(inD,inM)   = nevents_acom + n
+          volc_erp_event_end(inD,inM)   =  n
        end if
 
 
@@ -276,20 +281,20 @@ contains
        end if
 
        !// Assign i/j through ii/jj/mp
-       volc_ii(nevents_acom+n) = all_mp_indices(1,iii,jjj)
-       volc_jj(nevents_acom+n) = all_mp_indices(2,iii,jjj)
-       volc_mp(nevents_acom+n) = all_mp_indices(3,iii,jjj)
+       volc_erp_ii(n) = all_mp_indices(1,iii,jjj)
+       volc_erp_jj(n) = all_mp_indices(2,iii,jjj)
+       volc_erp_mp(n) = all_mp_indices(3,iii,jjj)
 
        !// Emissions (convert from kt(SO2)/d to kg(SO2)/s
-       volc_emis_so2(nevents_acom+n) = inEmis(n) * 1.e6_r8 / 86400._r8
+       volc_erp_emis_so2(n) = inEmis(n) * 1.e6_r8 / 86400._r8
        !// Volcanoe elevation [m]
-       volc_elev(nevents_acom+n)     = inElev(n)
+       volc_erp_elev(n)     = inElev(n)
        !// Volcanoe plume heigh [m]
-       volc_cch(nevents_acom+n)     = inCch(n)
+       volc_erp_cch(n)     = inCch(n)
 
-       if (volc_elev(nevents_acom+n) .gt. volc_cch(nevents_acom+n)) then
+       if (volc_erp_elev(n) .gt. volc_erp_cch(n)) then
           !// Correcting wrong values (may do this the other way around?)
-          volc_elev(nevents_acom+n) = volc_cch(nevents_acom+n)
+          volc_erp_elev(n) = volc_erp_cch(n)
        end if
 
     end do !// do n = 1, nEvents
@@ -372,7 +377,7 @@ contains
 
     !// Number of (continuous) events
     nEvents = 0
-    nevents_acom = -1
+    !nevents_acom = -1
     volc_event_start(:,:) = 1
     volc_event_end(:,:)   = 1
 
@@ -459,7 +464,7 @@ contains
 
     print*,'number of events ACOM volcanic emissions',nevents
 
-    nevents_acom = nevents
+    !nevents_acom = nevents
     
     !// --------------------------------------------------------------------
   end subroutine read_volcEMIS_ACOM
@@ -609,6 +614,149 @@ contains
 
     !// --------------------------------------------------------------------
   end subroutine add_volcEMIS
+  !// ----------------------------------------------------------------------
+  !// ----------------------------------------------------------------------
+  subroutine add_erruptive_volcEMIS(BX,DT,DAY,MONTH,MP)
+    !// --------------------------------------------------------------------
+    !// Routine to add volcanic SO2 emissions.
+    !// Routine is called from either emis4chem_oslo or SOURCE.
+    !// IMPORTANT:
+    !//   Note that the arguments are different things in the
+    !//   two routines!:
+    !//     emis4chem_oslo: BX is BEMIS [kg/s] and needs DT=1.d0
+    !//     SOURCE:         BX is BTT [kg] and needs DT to be the time step.
+    !//
+    !// Amund Sovde, March 2015, February 2014
+    !// --------------------------------------------------------------------
+    use cmn_size, only: LPAR, NPAR, IDBLK, JDBLK, MPBLK, LSULPHUR
+    use cmn_ctm, only:  MPBLKIB, MPBLKJB, all_mp_indices
+    use cmn_met, only: ZOFLE
+    use cmn_oslo, only: trsp_idx
+    !// --------------------------------------------------------------------
+    implicit none
+    !// --------------------------------------------------------------------
+    !// Input
+    integer, intent(in) :: DAY, MONTH, MP
+    real(r8), intent(in)  :: DT
+    !// In/Out: Emissions (emis4chem_oslo) or tracer array (SOURCE)
+    real(r8), intent(inout)  :: BX(LPAR,NPAR,IDBLK,JDBLK)
+
+    !// Local
+    integer :: N_SO2, L,I,J, II,JJ, LV1, LV2, N
+    real(r8) :: frac, DZ, ZH, topoH, plumeH, topZ3bot
+    !// --------------------------------------------------------------------
+
+    !// Skip volcanic emissions?
+    if (.not. LSULPHUR) return
+    if (.not. (LHTAP_VOLC .or. LACOM_VOLC)) return
+
+    N_SO2 = trsp_idx(72) !// Transport number for SO2
+
+        
+    !// Loop through all events of the day
+    do n = volc_erp_event_start(DAY,MONTH), volc_erp_event_end(DAY,MONTH)
+
+       !// Check for this MP-block
+       if (volc_erp_mp(n) .eq. MP) then
+
+          !// MP-block indices
+          II = volc_erp_ii(n)
+          JJ = volc_erp_jj(n)
+          !// Global indices
+          I = II - 1 + MPBLKIB(MP)
+          J = JJ - 1 + MPBLKJB(MP)
+
+
+          if (volc_erp_elev(n) .ge. volc_erp_cch(n)) then
+             !// Volcanoe altitude is the same as the cloud height it
+             !// generates. In other words it is non-eruptive, but degassing.
+             !// In this case, place emissions into the model level of the
+             !// crater elevation.
+
+             !// Check volcanoe altitude vs model levels
+             LV1 = 1
+             do L = 1, LPAR
+                if (volc_erp_elev(n) .ge. ZOFLE(L,I,J) .and. &
+                     volc_erp_elev(n) .lt. ZOFLE(L+1,I,J)) then
+                   LV1 = L !// Model level where volcanoe is located
+                   exit
+                end if
+             end do
+             BX(LV1,N_SO2,II,JJ) = BX(LV1,N_SO2,II,JJ) &
+                  + volc_erp_emis_so2(n) * DT
+          else
+             !// Eruptive volcanoe. Assume emissions are placed in the
+             !// levels spanning the top 1/3 of the volcano plume.
+             !// IMPORTANT: We only look for the model levels, and do not care
+             !//            about interpolation to get exact thickness of the
+             !//            plume. Emissions are to be equally distributed in
+             !//            the model levels containing the top 1/3 of the
+             !//            plume.
+             plumeH = volc_erp_cch(n)
+             !// Bottom of top 1/3
+             topZ3bot = plumeH - (plumeH - volc_erp_elev(n)) / 3._r8
+
+             !// Locate model levels where we find the top 1/3 of plume.
+             if (topZ3bot .lt. ZOFLE(1,I,J)) then
+                !// In case bottom of top 1/3 is below model surface
+                LV1 = 1
+             else
+                lv1 = -1
+                do L = 1, LPAR
+                   if (topZ3bot .ge. ZOFLE(L,I,J) .and. &
+                        topZ3bot .lt. ZOFLE(L+1,I,J)) then
+                      !// This is the level where top 1/3 of volcanoe
+                      !// plume starts
+                      lv1 = L
+                      exit
+                   end if
+                end do
+                if (lv1 .lt. 0) then
+                   write(6,'(a,f9.2)') &
+                        'emissions_volcanoes.f90: Volcanoe LV1 is not set',topZ3bot
+                   stop
+                end if
+                !// Limit LV1 just in case
+                if (LV1 .gt. LPAR) LV1 = LPAR
+             end if
+
+
+             lv2 = lv1 !// In case plumeH < ZOFLE(1,I,J)
+             do L = lv1, LPAR
+                if (plumeH .ge. ZOFLE(L,I,J) .and. &
+                     plumeH .lt. ZOFLE(L+1,I,J)) then
+                   !// This is the level of the plume top
+                   lv2 = L
+                   exit
+                end if
+             end do
+             if (lv2 .lt. 0) then
+                print*,'Volcanoe LV2 is not set',plumeH
+                stop
+             end if
+             !// Limit LV2 just in case
+             if (LV2 .gt. LPAR) LV2 = LPAR
+
+
+             !// Thickness of model layers spanning top 1/3 of volcanoe plume
+             dZ = ZOFLE(LV2+1,I,J) - ZOFLE(LV1,I,J)
+             do L = LV1, LV2
+                frac = (ZOFLE(L+1,I,J) - ZOFLE(L,I,J)) / DZ
+                BX(L,N_SO2,II,JJ) = BX(L,N_SO2,II,JJ) &
+                     + volc_erp_emis_so2(n) * DT * frac
+                !write(6,'(a4,1x,2i3,2f8.4,4f8.1)') 'VOLC', &
+                !     n,L,volc_emis_so2(n) * DT, frac,&
+                !     ZOFLE(L,I,J),ZOFLE(L+1,I,J),volc_elev(n),volc_cch(n)
+             end do
+
+          end if !// if (volc_erp_elev(n).le. volc_erp_cch(n)) then
+
+       end if !// if (volc_erp_mp(n) .eq. MP) then
+
+    end do !// do n = volc_erp_event_start(DAY,MONTH), volc_erp_event_end(DAY,MONTH)
+
+    !// --------------------------------------------------------------------
+  end subroutine add_erruptive_volcEMIS
   !// ----------------------------------------------------------------------
 
   !// ----------------------------------------------------------------------
