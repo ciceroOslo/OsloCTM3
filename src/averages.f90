@@ -53,6 +53,7 @@ contains
          ZGRD, ZEDG, ETAA, ETAB
     use cmn_met, only: METTYPE, metCYCLE, metREVNR, MET_ROOT, MPATH1,MPATH2
     use cmn_diag, only: NRAVG, STTAVG, AIRAVG, DVAVG, ZHAVG, PSFCAVG, &
+         BLHAVG, UAVG, VAVG, &
          SDAVG, & !Added for HYway soil output
          SFTAVG, &
          SWVL1AVG, &
@@ -123,6 +124,7 @@ contains
          areaxy_id, &
          psfc_id, &
          sd_id,sft_id,swvl1_id,stl1_id, & !For HYway soil output
+         blh_id,u_id,v_id, &
          air_id, volume_id, airdens_id, temperature_id, &
          height_id, lmtrop_id, h2o_id, q_id, &
          comps_id(NPAR+NOTRPAR)
@@ -197,6 +199,29 @@ contains
           end do
        end do
     end do
+    !// Wind U
+    do L = 1,LPAR
+       do J = 1,JPAR
+          do I = 1,IPAR
+             UAVG(I,J,L) = ZNRAVG * UAVG(I,J,L)
+          end do
+       end do
+    end do
+    !// Wind V
+    do L = 1,LPAR
+       do J = 1,JPAR
+          do I = 1,IPAR
+             VAVG(I,J,L) = ZNRAVG * VAVG(I,J,L)
+          end do
+       end do
+    end do
+    !// Boundary layer height
+    do J = 1,JPAR
+       do I = 1,IPAR
+          BLHAVG(I,J) = ZNRAVG * BLHAVG(I,J)
+       end do
+    end do
+    
     !// Surface pressure
     do J = 1,JPAR
        do I = 1,IPAR
@@ -662,6 +687,16 @@ contains
     if (status/=nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': attribute unit Psfc')
 
+    !// BLH, deflate netcdf4
+    status = nf90_def_var(ncid,"BLH",nf90_float,dim_lon_lat_id,blh_id)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define BLH variable')
+    status = nf90_def_var_deflate(ncid,blh_id,nc4shuffle,1,nc4deflate)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate BLH variable')
+    status = nf90_put_att(ncid,blh_id,'units','m')
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit BLH')
 
 
     !// For HYway soil output
@@ -759,6 +794,29 @@ contains
     if (status/=nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': attribute unit temperature')
 
+
+    !// U-Wind (r4), deflate netcdf4
+    status = nf90_def_var(ncid,"U",nf90_float,dim_lon_lat_lev_id,u_id)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define u-wind variable')
+    status = nf90_def_var_deflate(ncid,u_id,nc4shuffle,1,nc4deflate)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate u-wind variable')
+    status = nf90_put_att(ncid,u_id,'units','m s-1')
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit u-wind')
+
+    !// V-Wind (r4), deflate netcdf4
+    status = nf90_def_var(ncid,"V",nf90_float,dim_lon_lat_lev_id,v_id)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define v-wind variable')
+    status = nf90_def_var_deflate(ncid,v_id,nc4shuffle,1,nc4deflate)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': define deflate v-wind variable')
+    status = nf90_put_att(ncid,v_id,'units','m s-1')
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': attribute unit v-wind')
+    
     !// Height (r4), deflate netcdf4
     status = nf90_def_var(ncid,"height",nf90_float,dim_ilev_lon_lat_id,height_id)
     if (status/=nf90_noerr) call handle_error(status, &
@@ -956,7 +1014,18 @@ contains
     status = nf90_put_var(ncid,stl1_id,STL1AVG)
     if (status/=nf90_noerr) call handle_error(status, &
          f90file//':'//subr//': putting STL1AVG')
+    !BLG
+    status = nf90_put_var(ncid,blh_id,BLHAVG)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting BLHAVG')
 
+    status = nf90_put_var(ncid,u_id,UAVG)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting UAVG')
+
+    status = nf90_put_var(ncid,v_id,VAVG)
+    if (status/=nf90_noerr) call handle_error(status, &
+         f90file//':'//subr//': putting VAVG')
     
     !// Average gridbox air mass (r4)
     status = nf90_put_var(ncid,air_id,AIRAVG)
@@ -1156,8 +1225,10 @@ contains
     use cmn_size, only: IPAR, JPAR, LPAR, NPAR, NOTRPAR, IDBLK, JDBLK, MPBLK
     use cmn_ctm, only: NTM, MPBLKIB, MPBLKIE, MPBLKJB, MPBLKJE, STT, AIR
     use cmn_diag, only: STTAVG, AIRAVG, DVAVG, ZHAVG, PSFCAVG, &
+         BLHAVG,UAVG,VAVG,&
          SDAVG,SFTAVG,SWVL1AVG,STL1AVG,  NRAVG
-    use cmn_met, only: T, P, ZOFLE, SD, SFT, SWVL1, STL1
+    use cmn_met, only: T, P, ZOFLE, SD, SFT, SWVL1, STL1, &
+         U,V,BLH
     use cmn_oslo, only: TEMPAVG, AMAVG, DV_IJ, LMTROP, &
           LMTROPAVG, XSTT, XSTTAVG
     use cmn_parameters, only: AVOGNR, M_AIR
@@ -1224,12 +1295,38 @@ contains
           end do
        end do
     end do
+
+    !// U-wind
+    do L = 1, LPAR
+       do J = 1, JPAR
+          do I = 1, IPAR
+             UAVG(I,J,L) = UAVG(I,J,L) + real(U(I,J,L),rAvg)
+          end do
+       end do
+    end do
+    !// V-wind
+    do L = 1, LPAR
+       do J = 1, JPAR
+          do I = 1, IPAR
+             VAVG(I,J,L) = VAVG(I,J,L) + real(V(I,J,L),rAvg)
+          end do
+       end do
+    end do
+    
     !// Surface pressure
     do J = 1, JPAR
        do I = 1, IPAR
           PSFCAVG(I,J) = PSFCAVG(I,J) + real(P(I,J),rAvg)
        end do
     end do
+
+    !// Boundary layer heigh
+    do J = 1, JPAR
+       do I = 1, IPAR
+          BLHAVG(I,J) = BLHAVG(I,J) + real(BLH(I,J),rAvg)
+       end do
+    end do
+    
     !// For HYway soil output:
     do J = 1, JPAR
        do I = 1, IPAR
@@ -1307,6 +1404,7 @@ contains
     use cmn_ctm, only: NTM, MPBLKIB, MPBLKIE, MPBLKJB, MPBLKJE, GMTAU, &
          IDAY, JDAY, JYEAR, JMON, JDATE, TMON
     use cmn_diag, only: STTAVG, AIRAVG, DVAVG, ZHAVG, PSFCAVG, &
+         BLHAVG,UAVG,VAVG,&
          SDAVG,SFTAVG,SWVL1AVG,STL1AVG, NRAVG, &
          TAU1, NDAY1, JDAY1, JYEAR1, JMON1, JDATE1, TMON1
     use cmn_oslo, only: TEMPAVG, H2OAVG, AMAVG, LMTROPAVG, &
@@ -1324,6 +1422,12 @@ contains
     DVAVG(:,:,:)    = 0._rAvg
     !// Surface pressure
     PSFCAVG(:,:)    = 0._rAvg
+
+    !//Wind
+    UAVG(:,:,:)     = 0._rAvg
+    VAVG(:,:,:)     = 0._rAvg
+
+    BLHAVG(:,:)     = 0._rAvg
 
     !// For HYway soil output
     SDAVG(:,:)      = 0._rAvg

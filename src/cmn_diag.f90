@@ -85,6 +85,9 @@ module CMN_DIAG
        DVAVG(IPAR,JPAR,LPAR), &
        ZHAVG(LPAR+1,IPAR,JPAR), &
        PSFCAVG(IPAR,JPAR), &
+       BLHAVG(IPAR,JPAR), & !Added for AeroCom
+       UAVG(IPAR,JPAR,LPAR),& !Added for AeroCom
+       VAVG(IPAR,JPAR,LPAR), & !Added for AeroCom
        SDAVG(IPAR,JPAR), & !Added for HYway soil output
        SFTAVG(IPAR,JPAR), &
        SWVL1AVG(IPAR,JPAR),&
