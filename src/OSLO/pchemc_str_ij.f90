@@ -2029,6 +2029,11 @@ contains
         !// Add volcanic emissions of SO2 directly converted to SO4
         PROD = EMISX(72,L)*1.4995_r8
         LOSS = 0._r8
+
+        CHEMPROD(1,72,L) = CHEMPROD(1,72,L) + EMISX(72,L)*DTS
+        CHEMLOSS(1,72,L) = CHEMLOSS(1,72,L) + EMISX(72,L)*DTS
+        CHEMPROD(1,73,L) = CHEMPROD(1,73,L) + PROD*DTS
+        
         call QSSA(149,'strat',DTS,EULER,STEADYST,PROD,LOSS,M_SO4)
         
         !// NITROGEN
