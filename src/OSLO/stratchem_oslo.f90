@@ -404,6 +404,14 @@ contains
     !// All species plus one (NOy)
     real(r8) :: STT2D(J2D,L2D,N2D+1)
 
+    !//RBS++
+    integer, parameter :: antyear = 16
+    real(r8) :: SCALE_FACT_ALL(N2D,antyear)
+    real(r8) :: SCALE_FACT(N2D)
+    character(len=200) :: header_line
+    character(len=10) :: comp_name
+    !//RBS--
+    
     !// For interpolation
     real(r8) :: r8in(J2D), r8out(JPAR)
     !// For scaling (L60)
@@ -675,7 +683,38 @@ contains
     STT2D(1,:,:)   = STT2D(2,:,:)
     STT2D(J2D,:,:) = STT2D(J2D-1,:,:)
 
+    !//RBS++ added scaling factors.
+    !//Read scaling factors
+    !// File
+    filename='Indata_CTM3/2d_data/scaling_factors_for_srfile.csv'
+    open(ifnr,FILE=filename,form='formatted',STATUS='OLD',iostat=ierr)
+    if (ierr.ne.0) then
+       write(6,'(a)') f90file//':'//subr// &
+            ': No scaling file: '//trim(filename)
+       stop
+    end if
+    write(6,'(a)') '  Reading '//trim(filename)
+    read(ifnr, '(A)') header_line
+    !Read data rows
+    do N = 1, N2D
+       read(ifnr, '(A10, 16F7.3)') comp_name, SCALE_FACT_ALL(N,:)
+       !print*, comp_name
+       !print*, SCALE_FACT_ALL(N,:)
+    end do
+    SCALE_FACT(:) =SCALE_FACT_ALL(:,MYEAR-2011+1)  
+    !//Find scaling factor for correct year
+    !MYEAR-2011+1
+    !//For components 1 - 63, scale the STT2D(:,:,comp)
+    do N = 1, N2D
+       !print*, N
+       STT2D(:,:,N) = STT2D(:,:,N)*SCALE_FACT(N)
+       !print*, SCALE_FACT(N)
+    end do
+    !stop
+    !//RBS--
 
+
+    
     !// Need some extra species, i.e. sums
     do L = 1, L2D
       do J = 1, J2D
