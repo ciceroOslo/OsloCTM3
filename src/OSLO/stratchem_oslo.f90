@@ -371,7 +371,7 @@ contains
     use cmn_ctm, only: JMON, YDGRD
     use cmn_met, only: MYEAR
     use utilities, only: get_free_fileid
-    use cmn_oslo, only: STT_2D_LB, STT_2D_LT
+    use cmn_oslo, only: STT_2D_LB, STT_2D_LT, HISTYEAR
     !// --------------------------------------------------------------------
     implicit none
     !// --------------------------------------------------------------------
@@ -539,7 +539,8 @@ contains
     if (.not. LNEW_MONTH) return
 
     !// Year and month as strings
-    write(YEAR,'(I4)') MYEAR
+    !write(YEAR,'(I4)') MYEAR
+    write(YEAR,'(I4)') HISTYEAR
     write(MON,'(I2.2)') JMON
 
     write(6,'(a)') f90file//':'//subr//': Updating boundary conditions'
@@ -688,7 +689,7 @@ contains
     !// File
     !Only scale if MYEAR > 2011
     
-    if (MYEAR .gt. 2011) then
+    if (HISTYEAR .gt. 2011) then
        filename='Indata_CTM3/2d_data/scaling_factors_for_srfile.csv'
        open(ifnr,FILE=filename,form='formatted',STATUS='OLD',iostat=ierr)
        if (ierr.ne.0) then
